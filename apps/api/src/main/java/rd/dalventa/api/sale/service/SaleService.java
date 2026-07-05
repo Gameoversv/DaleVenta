@@ -15,6 +15,8 @@ import rd.dalventa.api.denomination.repository.DenominationRepository;
 import rd.dalventa.api.inventory.domain.InventoryMovementType;
 import rd.dalventa.api.inventory.dto.CreateInventoryMovementRequest;
 import rd.dalventa.api.inventory.service.InventoryMovementService;
+import rd.dalventa.api.permission.domain.PermissionCode;
+import rd.dalventa.api.permission.service.PermissionResolutionService;
 import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.sale.domain.Payment;
@@ -58,6 +60,7 @@ public class SaleService {
     private final CashShiftChangeService cashShiftChangeService;
     private final CashMovementService cashMovementService;
     private final DenominationRepository denominationRepository;
+    private final PermissionResolutionService permissionResolutionService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -110,7 +113,14 @@ public class SaleService {
             }
         }
 
-        BigDecimal discountAmount = req.discountAmount() != null ? req.discountAmount() : BigDecimal.ZERO;
+        BigDecimal requestedDiscount = req.discountAmount() != null
+                ? req.discountAmount().setScale(2, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2);
+        boolean canDiscount = requestedDiscount.signum() == 0
+                || currentUserProvider.current()
+                        .map(user -> permissionResolutionService.has(user, PermissionCode.SALE_DISCOUNT))
+                        .orElse(false);
+        BigDecimal discountAmount = canDiscount ? requestedDiscount : BigDecimal.ZERO.setScale(2);
         BigDecimal total = subtotal.add(taxTotal).subtract(discountAmount);
 
         BigDecimal paymentsSum = req.payments().stream()

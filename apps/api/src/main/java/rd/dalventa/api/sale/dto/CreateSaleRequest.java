@@ -12,7 +12,7 @@ public record CreateSaleRequest(
         @JsonProperty("registerId") @NotNull UUID registerId,
         @JsonProperty("cashShiftId") @NotNull UUID cashShiftId,
         @JsonProperty("customerId") UUID customerId,
-        BigDecimal discountAmount,
+        @JsonProperty("discountAmount") BigDecimal discountAmount,
         @NotNull @Valid List<SaleItemRequest> items,
         @NotNull @Valid List<PaymentRequest> payments
 ) {}
