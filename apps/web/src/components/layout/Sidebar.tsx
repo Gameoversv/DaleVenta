@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2 } from "lucide-react";
+import { LayoutDashboard, Building2, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
 import type { PermissionCode } from "@/types/auth";
@@ -17,6 +17,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/branches", label: "Sucursales", icon: Building2, permission: "SETTINGS_MANAGE" },
+  { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
 ];
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
