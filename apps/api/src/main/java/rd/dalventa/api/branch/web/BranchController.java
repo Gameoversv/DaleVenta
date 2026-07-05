@@ -3,6 +3,7 @@ package rd.dalventa.api.branch.web;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.branch.dto.BranchResponse;
 import rd.dalventa.api.branch.dto.CreateBranchRequest;
@@ -21,6 +22,7 @@ public class BranchController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@permissionService.has('SETTINGS_MANAGE')")
     public ApiResponse<BranchResponse> create(@Valid @RequestBody CreateBranchRequest req) {
         return ApiResponse.ok(branchService.create(req));
     }
@@ -31,6 +33,7 @@ public class BranchController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("@permissionService.has('SETTINGS_MANAGE')")
     public ApiResponse<Void> deactivate(@PathVariable UUID id) {
         branchService.deactivate(id);
         return ApiResponse.ok(null);

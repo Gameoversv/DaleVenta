@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
+import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
 
@@ -25,6 +26,7 @@ public abstract class IntegrationTestBase {
     @Autowired protected MockMvc mockMvc;
     @Autowired protected ObjectMapper objectMapper;
     @Autowired protected UserRepository userRepository;
+    @Autowired protected RoleRepository roleRepository;
     @Autowired protected TenantRepository tenantRepository;
     @Autowired protected CustomerRepository customerRepository;
     @Autowired protected BranchRepository branchRepository;

@@ -49,4 +49,25 @@ class BranchIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("Sucursal A"));
     }
+
+    @Test
+    void createBranch_asCashierWithoutSettingsManage_returnsForbidden() throws Exception {
+        String adminToken = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");
+        // Register a second user under the same tenant as CASHIER via the admin-only
+        // user creation endpoint is out of scope for this plan (Task 8 of the next
+        // plan adds branch/register assignment); for this test, directly flip the
+        // registered admin's role to CASHIER to exercise the permission check.
+        var admin = userRepository.findAll().stream()
+                .filter(u -> u.getEmail().equals("admin@dalventa.test"))
+                .findFirst().orElseThrow();
+        admin.getRoles().clear();
+        admin.addRole(roleRepository.findByName(rd.dalventa.api.auth.domain.RoleName.CASHIER).orElseThrow());
+        userRepository.save(admin);
+
+        mockMvc.perform(post("/api/branches")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Sucursal No Permitida\",\"address\":\"X\"}"))
+                .andExpect(status().isForbidden());
+    }
 }
