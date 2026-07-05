@@ -13,6 +13,7 @@ import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
+import rd.dalventa.api.product.repository.CategoryRepository;
 
 import java.util.Map;
 
@@ -31,11 +32,13 @@ public abstract class IntegrationTestBase {
     @Autowired protected CustomerRepository customerRepository;
     @Autowired protected BranchRepository branchRepository;
     @Autowired protected RegisterRepository registerRepository;
+    @Autowired protected CategoryRepository categoryRepository;
 
     protected void cleanAll() {
         registerRepository.deleteAll();
         userRepository.deleteAll();
         customerRepository.deleteAll();
+        categoryRepository.deleteAll();
         branchRepository.deleteAll();
         tenantRepository.deleteAll();
     }
