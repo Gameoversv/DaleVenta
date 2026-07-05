@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.branch.dto.BranchResponse;
 import rd.dalventa.api.branch.dto.CreateBranchRequest;
+import rd.dalventa.api.branch.dto.UpdateBranchRequest;
 import rd.dalventa.api.branch.service.BranchService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
@@ -30,6 +31,12 @@ public class BranchController {
     @GetMapping
     public ApiResponse<List<BranchResponse>> list() {
         return ApiResponse.ok(branchService.list());
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@permissionService.has('SETTINGS_MANAGE')")
+    public ApiResponse<BranchResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateBranchRequest req) {
+        return ApiResponse.ok(branchService.update(id, req));
     }
 
     @DeleteMapping("/{id}")

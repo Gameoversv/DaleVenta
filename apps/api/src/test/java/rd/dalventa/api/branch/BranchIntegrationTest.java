@@ -6,6 +6,7 @@ import rd.dalventa.api.support.IntegrationTestBase;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.greaterThan;
@@ -69,5 +70,42 @@ class BranchIntegrationTest extends IntegrationTestBase {
                         .contentType("application/json")
                         .content("{\"name\":\"Sucursal No Permitida\",\"address\":\"X\"}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateBranch_asAdmin_persistsChanges() throws Exception {
+        String token = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");
+        var branchRes = mockMvc.perform(post("/api/branches")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Sucursal Centro\",\"address\":\"Calle Duarte 12\"}"))
+                .andReturn().getResponse().getContentAsString();
+        String branchId = objectMapper.readTree(branchRes).path("data").path("id").asText();
+
+        mockMvc.perform(put("/api/branches/" + branchId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Sucursal Renombrada\",\"address\":\"Nueva Direccion\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Sucursal Renombrada"))
+                .andExpect(jsonPath("$.data.address").value("Nueva Direccion"));
+    }
+
+    @Test
+    void updateBranch_forBranchOfOtherTenant_returnsNotFound() throws Exception {
+        String tokenA = registerTenantAndGetToken("admin-a@dalventa.test", "Secret123!");
+        String tokenB = registerTenantAndGetToken("admin-b@dalventa.test", "Secret123!");
+        var branchRes = mockMvc.perform(post("/api/branches")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Sucursal A\",\"address\":\"Dir A\"}"))
+                .andReturn().getResponse().getContentAsString();
+        String branchId = objectMapper.readTree(branchRes).path("data").path("id").asText();
+
+        mockMvc.perform(put("/api/branches/" + branchId)
+                        .header("Authorization", "Bearer " + tokenB)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Hackeada\",\"address\":\"X\"}"))
+                .andExpect(status().isNotFound());
     }
 }
