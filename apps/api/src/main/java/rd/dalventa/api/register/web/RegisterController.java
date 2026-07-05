@@ -3,9 +3,11 @@ package rd.dalventa.api.register.web;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.register.dto.CreateRegisterRequest;
 import rd.dalventa.api.register.dto.RegisterResponse;
+import rd.dalventa.api.register.dto.UpdateRegisterRequest;
 import rd.dalventa.api.register.service.RegisterService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
@@ -28,5 +30,11 @@ public class RegisterController {
     @GetMapping
     public ApiResponse<List<RegisterResponse>> listByBranch(@RequestParam UUID branchId) {
         return ApiResponse.ok(registerService.listByBranch(branchId));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@permissionService.has('SETTINGS_MANAGE')")
+    public ApiResponse<RegisterResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateRegisterRequest req) {
+        return ApiResponse.ok(registerService.update(id, req));
     }
 }

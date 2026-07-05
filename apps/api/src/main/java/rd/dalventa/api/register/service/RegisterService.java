@@ -7,6 +7,7 @@ import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.register.domain.Register;
 import rd.dalventa.api.register.dto.CreateRegisterRequest;
 import rd.dalventa.api.register.dto.RegisterResponse;
+import rd.dalventa.api.register.dto.UpdateRegisterRequest;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
@@ -42,5 +43,14 @@ public class RegisterService {
 
         return registerRepository.findAllByBranchIdAndActiveTrue(branch.getId())
                 .stream().map(RegisterResponse::from).toList();
+    }
+
+    @Transactional
+    public RegisterResponse update(UUID id, UpdateRegisterRequest req) {
+        var tenantId = TenantContext.require();
+        var register = registerRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        register.setName(req.name());
+        return RegisterResponse.from(registerRepository.save(register));
     }
 }
