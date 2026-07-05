@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  api-test:
+    name: API Tests (Spring Boot)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: dalventa_test
+          POSTGRES_USER: dalventa
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run API tests
+        working-directory: apps/api
+        run: ./mvnw test -Dspring.profiles.active=test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: dalventa_test
+          DB_USER: dalventa
+          DB_PASSWORD: changeme
+          JWT_SECRET: ci-test-secret-256-bits-minimum-length-ok
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: apps/api/target/surefire-reports/
