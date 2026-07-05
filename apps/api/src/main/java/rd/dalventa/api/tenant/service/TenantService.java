@@ -11,6 +11,7 @@ import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.auth.service.JwtService;
+import rd.dalventa.api.denomination.service.DenominationService;
 import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.dto.RegisterTenantRequest;
 import rd.dalventa.api.tenant.dto.TenantPublicResult;
@@ -32,6 +33,7 @@ public class TenantService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final DenominationService denominationService;
 
     @Transactional
     public AuthResponse registerTenant(RegisterTenantRequest req) {
@@ -49,6 +51,7 @@ public class TenantService {
         tenant.setCity(req.city());
         tenant.setRnc(req.rnc());
         tenant = tenantRepository.save(tenant);
+        denominationService.seedDefaults(tenant.getId());
 
         var adminRole = roleRepository.findByName(RoleName.ADMIN)
                 .orElseThrow(() -> new IllegalStateException("Rol ADMIN no encontrado"));
