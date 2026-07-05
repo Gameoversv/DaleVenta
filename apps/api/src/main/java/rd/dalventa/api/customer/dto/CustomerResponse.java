@@ -1,5 +1,6 @@
 package rd.dalventa.api.customer.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.customer.domain.Customer;
 
 import java.time.Instant;
@@ -7,16 +8,16 @@ import java.util.UUID;
 
 public record CustomerResponse(
         UUID id,
-        String firstName,
-        String lastName,
-        String fullName,
+        @JsonProperty("firstName") String firstName,
+        @JsonProperty("lastName") String lastName,
+        @JsonProperty("fullName") String fullName,
         String phone,
         String whatsapp,
         String email,
         String address,
-        String documentId,
+        @JsonProperty("documentId") String documentId,
         boolean active,
-        Instant createdAt
+        @JsonProperty("createdAt") Instant createdAt
 ) {
     public static CustomerResponse from(Customer c) {
         return new CustomerResponse(

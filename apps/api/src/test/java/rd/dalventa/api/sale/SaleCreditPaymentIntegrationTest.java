@@ -81,7 +81,7 @@ class SaleCreditPaymentIntegrationTest extends IntegrationTestBase {
         var customerRes = mockMvc.perform(post("/api/customers")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
-                        .content("{\"first_name\":\"Juana\",\"last_name\":\"Perez\"}"))
+                        .content("{\"firstName\":\"Juana\",\"lastName\":\"Perez\"}"))
                 .andReturn().getResponse().getContentAsString();
         var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
 

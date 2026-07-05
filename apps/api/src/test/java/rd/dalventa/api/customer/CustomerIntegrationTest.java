@@ -38,8 +38,8 @@ class CustomerIntegrationTest extends IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.full_name").value("Juan Perez"))
-                .andExpect(jsonPath("$.data.document_id").value("00100100100"));
+                .andExpect(jsonPath("$.data.fullName").value("Juan Perez"))
+                .andExpect(jsonPath("$.data.documentId").value("00100100100"));
     }
 
     @Test
@@ -65,7 +65,7 @@ class CustomerIntegrationTest extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.meta.total").value(1))
-                .andExpect(jsonPath("$.data[0].last_name").value("Lopez"));
+                .andExpect(jsonPath("$.data[0].lastName").value("Lopez"));
     }
 
     @Test
@@ -76,7 +76,7 @@ class CustomerIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(get("/api/customers/" + id)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.first_name").value("Ana"));
+                .andExpect(jsonPath("$.data.firstName").value("Ana"));
     }
 
     @Test
