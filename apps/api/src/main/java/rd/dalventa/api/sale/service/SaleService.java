@@ -39,6 +39,7 @@ import rd.dalventa.api.sale.repository.TransferPaymentDetailRepository;
 import rd.dalventa.api.cashshift.repository.CashMovementRepository;
 import rd.dalventa.api.cashshift.repository.CashMovementDenominationRepository;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
+import rd.dalventa.api.credit.service.CreditService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
@@ -68,6 +69,7 @@ public class SaleService {
     private final PermissionResolutionService permissionResolutionService;
     private final CashMovementRepository cashMovementRepository;
     private final CashMovementDenominationRepository cashMovementDenominationRepository;
+    private final CreditService creditService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -83,6 +85,16 @@ public class SaleService {
         if (req.customerId() != null) {
             customerRepository.findByIdAndTenantIdAndActiveTrue(req.customerId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+        }
+
+        boolean hasCreditPayment = req.payments().stream().anyMatch(p -> p.method() == PaymentMethod.CREDIT);
+        if (hasCreditPayment && req.customerId() == null) {
+            throw new IllegalArgumentException("Una venta a credito requiere un cliente");
+        }
+        if (hasCreditPayment && !currentUserProvider.current()
+                .map(user -> permissionResolutionService.has(user, PermissionCode.CREDIT_AUTHORIZE))
+                .orElse(false)) {
+            throw new org.springframework.security.access.AccessDeniedException("No tiene permiso para vender a credito");
         }
 
         var userId = currentUserProvider.current()
@@ -197,6 +209,12 @@ public class SaleService {
                                     "Venta - cambio entregado", suggestion.combination()),
                             sale.getId());
                 }
+            } else if (paymentReq.method() == PaymentMethod.CREDIT) {
+                var payment = new Payment(sale.getId(), PaymentMethod.CREDIT, paymentReq.amount());
+                payment.setTenantId(tenantId);
+                paymentRepository.save(payment);
+
+                creditService.charge(tenantId, req.customerId(), paymentReq.amount(), sale.getId(), userId);
             } else {
                 throw new IllegalArgumentException("Metodo de pago no soportado en esta version");
             }
