@@ -288,6 +288,12 @@ public class SaleService {
                     sale.getId());
         }
 
+        for (Payment payment : paymentRepository.findAllBySaleId(sale.getId())) {
+            if (payment.getMethod() == PaymentMethod.CREDIT) {
+                creditService.reverseCharge(tenantId, sale.getCustomerId(), payment.getAmount(), sale.getId(), userId);
+            }
+        }
+
         sale.setStatus(SaleStatus.VOIDED);
         sale.setVoidedAt(java.time.Instant.now());
         sale.setVoidedBy(userId);
