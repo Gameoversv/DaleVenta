@@ -30,10 +30,17 @@ class RolePermissionRepositoryTest {
         var cashierPerms = rolePermissionRepository.findByRole(RoleName.CASHIER);
         var adminPerms = rolePermissionRepository.findByRole(RoleName.ADMIN);
 
-        // Verify CASHIER has the expected seeded permissions
+        // Verify CASHIER has exactly the seeded set — an exact-set check so a regression
+        // that leaks extra rows into the CASHIER result (e.g. role filter ignored) is caught,
+        // not just presence/absence of two sentinel codes.
         assertThat(cashierPerms.stream().map(RolePermission::getCode))
-                .contains(PermissionCode.SALE_CREATE)
-                .doesNotContain(PermissionCode.USERS_MANAGE); // USERS_MANAGE is only for ADMIN
+                .containsExactlyInAnyOrder(
+                        PermissionCode.INVENTORY_VIEW,
+                        PermissionCode.SALE_CREATE,
+                        PermissionCode.CASHSHIFT_OPEN,
+                        PermissionCode.CASHSHIFT_CLOSE,
+                        PermissionCode.CUSTOMER_CREATE,
+                        PermissionCode.CREDIT_RECEIVE_PAYMENT);
 
         // Verify ADMIN has more permissions than CASHIER
         assertThat(adminPerms.size()).isGreaterThan(cashierPerms.size());
