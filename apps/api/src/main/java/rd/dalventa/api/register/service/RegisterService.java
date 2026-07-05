@@ -35,7 +35,12 @@ public class RegisterService {
 
     @Transactional(readOnly = true)
     public List<RegisterResponse> listByBranch(UUID branchId) {
-        return registerRepository.findAllByBranchIdAndActiveTrue(branchId)
+        var tenantId = TenantContext.require();
+        var branch = branchRepository.findById(branchId)
+                .filter(b -> b.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
+
+        return registerRepository.findAllByBranchIdAndActiveTrue(branch.getId())
                 .stream().map(RegisterResponse::from).toList();
     }
 }
