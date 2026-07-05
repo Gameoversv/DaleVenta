@@ -47,3 +47,20 @@ export interface UpdateProductRequest {
   tracksInventory: boolean;
   active: boolean;
 }
+
+export interface BranchInventoryResponse {
+  productId: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number | null;
+}
+
+export type InventoryMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
+
+export interface CreateInventoryMovementRequest {
+  branchId: string;
+  productId: string;
+  type: InventoryMovementType;
+  quantity: number;
+  reason: string;
+}
