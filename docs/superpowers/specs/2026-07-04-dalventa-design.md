@@ -29,7 +29,7 @@ Excluido de Fase 1 (ver §3): reportes exportables avanzados, devoluciones/anula
 
 ## 3. Fases posteriores
 
-**Fase 2:** reportes avanzados (PDF/Excel/CSV), devoluciones y anulaciones con autorización de supervisor, notificaciones internas, portal de cliente (consulta de historial/deuda).
+**Fase 2:** reportes avanzados (PDF/Excel/CSV), devoluciones y anulaciones con autorización de Administrador, notificaciones internas, portal de cliente (consulta de historial/deuda).
 
 **Fase 3:** materias primas, recetas, producción (BOM) — específico de repostería/panadería, no bloquea venta a otros rubros. Analítica avanzada (rentabilidad, forecasting).
 
@@ -54,8 +54,7 @@ Excluido de Fase 1 (ver §3): reportes exportables avanzados, devoluciones/anula
 ## 5. Actores
 
 - **Superadmin (SaaS):** gestiona tenants, planes, suscripciones, soporte, impersonación auditada.
-- **Administrador del negocio:** gestiona sucursales, cajas, usuarios, roles, permisos, productos, clientes, crédito, ve todos los reportes y auditoría, autoriza operaciones sensibles.
-- **Supervisor:** subconjunto de admin — autoriza descuentos altos, anulaciones, diferencias de caja/inventario, reaperturas.
+- **Administrador del negocio:** gestiona sucursales, cajas, usuarios, roles, permisos, productos, clientes, crédito, ve todos los reportes y auditoría, autoriza toda operación sensible (descuentos altos, anulaciones, diferencias de caja/inventario, reaperturas).
 - **Cajero:** opera POS y su turno según permisos asignados. No ve costos/ganancias salvo permiso explícito.
 - **Cliente (fase 2, portal):** consulta su historial y deuda.
 
