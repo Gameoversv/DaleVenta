@@ -1,0 +1,99 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dalventa_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dalventa}
+      POSTGRES_USER: ${DB_USER:-dalventa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    # No public port mapping: Postgres is only reachable from other services
+    # on the internal docker network. Use `docker compose exec postgres psql ...`
+    # or a temporary port-forward for local debugging if needed.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dalventa} -d ${DB_NAME:-dalventa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dalventa_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@dalventa.rd}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: dalventa_api
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      DB_HOST: postgres
+    # No host port mapping: only reachable via the nginx reverse proxy on the
+    # internal docker network. Use the `tools` profile / a temporary
+    # `docker compose port` mapping for local debugging if needed.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    container_name: dalventa_web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    # No host port mapping: only reachable via the nginx reverse proxy.
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: dalventa_proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${PROXY_PORT:-80}:80"
+    depends_on:
+      - api
+      - web
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+volumes:
+  pgdata:
+    driver: local
