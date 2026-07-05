@@ -26,6 +26,13 @@ public class InventoryQueryService {
                 .stream().map(BranchInventoryResponse::from).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<BranchInventoryResponse> lowStock(UUID branchId) {
+        var tenantId = requireBranchInTenant(branchId);
+        return branchInventoryRepository.findLowStock(tenantId, branchId)
+                .stream().map(BranchInventoryResponse::from).toList();
+    }
+
     private UUID requireBranchInTenant(UUID branchId) {
         var tenantId = TenantContext.require();
         branchRepository.findById(branchId)

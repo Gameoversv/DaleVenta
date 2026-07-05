@@ -29,6 +29,12 @@ public class InventoryController {
         return ApiResponse.ok(inventoryQueryService.byBranch(branchId));
     }
 
+    @GetMapping("/low-stock")
+    @PreAuthorize("@permissionService.has('INVENTORY_VIEW')")
+    public ApiResponse<List<BranchInventoryResponse>> lowStock(@RequestParam UUID branchId) {
+        return ApiResponse.ok(inventoryQueryService.lowStock(branchId));
+    }
+
     @PostMapping("/movements")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@permissionService.has('INVENTORY_ADJUST')")
