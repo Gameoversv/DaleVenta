@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
+import rd.dalventa.api.branch.repository.BranchRepository;
 
 import java.util.Map;
 
@@ -25,10 +26,12 @@ public abstract class IntegrationTestBase {
     @Autowired protected UserRepository userRepository;
     @Autowired protected TenantRepository tenantRepository;
     @Autowired protected CustomerRepository customerRepository;
+    @Autowired protected BranchRepository branchRepository;
 
     protected void cleanAll() {
         userRepository.deleteAll();
         customerRepository.deleteAll();
+        branchRepository.deleteAll();
         tenantRepository.deleteAll();
     }
 
