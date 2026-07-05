@@ -1,14 +1,13 @@
 package rd.dalventa.api.inventory.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.inventory.dto.BranchInventoryResponse;
 import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +30,7 @@ public class InventoryQueryService {
         var tenantId = TenantContext.require();
         branchRepository.findById(branchId)
                 .filter(b -> b.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
         return tenantId;
     }
 }

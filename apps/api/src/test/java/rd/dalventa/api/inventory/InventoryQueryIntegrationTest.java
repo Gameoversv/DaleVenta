@@ -61,4 +61,20 @@ class InventoryQueryIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data[0].currentStock").value(20))
                 .andExpect(jsonPath("$.data[0].minStock").value(5));
     }
+
+    @Test
+    void getBranchInventory_forBranchOfOtherTenant_returnsNotFound() throws Exception {
+        String tokenA = registerTenantAndGetToken("admin-a@dalventa.test", "Secret123!");
+        String tokenB = registerTenantAndGetToken("admin-b@dalventa.test", "Secret123!");
+
+        var branchRes = mockMvc.perform(post("/api/branches")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Sucursal A\",\"address\":\"Dir A\"}"))
+                .andReturn().getResponse().getContentAsString();
+        var branchId = objectMapper.readTree(branchRes).path("data").path("id").asText();
+
+        mockMvc.perform(get("/api/inventory/branch/" + branchId).header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isNotFound());
+    }
 }
