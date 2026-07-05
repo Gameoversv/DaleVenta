@@ -37,6 +37,7 @@ C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\custom
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\customer\repository\CustomerRepository.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\customer\service\CustomerService.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\customer\web\CustomerController.java
+C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\DaleVentaApplication.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\dashboard\dto\ActivityEvent.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\dashboard\dto\AlertItem.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\dashboard\dto\DashboardSummaryResponse.java
@@ -171,7 +172,6 @@ C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\supera
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\superadmin\repository\AdminActionRepository.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\superadmin\service\SuperAdminService.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\superadmin\web\SuperAdminController.java
-C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\TallerFacilApplication.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\tenant\domain\Tenant.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\tenant\domain\TenantPlan.java
 C:\Users\wilki\Proyectos\DaleVenta\apps\api\src\main\java\rd\dalventa\api\tenant\domain\TenantStatus.java

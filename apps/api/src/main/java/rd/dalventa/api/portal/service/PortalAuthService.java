@@ -76,7 +76,7 @@ public class PortalAuthService {
         }
 
         String password = generatePassword(10);
-        String email = "portal_" + customerId + "@tallerfacil.internal";
+        String email = "portal_" + customerId + "@dalventa.internal";
 
         var clientRole = roleRepository.findByName(RoleName.CLIENT)
                 .orElseThrow(() -> new IllegalStateException("Rol CLIENT no encontrado"));

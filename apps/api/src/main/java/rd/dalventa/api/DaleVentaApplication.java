@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableScheduling
-public class TallerFacilApplication {
+public class DaleVentaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(TallerFacilApplication.class, args);
+        SpringApplication.run(DaleVentaApplication.class, args);
     }
 }

@@ -31,7 +31,7 @@ class CorsConfigValidatorTest {
         Environment env = mock(Environment.class);
         when(env.getActiveProfiles()).thenReturn(new String[]{"prod"});
         AppProperties properties = new AppProperties();
-        properties.getCors().setAllowedOrigins("https://app.tallerfacil.rd");
+        properties.getCors().setAllowedOrigins("https://app.dalventa.rd");
 
         var validator = new CorsConfigValidator(env, properties);
 

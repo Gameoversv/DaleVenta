@@ -24,7 +24,6 @@ rd\dalventa\api\reports\dto\LowStockEntry.class
 rd\dalventa\api\reports\dto\TopProductEntry.class
 rd\dalventa\api\payment\domain\PaymentMethod.class
 rd\dalventa\api\customer\web\CustomerController.class
-rd\dalventa\api\TallerFacilApplication.class
 rd\dalventa\api\shared\DataSeeder.class
 rd\dalventa\api\portal\dto\PortalAuthResponse.class
 rd\dalventa\api\workorder\repository\WorkOrderRepository.class
@@ -185,6 +184,7 @@ rd\dalventa\api\payment\dto\PaymentResponse.class
 rd\dalventa\api\superadmin\dto\ResetPasswordResponse.class
 rd\dalventa\api\reminder\service\ReminderService.class
 rd\dalventa\api\shared\web\FileController.class
+rd\dalventa\api\DaleVentaApplication.class
 rd\dalventa\api\shared\web\GlobalExceptionHandler.class
 rd\dalventa\api\reception\domain\Reception.class
 rd\dalventa\api\tenant\dto\TenantResponse.class

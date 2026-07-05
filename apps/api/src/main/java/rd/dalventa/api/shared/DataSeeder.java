@@ -26,7 +26,7 @@ public class DataSeeder implements ApplicationRunner {
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.seed.admin-email:admin@taller.rd}")
+    @Value("${app.seed.admin-email:admin@dalventa.rd}")
     private String adminEmail;
 
     @Value("${app.seed.admin-password:admin123}")
@@ -35,7 +35,7 @@ public class DataSeeder implements ApplicationRunner {
     @Value("${app.seed.admin-name:Administrador}")
     private String adminName;
 
-    @Value("${app.seed.super-admin-email:superadmin@tallerfacil.rd}")
+    @Value("${app.seed.super-admin-email:superadmin@dalventa.rd}")
     private String superAdminEmail;
 
     @Value("${app.seed.super-admin-password:superadmin123}")
