@@ -80,10 +80,10 @@ DaleVenta handles:
 
 ### Docker Compose (Local Development)
 
-A `docker-compose.yml` in the root sets up PostgreSQL and Nginx:
+`infra/docker-compose.yml` sets up PostgreSQL and Nginx:
 
 ```bash
-docker-compose up -d
+docker compose -f infra/docker-compose.yml up -d
 ```
 
 This starts:
