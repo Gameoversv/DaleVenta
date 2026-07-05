@@ -10,6 +10,9 @@ import rd.dalventa.api.sale.dto.SaleResponse;
 import rd.dalventa.api.sale.service.SaleService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/sales")
 @RequiredArgsConstructor
@@ -22,5 +25,17 @@ public class SaleController {
     @PreAuthorize("@permissionService.has('SALE_CREATE')")
     public ApiResponse<SaleResponse> create(@Valid @RequestBody CreateSaleRequest req) {
         return ApiResponse.ok(saleService.create(req));
+    }
+
+    @GetMapping
+    @PreAuthorize("@permissionService.has('SALE_CREATE')")
+    public ApiResponse<List<SaleResponse>> list(@RequestParam UUID registerId) {
+        return ApiResponse.ok(saleService.list(registerId));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("@permissionService.has('SALE_CREATE')")
+    public ApiResponse<SaleResponse> detail(@PathVariable UUID id) {
+        return ApiResponse.ok(saleService.getDetail(id));
     }
 }

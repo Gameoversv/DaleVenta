@@ -143,7 +143,6 @@ public class SaleService {
             saleItemRepository.save(persisted);
         }
 
-        List<PaymentResponse> paymentResponses = new ArrayList<>();
         for (PaymentRequest paymentReq : req.payments()) {
             if (paymentReq.method() == PaymentMethod.TRANSFER) {
                 if (transferPaymentDetailRepository.existsByTenantIdAndBankAndReference(
@@ -157,8 +156,6 @@ public class SaleService {
                 var detail = new TransferPaymentDetail(payment.getId(), paymentReq.bank(), paymentReq.reference(), paymentReq.amount());
                 detail.setTenantId(tenantId);
                 transferPaymentDetailRepository.save(detail);
-
-                paymentResponses.add(PaymentResponse.from(payment));
             } else if (paymentReq.method() == PaymentMethod.CASH) {
                 var payment = new Payment(sale.getId(), PaymentMethod.CASH, paymentReq.amount());
                 payment.setTenantId(tenantId);
@@ -193,16 +190,34 @@ public class SaleService {
                                     "Venta - cambio entregado", suggestion.combination()),
                             sale.getId());
                 }
-
-                paymentResponses.add(PaymentResponse.from(payment));
             } else {
                 throw new IllegalArgumentException("Metodo de pago no soportado en esta version");
             }
         }
 
-        List<SaleItemResponse> itemResponses = saleItemRepository.findAllBySaleId(sale.getId())
-                .stream().map(SaleItemResponse::from).toList();
+        return toResponse(sale);
+    }
 
-        return SaleResponse.from(sale, itemResponses, paymentResponses);
+    @Transactional(readOnly = true)
+    public List<SaleResponse> list(java.util.UUID registerId) {
+        var tenantId = TenantContext.require();
+        return saleRepository.findAllByTenantIdAndRegisterId(tenantId, registerId)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SaleResponse getDetail(java.util.UUID id) {
+        var tenantId = TenantContext.require();
+        var sale = saleRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        return toResponse(sale);
+    }
+
+    private SaleResponse toResponse(Sale sale) {
+        List<SaleItemResponse> items = saleItemRepository.findAllBySaleId(sale.getId())
+                .stream().map(SaleItemResponse::from).toList();
+        List<PaymentResponse> payments = paymentRepository.findAllBySaleId(sale.getId())
+                .stream().map(PaymentResponse::from).toList();
+        return SaleResponse.from(sale, items, payments);
     }
 }
