@@ -41,7 +41,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<UserResponse>> list() {
         List<UserResponse> users = userRepository.findAll().stream()
                 .map(UserResponse::from)

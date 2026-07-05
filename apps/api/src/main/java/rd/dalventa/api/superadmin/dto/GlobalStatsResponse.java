@@ -8,7 +8,5 @@ public record GlobalStatsResponse(
         long tenantsSuspended,
         long tenantsCancelled,
         long usersTotal,
-        long customersTotal,
-        long vehiclesTotal,
-        long workOrdersTotal
+        long customersTotal
 ) {}

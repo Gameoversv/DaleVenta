@@ -7,9 +7,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import rd.dalventa.api.announcement.dto.AnnouncementResponse;
-import rd.dalventa.api.announcement.dto.UpdateAnnouncementRequest;
-import rd.dalventa.api.announcement.service.AnnouncementService;
 import rd.dalventa.api.shared.web.ApiResponse;
 import rd.dalventa.api.superadmin.dto.*;
 import rd.dalventa.api.superadmin.service.SuperAdminService;
@@ -25,7 +22,6 @@ import java.util.UUID;
 public class SuperAdminController {
 
     private final SuperAdminService service;
-    private final AnnouncementService announcementService;
 
     @GetMapping("/stats")
     public ApiResponse<GlobalStatsResponse> stats() {
@@ -114,19 +110,6 @@ public class SuperAdminController {
             @AuthenticationPrincipal UserDetails principal
     ) {
         return ApiResponse.ok(service.resetUserPassword(userId, principal.getUsername()));
-    }
-
-    @GetMapping("/announcement")
-    public ApiResponse<AnnouncementResponse> getAnnouncement() {
-        return ApiResponse.ok(announcementService.getCurrent());
-    }
-
-    @PutMapping("/announcement")
-    public ApiResponse<AnnouncementResponse> setAnnouncement(
-            @Valid @RequestBody UpdateAnnouncementRequest req,
-            @AuthenticationPrincipal UserDetails principal
-    ) {
-        return ApiResponse.ok(announcementService.save(req, principal.getUsername()));
     }
 
     @GetMapping("/audit")

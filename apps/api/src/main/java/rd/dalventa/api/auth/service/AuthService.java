@@ -71,7 +71,7 @@ public class AuthService {
     }
 
     /**
-     * Self-service password change for staff. Taller OWNERs are not allowed —
+     * Self-service password change for staff. Tenant ADMINs are not allowed —
      * they must contact a super-admin for a reset.
      */
     @Transactional
@@ -79,11 +79,11 @@ public class AuthService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        boolean isOwner = user.getRoles().stream()
-                .anyMatch(r -> r.getName() == RoleName.OWNER);
-        if (isOwner) {
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleName.ADMIN);
+        if (isAdmin) {
             throw new PasswordChangeNotAllowedException(
-                    "Los propietarios deben contactar a un super-admin para cambiar su contraseña.");
+                    "Los administradores deben contactar a un super-admin para cambiar su contraseña.");
         }
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {

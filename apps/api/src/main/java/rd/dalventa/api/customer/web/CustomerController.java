@@ -10,9 +10,6 @@ import rd.dalventa.api.customer.dto.CreateCustomerRequest;
 import rd.dalventa.api.customer.dto.CustomerResponse;
 import rd.dalventa.api.customer.dto.UpdateCustomerRequest;
 import rd.dalventa.api.customer.service.CustomerService;
-import rd.dalventa.api.portal.dto.PortalInviteResponse;
-import rd.dalventa.api.portal.service.PortalAuthService;
-import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.web.ApiResponse;
 
 import java.util.UUID;
@@ -23,7 +20,6 @@ import java.util.UUID;
 public class CustomerController {
 
     private final CustomerService service;
-    private final PortalAuthService portalAuthService;
 
     @GetMapping
     public ApiResponse<Iterable<CustomerResponse>> list(
@@ -59,12 +55,5 @@ public class CustomerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
         service.delete(id);
-    }
-
-    @PostMapping("/{id}/portal/invite")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<PortalInviteResponse> inviteToPortal(@PathVariable UUID id) {
-        UUID tenantId = TenantContext.require();
-        return ApiResponse.ok(portalAuthService.invite(id, tenantId));
     }
 }

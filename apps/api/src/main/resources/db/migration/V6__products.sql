@@ -1,5 +1,8 @@
+-- Product catalog (inventory module), scoped per tenant from the start.
+
 CREATE TABLE products (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY,
+    tenant_id       UUID NOT NULL REFERENCES tenants(id),
     internal_code   VARCHAR(50)      NOT NULL,
     description     TEXT             NOT NULL,
     purchase_cost   DECIMAL(12,2)    NOT NULL,
@@ -14,6 +17,7 @@ CREATE TABLE products (
     updated_by      VARCHAR(255)
 );
 
-CREATE UNIQUE INDEX idx_products_internal_code ON products(internal_code) WHERE active = TRUE;
+CREATE UNIQUE INDEX idx_products_internal_code ON products(tenant_id, internal_code) WHERE active = TRUE;
+CREATE INDEX idx_products_tenant              ON products(tenant_id);
 CREATE INDEX idx_products_category            ON products(category);
 CREATE INDEX idx_products_low_stock           ON products(current_stock, min_stock) WHERE active = TRUE;

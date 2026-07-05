@@ -46,9 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/tenants/register").permitAll()
                         .requestMatchers("/api/tenants/public/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/portal/auth/login").permitAll()
-                        .requestMatchers("/api/portal/**").hasRole("CLIENT")
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("OWNER")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

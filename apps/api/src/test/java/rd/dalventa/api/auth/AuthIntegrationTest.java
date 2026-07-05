@@ -43,7 +43,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("POST /api/auth/register - creates user and returns token")
     void register_validRequest_returnsToken() throws Exception {
-        var request = new RegisterRequest("Maria Lopez", "maria@taller.rd", "password123", RoleName.OWNER);
+        var request = new RegisterRequest("Maria Lopez", "maria@taller.rd", "password123", RoleName.ADMIN);
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -52,13 +52,13 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
                 .andExpect(jsonPath("$.data.user.email").value("maria@taller.rd"))
-                .andExpect(jsonPath("$.data.user.role").value("OWNER"));
+                .andExpect(jsonPath("$.data.user.role").value("ADMIN"));
     }
 
     @Test
     @DisplayName("POST /api/auth/login - returns token for valid credentials")
     void login_validCredentials_returnsToken() throws Exception {
-        var register = new RegisterRequest("Carlos Diaz", "carlos@taller.rd", "password123", RoleName.MECHANIC);
+        var register = new RegisterRequest("Carlos Diaz", "carlos@taller.rd", "password123", RoleName.CASHIER);
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
@@ -96,7 +96,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("GET /api/users/me - returns user data with valid token")
     void me_validToken_returnsUser() throws Exception {
-        var register = new RegisterRequest("Ana Marte", "ana@taller.rd", "password123", RoleName.MANAGER);
+        var register = new RegisterRequest("Ana Marte", "ana@taller.rd", "password123", RoleName.CASHIER);
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))
@@ -109,7 +109,7 @@ class AuthIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.email").value("ana@taller.rd"))
-                .andExpect(jsonPath("$.data.role").value("MANAGER"));
+                .andExpect(jsonPath("$.data.role").value("CASHIER"));
     }
 
     @Test

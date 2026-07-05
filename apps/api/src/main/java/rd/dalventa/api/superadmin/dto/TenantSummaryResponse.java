@@ -16,15 +16,13 @@ public record TenantSummaryResponse(
         Instant trialEndsAt,
         Instant createdAt,
         long userCount,
-        long customerCount,
-        long vehicleCount,
-        long orderCount
+        long customerCount
 ) {
-    public static TenantSummaryResponse of(Tenant t, long users, long customers, long vehicles, long orders) {
+    public static TenantSummaryResponse of(Tenant t, long users, long customers) {
         return new TenantSummaryResponse(
                 t.getId(), t.getName(), t.getSlug(),
                 t.getPlan(), t.getStatus(), t.getTrialEndsAt(), t.getCreatedAt(),
-                users, customers, vehicles, orders
+                users, customers
         );
     }
 }

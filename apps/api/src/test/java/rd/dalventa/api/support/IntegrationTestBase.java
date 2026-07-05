@@ -8,14 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import rd.dalventa.api.customer.repository.CustomerRepository;
-import rd.dalventa.api.invoice.repository.InvoiceRepository;
-import rd.dalventa.api.payment.repository.PaymentRepository;
-import rd.dalventa.api.quote.repository.QuoteRepository;
-import rd.dalventa.api.reception.repository.ReceptionRepository;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
-import rd.dalventa.api.vehicle.repository.VehicleRepository;
-import rd.dalventa.api.workorder.repository.WorkOrderRepository;
 
 import java.util.Map;
 
@@ -31,28 +25,16 @@ public abstract class IntegrationTestBase {
     @Autowired protected UserRepository userRepository;
     @Autowired protected TenantRepository tenantRepository;
     @Autowired protected CustomerRepository customerRepository;
-    @Autowired protected VehicleRepository vehicleRepository;
-    @Autowired protected ReceptionRepository receptionRepository;
-    @Autowired protected WorkOrderRepository workOrderRepository;
-    @Autowired protected QuoteRepository quoteRepository;
-    @Autowired protected InvoiceRepository invoiceRepository;
-    @Autowired protected PaymentRepository paymentRepository;
 
     protected void cleanAll() {
-        paymentRepository.deleteAll();
-        invoiceRepository.deleteAll();
-        quoteRepository.deleteAll();
-        workOrderRepository.deleteAll();
-        receptionRepository.deleteAll();
-        vehicleRepository.deleteAll();
-        userRepository.deleteAll();     // before customers: portal users have customer_id FK
+        userRepository.deleteAll();
         customerRepository.deleteAll();
         tenantRepository.deleteAll();
     }
 
     protected String registerTenantAndGetToken(String email, String password) throws Exception {
         var body = Map.of(
-                "tenant_name", "Taller Test",
+                "tenant_name", "DaleVenta Test",
                 "admin_name", "Admin Test",
                 "admin_email", email,
                 "admin_password", password
@@ -62,13 +44,5 @@ public abstract class IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(body)))
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(res).path("data").path("token").asText();
-    }
-
-    protected Map<String, Object> buildChecklist() {
-        return Map.of(
-                "exterior", Map.of("scratches", "NA", "dents", "NA", "lights", "OK"),
-                "interior", Map.of("radio", "OK", "screen", "OK", "mats", "OK"),
-                "mechanical", Map.of("oil_level", "OK", "coolant", "OK", "battery", "OK")
-        );
     }
 }

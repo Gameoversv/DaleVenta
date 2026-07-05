@@ -23,13 +23,11 @@ public record TenantDetailResponse(
         Instant createdAt,
         long userCount,
         long customerCount,
-        long vehicleCount,
-        long orderCount,
         List<UserSummaryResponse> owners
 ) {
     public static TenantDetailResponse of(
             Tenant t,
-            long users, long customers, long vehicles, long orders,
+            long users, long customers,
             List<UserSummaryResponse> owners
     ) {
         return new TenantDetailResponse(
@@ -37,7 +35,7 @@ public record TenantDetailResponse(
                 t.getCity(), t.getCountry(), t.getPhone(),
                 t.getEmail(), t.getRnc(),
                 t.getPlan(), t.getStatus(), t.getTrialEndsAt(), t.getCreatedAt(),
-                users, customers, vehicles, orders, owners
+                users, customers, owners
         );
     }
 }

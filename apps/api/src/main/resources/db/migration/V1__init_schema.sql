@@ -15,6 +15,8 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
+    tenant_id UUID,
+    customer_id UUID,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     created_by VARCHAR(255),
@@ -28,3 +30,4 @@ CREATE TABLE user_roles (
 );
 
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_tenant_id ON users(tenant_id);

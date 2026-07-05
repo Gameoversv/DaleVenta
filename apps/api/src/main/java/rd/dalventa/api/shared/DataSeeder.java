@@ -44,13 +44,13 @@ public class DataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        var ownerRole = roleRepository.findByName(RoleName.OWNER)
-                .orElseThrow(() -> new IllegalStateException("Rol OWNER no encontrado — verificar migración V2"));
+        var adminRole = roleRepository.findByName(RoleName.ADMIN)
+                .orElseThrow(() -> new IllegalStateException("Rol ADMIN no encontrado — verificar migración V2"));
 
-        // Demo taller the default admin belongs to, so it is reachable/manageable
+        // Demo tenant the default admin belongs to, so it is reachable/manageable
         // from the super-admin (e.g. password reset). Reused by slug if it exists.
-        var demoTenant = tenantRepository.findBySlug("taller-demo").orElseGet(() -> {
-            var t = new Tenant("Taller Demo", "taller-demo");
+        var demoTenant = tenantRepository.findBySlug("dalventa-demo").orElseGet(() -> {
+            var t = new Tenant("DaleVenta Demo", "dalventa-demo");
             t.setStatus(TenantStatus.ACTIVE);
             return tenantRepository.save(t);
         });
@@ -59,14 +59,14 @@ public class DataSeeder implements ApplicationRunner {
         if (existingAdmin == null) {
             var admin = new User(adminName, adminEmail,
                     passwordEncoder.encode(adminPassword), demoTenant.getId());
-            admin.addRole(ownerRole);
+            admin.addRole(adminRole);
             userRepository.save(admin);
-            log.info("Admin creado: {} / {} (taller {})", adminEmail, adminPassword, demoTenant.getSlug());
+            log.info("Admin creado: {} / {} (tenant {})", adminEmail, adminPassword, demoTenant.getSlug());
         } else if (existingAdmin.getTenantId() == null) {
-            // Repair earlier seeds where the admin was created without a taller.
+            // Repair earlier seeds where the admin was created without a tenant.
             existingAdmin.setTenantId(demoTenant.getId());
             userRepository.save(existingAdmin);
-            log.info("Admin {} vinculado al taller {}", adminEmail, demoTenant.getSlug());
+            log.info("Admin {} vinculado al tenant {}", adminEmail, demoTenant.getSlug());
         }
 
         if (!userRepository.existsByEmail(superAdminEmail)) {

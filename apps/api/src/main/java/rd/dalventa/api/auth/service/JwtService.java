@@ -47,7 +47,7 @@ public class JwtService {
                 .subject(superAdmin.getId().toString())
                 .claim("email", superAdmin.getEmail())
                 .claim("name", superAdmin.getName())
-                .claim("role", "OWNER")
+                .claim("role", "ADMIN")
                 .claim("tenantId", tenantId.toString())
                 .claim("tenantName", tenantName)
                 .claim("impersonating", true)

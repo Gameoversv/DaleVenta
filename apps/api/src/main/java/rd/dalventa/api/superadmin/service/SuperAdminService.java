@@ -20,8 +20,6 @@ import rd.dalventa.api.superadmin.dto.*;
 import rd.dalventa.api.superadmin.repository.AdminActionRepository;
 import rd.dalventa.api.tenant.domain.TenantStatus;
 import rd.dalventa.api.tenant.repository.TenantRepository;
-import rd.dalventa.api.vehicle.repository.VehicleRepository;
-import rd.dalventa.api.workorder.repository.WorkOrderRepository;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -35,8 +33,6 @@ public class SuperAdminService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
-    private final VehicleRepository vehicleRepository;
-    private final WorkOrderRepository workOrderRepository;
     private final AdminActionRepository auditRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
@@ -58,9 +54,7 @@ public class SuperAdminService {
                 tenantRepository.countByStatus(TenantStatus.SUSPENDED),
                 tenantRepository.countByStatus(TenantStatus.CANCELLED),
                 userRepository.countByTenantIdIsNotNull(),
-                customerRepository.count(),
-                vehicleRepository.count(),
-                workOrderRepository.count()
+                customerRepository.count()
         );
     }
 
@@ -79,9 +73,7 @@ public class SuperAdminService {
                 .stream()
                 .map(t -> TenantSummaryResponse.of(t,
                         userRepository.countByTenantId(t.getId()),
-                        customerRepository.countByTenantIdAndActiveTrue(t.getId()),
-                        vehicleRepository.countByTenantIdAndActiveTrue(t.getId()),
-                        workOrderRepository.countByTenantId(t.getId())))
+                        customerRepository.countByTenantIdAndActiveTrue(t.getId())))
                 .toList();
     }
 
@@ -94,9 +86,7 @@ public class SuperAdminService {
                 : tenantRepository.findAll(pageable);
         return tenants.map(t -> TenantSummaryResponse.of(t,
                 userRepository.countByTenantId(t.getId()),
-                customerRepository.countByTenantIdAndActiveTrue(t.getId()),
-                vehicleRepository.countByTenantIdAndActiveTrue(t.getId()),
-                workOrderRepository.countByTenantId(t.getId())));
+                customerRepository.countByTenantIdAndActiveTrue(t.getId())));
     }
 
     // ── Tenant detail ─────────────────────────────────────────────────────────
@@ -113,8 +103,6 @@ public class SuperAdminService {
         return TenantDetailResponse.of(tenant,
                 userRepository.countByTenantId(id),
                 customerRepository.countByTenantIdAndActiveTrue(id),
-                vehicleRepository.countByTenantIdAndActiveTrue(id),
-                workOrderRepository.countByTenantId(id),
                 owners);
     }
 
@@ -232,8 +220,6 @@ public class SuperAdminService {
     private TenantSummaryResponse summary(rd.dalventa.api.tenant.domain.Tenant t) {
         return TenantSummaryResponse.of(t,
                 userRepository.countByTenantId(t.getId()),
-                customerRepository.countByTenantIdAndActiveTrue(t.getId()),
-                vehicleRepository.countByTenantIdAndActiveTrue(t.getId()),
-                workOrderRepository.countByTenantId(t.getId()));
+                customerRepository.countByTenantIdAndActiveTrue(t.getId()));
     }
 }

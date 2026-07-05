@@ -50,12 +50,12 @@ public class TenantService {
         tenant.setRnc(req.rnc());
         tenant = tenantRepository.save(tenant);
 
-        var ownerRole = roleRepository.findByName(RoleName.OWNER)
-                .orElseThrow(() -> new IllegalStateException("Rol OWNER no encontrado"));
+        var adminRole = roleRepository.findByName(RoleName.ADMIN)
+                .orElseThrow(() -> new IllegalStateException("Rol ADMIN no encontrado"));
 
         var admin = new User(req.adminName(), req.adminEmail(),
                 passwordEncoder.encode(req.adminPassword()), tenant.getId());
-        admin.addRole(ownerRole);
+        admin.addRole(adminRole);
         userRepository.save(admin);
 
         String token = jwtService.generateToken(admin);

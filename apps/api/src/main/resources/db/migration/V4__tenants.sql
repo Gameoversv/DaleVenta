@@ -1,9 +1,3 @@
--- Tenants table and SUPER_ADMIN role
-
-INSERT INTO roles (id, name, created_at, updated_at)
-VALUES (gen_random_uuid(), 'SUPER_ADMIN', NOW(), NOW())
-ON CONFLICT (name) DO NOTHING;
-
 CREATE TABLE tenants (
     id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     name        VARCHAR(150) NOT NULL,
@@ -28,14 +22,6 @@ CREATE TABLE tenants (
 CREATE INDEX idx_tenants_slug   ON tenants(slug);
 CREATE INDEX idx_tenants_status ON tenants(status);
 
--- Default development tenant
-INSERT INTO tenants (id, name, slug, plan, status, created_at, updated_at)
-VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'Taller Demo',
-    'taller-demo',
-    'ENTERPRISE',
-    'ACTIVE',
-    NOW(),
-    NOW()
-);
+ALTER TABLE users ADD CONSTRAINT fk_users_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id);
+CREATE INDEX IF NOT EXISTS idx_customers_tenant_id ON customers(tenant_id);
