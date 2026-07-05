@@ -9,6 +9,7 @@ import rd.dalventa.api.cashshift.dto.CashMovementResponse;
 import rd.dalventa.api.cashshift.dto.CashShiftSummaryResponse;
 import rd.dalventa.api.cashshift.dto.ChangeSuggestionRequest;
 import rd.dalventa.api.cashshift.dto.ChangeSuggestionResponse;
+import rd.dalventa.api.cashshift.dto.CloseCashShiftRequest;
 import rd.dalventa.api.cashshift.dto.CreateCashMovementRequest;
 import rd.dalventa.api.cashshift.dto.OpenCashShiftRequest;
 import rd.dalventa.api.cashshift.service.CashMovementService;
@@ -16,6 +17,7 @@ import rd.dalventa.api.cashshift.service.CashShiftChangeService;
 import rd.dalventa.api.cashshift.service.CashShiftService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -53,5 +55,19 @@ public class CashShiftController {
     @PreAuthorize("@permissionService.has('CASHSHIFT_OPEN')")
     public ApiResponse<ChangeSuggestionResponse> changeSuggestion(@Valid @RequestBody ChangeSuggestionRequest req) {
         return ApiResponse.ok(cashShiftChangeService.suggest(req));
+    }
+
+    @PostMapping("/{id}/close")
+    @PreAuthorize("@permissionService.has('CASHSHIFT_CLOSE')")
+    public ApiResponse<CashShiftSummaryResponse> close(
+            @PathVariable UUID id,
+            @Valid @RequestBody CloseCashShiftRequest req) {
+        return ApiResponse.ok(cashShiftService.close(id, req));
+    }
+
+    @GetMapping
+    @PreAuthorize("@permissionService.has('CASHSHIFT_VIEW_HISTORY')")
+    public ApiResponse<List<CashShiftSummaryResponse>> list(@RequestParam UUID registerId) {
+        return ApiResponse.ok(cashShiftService.list(registerId));
     }
 }

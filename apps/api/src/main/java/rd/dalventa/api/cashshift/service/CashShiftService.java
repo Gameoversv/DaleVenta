@@ -9,8 +9,10 @@ import rd.dalventa.api.cashshift.domain.CashShiftDenomination;
 import rd.dalventa.api.cashshift.domain.CashShiftStatus;
 import rd.dalventa.api.cashshift.dto.CashShiftDenominationEntry;
 import rd.dalventa.api.cashshift.dto.CashShiftSummaryResponse;
+import rd.dalventa.api.cashshift.dto.CloseCashShiftRequest;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.cashshift.dto.OpenCashShiftRequest;
+import rd.dalventa.api.cashshift.repository.CashMovementRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftDenominationRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
 import rd.dalventa.api.denomination.repository.DenominationRepository;
@@ -33,6 +35,7 @@ public class CashShiftService {
     private final RegisterRepository registerRepository;
     private final DenominationRepository denominationRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final CashMovementRepository cashMovementRepository;
 
     @Transactional
     public CashShiftSummaryResponse open(OpenCashShiftRequest req) {
@@ -76,6 +79,59 @@ public class CashShiftService {
     public CashShiftSummaryResponse getSummary(UUID id) {
         var shift = requireShiftInTenant(id);
         return buildSummary(shift);
+    }
+
+    @Transactional
+    public CashShiftSummaryResponse close(UUID id, CloseCashShiftRequest req) {
+        var shift = requireShiftInTenant(id);
+        var tenantId = TenantContext.require();
+        if (shift.getStatus() != CashShiftStatus.OPEN) {
+            throw new DuplicateResourceException("Este turno ya esta cerrado");
+        }
+
+        BigDecimal countedCash = BigDecimal.ZERO;
+        for (DenominationCountEntry entry : req.closingCounts()) {
+            var csd = cashShiftDenominationRepository
+                    .findByCashShiftIdAndDenominationId(id, entry.denominationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no registrada en este turno"));
+            csd.setClosingQuantity(entry.quantity());
+            cashShiftDenominationRepository.save(csd);
+
+            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+            countedCash = countedCash.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+        }
+
+        BigDecimal expectedCash = shift.getOpeningTotal();
+        for (var movement : cashMovementRepository.findAllByTenantIdAndCashShiftId(tenantId, id)) {
+            expectedCash = switch (movement.getType()) {
+                case ENTRY -> expectedCash.add(movement.getAmount());
+                case WITHDRAWAL, EXPENSE -> expectedCash.subtract(movement.getAmount());
+            };
+        }
+
+        BigDecimal difference = countedCash.subtract(expectedCash);
+        if (difference.compareTo(BigDecimal.ZERO) != 0
+                && (req.closingNotes() == null || req.closingNotes().isBlank())) {
+            throw new IllegalArgumentException("Se requiere una nota explicando la diferencia de caja");
+        }
+
+        shift.setExpectedCash(expectedCash);
+        shift.setCountedCash(countedCash);
+        shift.setCashDifference(difference);
+        shift.setClosingNotes(req.closingNotes());
+        shift.setStatus(CashShiftStatus.CLOSED);
+        shift.setClosedAt(java.time.Instant.now());
+        cashShiftRepository.save(shift);
+
+        return buildSummary(shift);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CashShiftSummaryResponse> list(UUID registerId) {
+        var tenantId = TenantContext.require();
+        return cashShiftRepository.findAllByTenantIdAndRegisterId(tenantId, registerId)
+                .stream().map(this::buildSummary).toList();
     }
 
     CashShift requireShiftInTenant(UUID id) {
