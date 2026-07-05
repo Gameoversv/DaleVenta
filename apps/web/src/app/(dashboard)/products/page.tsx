@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CategoryPanel } from "@/components/products/CategoryPanel";
+import { ProductTable } from "@/components/products/ProductTable";
 
 export default function ProductsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -11,7 +12,7 @@ export default function ProductsPage() {
       <h1 className="text-2xl font-semibold">Productos</h1>
       <div className="grid grid-cols-[240px_1fr] gap-6">
         <CategoryPanel selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
-        <div className="text-muted-foreground">Selecciona una categoria o crea un producto.</div>
+        <ProductTable categoryId={selectedCategoryId} />
       </div>
     </div>
   );
