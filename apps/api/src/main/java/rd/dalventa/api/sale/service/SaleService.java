@@ -3,9 +3,15 @@ package rd.dalventa.api.sale.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.cashshift.domain.CashMovementType;
 import rd.dalventa.api.cashshift.domain.CashShiftStatus;
+import rd.dalventa.api.cashshift.dto.ChangeSuggestionRequest;
+import rd.dalventa.api.cashshift.dto.CreateCashMovementRequest;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
+import rd.dalventa.api.cashshift.service.CashMovementService;
+import rd.dalventa.api.cashshift.service.CashShiftChangeService;
 import rd.dalventa.api.customer.repository.CustomerRepository;
+import rd.dalventa.api.denomination.repository.DenominationRepository;
 import rd.dalventa.api.inventory.domain.InventoryMovementType;
 import rd.dalventa.api.inventory.dto.CreateInventoryMovementRequest;
 import rd.dalventa.api.inventory.service.InventoryMovementService;
@@ -49,6 +55,9 @@ public class SaleService {
     private final CashShiftRepository cashShiftRepository;
     private final InventoryMovementService inventoryMovementService;
     private final CurrentUserProvider currentUserProvider;
+    private final CashShiftChangeService cashShiftChangeService;
+    private final CashMovementService cashMovementService;
+    private final DenominationRepository denominationRepository;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -138,6 +147,42 @@ public class SaleService {
                 var detail = new TransferPaymentDetail(payment.getId(), paymentReq.bank(), paymentReq.reference(), paymentReq.amount());
                 detail.setTenantId(tenantId);
                 transferPaymentDetailRepository.save(detail);
+
+                paymentResponses.add(PaymentResponse.from(payment));
+            } else if (paymentReq.method() == PaymentMethod.CASH) {
+                var payment = new Payment(sale.getId(), PaymentMethod.CASH, paymentReq.amount());
+                payment.setTenantId(tenantId);
+                payment = paymentRepository.save(payment);
+
+                BigDecimal receivedTotal = BigDecimal.ZERO;
+                for (var entry : paymentReq.receivedDenominations()) {
+                    var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+                    receivedTotal = receivedTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+                }
+                BigDecimal changeAmount = receivedTotal.subtract(paymentReq.amount());
+                if (changeAmount.signum() < 0) {
+                    throw new IllegalArgumentException("El monto recibido es menor al monto de este pago");
+                }
+
+                var suggestion = cashShiftChangeService.suggest(new ChangeSuggestionRequest(
+                        req.registerId(), changeAmount.multiply(BigDecimal.valueOf(100)).longValueExact(),
+                        paymentReq.receivedDenominations()));
+                if (!suggestion.exact()) {
+                    throw new IllegalArgumentException("No hay combinacion exacta de denominaciones para el cambio");
+                }
+
+                cashMovementService.recordMovement(req.cashShiftId(),
+                        new CreateCashMovementRequest(CashMovementType.ENTRY,
+                                "Venta - efectivo recibido", paymentReq.receivedDenominations()),
+                        sale.getId());
+
+                if (changeAmount.signum() > 0) {
+                    cashMovementService.recordMovement(req.cashShiftId(),
+                            new CreateCashMovementRequest(CashMovementType.WITHDRAWAL,
+                                    "Venta - cambio entregado", suggestion.combination()),
+                            sale.getId());
+                }
 
                 paymentResponses.add(PaymentResponse.from(payment));
             } else {

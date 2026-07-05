@@ -36,6 +36,11 @@ public class CashMovementService {
 
     @Transactional
     public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req) {
+        return recordMovement(cashShiftId, req, null);
+    }
+
+    @Transactional
+    public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req, UUID saleId) {
         cashShiftService.requireShiftInTenant(cashShiftId);
         var tenantId = TenantContext.require();
         boolean isOutflow = req.type() != CashMovementType.ENTRY;
@@ -46,7 +51,7 @@ public class CashMovementService {
         for (DenominationCountEntry entry : req.denominations()) {
             var csd = cashShiftDenominationRepository
                     .lockByCashShiftIdAndDenominationId(cashShiftId, entry.denominationId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no registrada en este turno"));
+                    .orElseGet(() -> createCashShiftDenomination(tenantId, cashShiftId, entry.denominationId()));
 
             int newQuantity = isOutflow
                     ? csd.getCurrentQuantity() - entry.quantity()
@@ -66,6 +71,7 @@ public class CashMovementService {
                 .getId();
         var movement = new CashMovement(cashShiftId, req.type(), amount, req.reason(), userId);
         movement.setTenantId(tenantId);
+        movement.setSaleId(saleId);
         movement = cashMovementRepository.save(movement);
 
         for (DenominationCountEntry entry : req.denominations()) {
@@ -80,5 +86,11 @@ public class CashMovementService {
         }
 
         return CashMovementResponse.from(movement);
+    }
+
+    private CashShiftDenomination createCashShiftDenomination(UUID tenantId, UUID cashShiftId, UUID denominationId) {
+        var csd = new CashShiftDenomination(cashShiftId, denominationId, 0);
+        csd.setTenantId(tenantId);
+        return cashShiftDenominationRepository.save(csd);
     }
 }

@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface CashMovementRepository extends JpaRepository<CashMovement, UUID> {
     List<CashMovement> findAllByTenantIdAndCashShiftId(UUID tenantId, UUID cashShiftId);
+    List<CashMovement> findAllByTenantIdAndSaleId(UUID tenantId, UUID saleId);
 }
