@@ -1,1 +1,0 @@
-ALTER TABLE work_orders ADD COLUMN priority VARCHAR(10) DEFAULT 'MEDIA';
