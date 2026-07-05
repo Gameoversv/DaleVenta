@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -40,6 +42,7 @@ export default function RegisterPage() {
         website: values.website ?? "",
       });
       localStorage.setItem("token", res.data.data.token);
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
       router.push("/dashboard");
     } catch (err: unknown) {
       const message =
