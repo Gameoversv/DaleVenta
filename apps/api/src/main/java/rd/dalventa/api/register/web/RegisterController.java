@@ -26,7 +26,7 @@ public class RegisterController {
     }
 
     @GetMapping
-    public ApiResponse<List<RegisterResponse>> listByBranch(@RequestParam String branchId) {
-        return ApiResponse.ok(registerService.listByBranch(UUID.fromString(branchId)));
+    public ApiResponse<List<RegisterResponse>> listByBranch(@RequestParam UUID branchId) {
+        return ApiResponse.ok(registerService.listByBranch(branchId));
     }
 }

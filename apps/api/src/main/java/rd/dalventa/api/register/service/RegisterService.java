@@ -24,8 +24,7 @@ public class RegisterService {
     @Transactional
     public RegisterResponse create(CreateRegisterRequest req) {
         var tenantId = TenantContext.require();
-        var branchId = UUID.fromString(req.branchId());
-        var branch = branchRepository.findById(branchId)
+        var branch = branchRepository.findById(req.branchId())
                 .filter(b -> b.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
 
