@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.sale.dto.CreateSaleRequest;
 import rd.dalventa.api.sale.dto.SaleResponse;
+import rd.dalventa.api.sale.dto.VoidSaleRequest;
 import rd.dalventa.api.sale.service.SaleService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
@@ -37,5 +38,13 @@ public class SaleController {
     @PreAuthorize("@permissionService.has('SALE_CREATE')")
     public ApiResponse<SaleResponse> detail(@PathVariable UUID id) {
         return ApiResponse.ok(saleService.getDetail(id));
+    }
+
+    @PostMapping("/{id}/void")
+    @PreAuthorize("@permissionService.has('SALE_VOID')")
+    public ApiResponse<SaleResponse> voidSale(
+            @PathVariable UUID id,
+            @Valid @RequestBody VoidSaleRequest req) {
+        return ApiResponse.ok(saleService.voidSale(id, req));
     }
 }

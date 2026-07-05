@@ -29,11 +29,16 @@ import rd.dalventa.api.sale.dto.PaymentResponse;
 import rd.dalventa.api.sale.dto.SaleItemRequest;
 import rd.dalventa.api.sale.dto.SaleItemResponse;
 import rd.dalventa.api.sale.dto.SaleResponse;
+import rd.dalventa.api.sale.domain.SaleStatus;
 import rd.dalventa.api.sale.domain.TransferPaymentDetail;
+import rd.dalventa.api.sale.dto.VoidSaleRequest;
 import rd.dalventa.api.sale.repository.PaymentRepository;
 import rd.dalventa.api.sale.repository.SaleItemRepository;
 import rd.dalventa.api.sale.repository.SaleRepository;
 import rd.dalventa.api.sale.repository.TransferPaymentDetailRepository;
+import rd.dalventa.api.cashshift.repository.CashMovementRepository;
+import rd.dalventa.api.cashshift.repository.CashMovementDenominationRepository;
+import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
@@ -61,6 +66,8 @@ public class SaleService {
     private final CashMovementService cashMovementService;
     private final DenominationRepository denominationRepository;
     private final PermissionResolutionService permissionResolutionService;
+    private final CashMovementRepository cashMovementRepository;
+    private final CashMovementDenominationRepository cashMovementDenominationRepository;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -219,5 +226,56 @@ public class SaleService {
         List<PaymentResponse> payments = paymentRepository.findAllBySaleId(sale.getId())
                 .stream().map(PaymentResponse::from).toList();
         return SaleResponse.from(sale, items, payments);
+    }
+
+    @Transactional
+    public SaleResponse voidSale(java.util.UUID id, VoidSaleRequest req) {
+        var tenantId = TenantContext.require();
+        var sale = saleRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+
+        if (sale.getStatus() == SaleStatus.VOIDED) {
+            throw new DuplicateResourceException("Esta venta ya esta anulada");
+        }
+
+        var cashShift = cashShiftRepository.findByIdAndTenantId(sale.getCashShiftId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado"));
+        if (cashShift.getStatus() != CashShiftStatus.OPEN) {
+            throw new IllegalArgumentException("No se puede anular: el turno de esta venta ya esta cerrado");
+        }
+
+        var userId = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
+
+        for (SaleItem item : saleItemRepository.findAllBySaleId(sale.getId())) {
+            var product = productRepository.findByIdAndTenantId(item.getProductId(), tenantId).orElseThrow();
+            if (product.isTracksInventory()) {
+                inventoryMovementService.recordMovement(new CreateInventoryMovementRequest(
+                        sale.getBranchId(), item.getProductId(), InventoryMovementType.ENTRY,
+                        item.getQuantity(), "Anulacion venta"));
+            }
+        }
+
+        for (var movement : cashMovementRepository.findAllByTenantIdAndSaleId(tenantId, sale.getId())) {
+            var reversedType = movement.getType() == CashMovementType.ENTRY
+                    ? CashMovementType.WITHDRAWAL
+                    : CashMovementType.ENTRY;
+            var denominationEntries = cashMovementDenominationRepository.findAllByCashMovementId(movement.getId())
+                    .stream()
+                    .map(d -> new DenominationCountEntry(d.getDenominationId(), d.getQuantity()))
+                    .toList();
+            cashMovementService.recordMovement(sale.getCashShiftId(),
+                    new CreateCashMovementRequest(reversedType, "Anulacion venta", denominationEntries),
+                    sale.getId());
+        }
+
+        sale.setStatus(SaleStatus.VOIDED);
+        sale.setVoidedAt(java.time.Instant.now());
+        sale.setVoidedBy(userId);
+        sale.setVoidReason(req.voidReason());
+        saleRepository.save(sale);
+
+        return toResponse(sale);
     }
 }
