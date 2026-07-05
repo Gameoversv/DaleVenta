@@ -1,0 +1,4 @@
+.claude/worktrees/
+target/
+node_modules/
+.env
