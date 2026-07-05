@@ -74,7 +74,7 @@ class CreditProfileIntegrationTest extends IntegrationTestBase {
         var customerRes = mockMvc.perform(post("/api/customers")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
-                        .content("{\"firstName\":\"Juana\",\"lastName\":\"Perez\"}"))
+                        .content("{\"first_name\":\"Juana\",\"last_name\":\"Perez\"}"))
                 .andReturn().getResponse().getContentAsString();
         var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
 
@@ -575,7 +575,7 @@ class SaleCreditPaymentIntegrationTest extends IntegrationTestBase {
         var customerRes = mockMvc.perform(post("/api/customers")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
-                        .content("{\"firstName\":\"Juana\",\"lastName\":\"Perez\"}"))
+                        .content("{\"first_name\":\"Juana\",\"last_name\":\"Perez\"}"))
                 .andReturn().getResponse().getContentAsString();
         var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
 
@@ -931,7 +931,7 @@ class CreditPaymentIntegrationTest extends IntegrationTestBase {
         var customerRes = mockMvc.perform(post("/api/customers")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
-                        .content("{\"firstName\":\"Juana\",\"lastName\":\"Perez\"}"))
+                        .content("{\"first_name\":\"Juana\",\"last_name\":\"Perez\"}"))
                 .andReturn().getResponse().getContentAsString();
         var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
 
@@ -1223,7 +1223,7 @@ class SaleCreditVoidIntegrationTest extends IntegrationTestBase {
         var customerRes = mockMvc.perform(post("/api/customers")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
-                        .content("{\"firstName\":\"Juana\",\"lastName\":\"Perez\"}"))
+                        .content("{\"first_name\":\"Juana\",\"last_name\":\"Perez\"}"))
                 .andReturn().getResponse().getContentAsString();
         var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
 
