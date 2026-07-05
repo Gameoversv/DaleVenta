@@ -16,6 +16,7 @@ import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.product.repository.CategoryRepository;
 import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
+import rd.dalventa.api.inventory.repository.InventoryMovementRepository;
 
 import java.util.Map;
 
@@ -37,9 +38,11 @@ public abstract class IntegrationTestBase {
     @Autowired protected CategoryRepository categoryRepository;
     @Autowired protected ProductRepository productRepository;
     @Autowired protected BranchInventoryRepository branchInventoryRepository;
+    @Autowired protected InventoryMovementRepository inventoryMovementRepository;
 
     protected void cleanAll() {
         registerRepository.deleteAll();
+        inventoryMovementRepository.deleteAll();
         userRepository.deleteAll();
         customerRepository.deleteAll();
         branchInventoryRepository.deleteAll();
