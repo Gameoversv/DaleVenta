@@ -20,6 +20,8 @@ import rd.dalventa.api.inventory.repository.InventoryMovementRepository;
 import rd.dalventa.api.denomination.repository.DenominationRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftDenominationRepository;
+import rd.dalventa.api.cashshift.repository.CashMovementRepository;
+import rd.dalventa.api.cashshift.repository.CashMovementDenominationRepository;
 
 import java.util.Map;
 
@@ -45,8 +47,12 @@ public abstract class IntegrationTestBase {
     @Autowired protected DenominationRepository denominationRepository;
     @Autowired protected CashShiftRepository cashShiftRepository;
     @Autowired protected CashShiftDenominationRepository cashShiftDenominationRepository;
+    @Autowired protected CashMovementRepository cashMovementRepository;
+    @Autowired protected CashMovementDenominationRepository cashMovementDenominationRepository;
 
     protected void cleanAll() {
+        cashMovementDenominationRepository.deleteAll();
+        cashMovementRepository.deleteAll();
         cashShiftDenominationRepository.deleteAll();
         cashShiftRepository.deleteAll();
         registerRepository.deleteAll();
