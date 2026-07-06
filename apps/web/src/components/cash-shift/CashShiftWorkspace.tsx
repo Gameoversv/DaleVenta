@@ -1,9 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { OpenShiftForm } from "./OpenShiftForm";
 import { ShiftSummary } from "./ShiftSummary";
+import { CloseShiftForm } from "./CloseShiftForm";
+import { FinalShiftSummary } from "./FinalShiftSummary";
 import type { CashShiftSummaryResponse } from "@/types/cash-shift";
 
 async function fetchCurrentShift(registerId: string): Promise<CashShiftSummaryResponse | null> {
@@ -21,18 +24,44 @@ async function fetchCurrentShift(registerId: string): Promise<CashShiftSummaryRe
 }
 
 export function CashShiftWorkspace({ registerId }: { registerId: string }) {
+  const queryClient = useQueryClient();
+  const [closing, setClosing] = useState(false);
+  const [closedShift, setClosedShift] = useState<CashShiftSummaryResponse | null>(null);
+
   const { data: currentShift, isLoading } = useQuery({
     queryKey: ["cash-shift-current", registerId],
     queryFn: () => fetchCurrentShift(registerId),
+    enabled: !closedShift,
   });
 
+  if (closedShift) {
+    return (
+      <FinalShiftSummary
+        shift={closedShift}
+        onDone={() => {
+          setClosedShift(null);
+          queryClient.invalidateQueries({ queryKey: ["cash-shift-current", registerId] });
+        }}
+      />
+    );
+  }
   if (isLoading) {
     return <p className="text-muted-foreground">Cargando turno...</p>;
   }
   if (!currentShift) {
     return <OpenShiftForm registerId={registerId} />;
   }
-  return (
-    <ShiftSummary shift={currentShift} registerId={registerId} onRequestClose={() => {}} />
-  );
+  if (closing) {
+    return (
+      <CloseShiftForm
+        shift={currentShift}
+        onCancel={() => setClosing(false)}
+        onClosed={(closed) => {
+          setClosing(false);
+          setClosedShift(closed);
+        }}
+      />
+    );
+  }
+  return <ShiftSummary shift={currentShift} registerId={registerId} onRequestClose={() => setClosing(true)} />;
 }
