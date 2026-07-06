@@ -2,7 +2,6 @@ package rd.dalventa.api.superadmin.web;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,12 +38,13 @@ public class SuperAdminController {
     }
 
     @GetMapping("/tenants")
-    public ApiResponse<Page<TenantSummaryResponse>> tenants(
+    public ApiResponse<List<TenantSummaryResponse>> tenants(
             @RequestParam(required = false) TenantStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(service.listTenants(status, page, size));
+        var result = service.listTenants(status, page, size);
+        return ApiResponse.paged(result.getContent(), result.getTotalElements(), page, size);
     }
 
     @GetMapping("/tenants/{id}")
@@ -96,12 +96,13 @@ public class SuperAdminController {
     }
 
     @GetMapping("/users")
-    public ApiResponse<Page<UserSummaryResponse>> searchUsers(
+    public ApiResponse<List<UserSummaryResponse>> searchUsers(
             @RequestParam(required = false, defaultValue = "") String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(service.searchUsers(email, page, size));
+        var result = service.searchUsers(email, page, size);
+        return ApiResponse.paged(result.getContent(), result.getTotalElements(), page, size);
     }
 
     @PostMapping("/users/{userId}/reset-password")
@@ -113,11 +114,12 @@ public class SuperAdminController {
     }
 
     @GetMapping("/audit")
-    public ApiResponse<Page<AdminActionResponse>> auditLog(
+    public ApiResponse<List<AdminActionResponse>> auditLog(
             @RequestParam(required = false) UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size
     ) {
-        return ApiResponse.ok(service.auditLog(tenantId, page, size));
+        var result = service.auditLog(tenantId, page, size);
+        return ApiResponse.paged(result.getContent(), result.getTotalElements(), page, size);
     }
 }

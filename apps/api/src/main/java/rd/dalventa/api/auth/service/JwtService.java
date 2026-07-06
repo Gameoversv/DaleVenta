@@ -39,24 +39,6 @@ public class JwtService {
         return builder.signWith(getSigningKey()).compact();
     }
 
-    public String generateImpersonationToken(User superAdmin, java.util.UUID tenantId, String tenantName) {
-        Instant now = Instant.now();
-        Instant expiry = now.plus(1, ChronoUnit.HOURS);
-
-        return Jwts.builder()
-                .subject(superAdmin.getId().toString())
-                .claim("email", superAdmin.getEmail())
-                .claim("name", superAdmin.getName())
-                .claim("role", "ADMIN")
-                .claim("tenantId", tenantId.toString())
-                .claim("tenantName", tenantName)
-                .claim("impersonating", true)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(expiry))
-                .signWith(getSigningKey())
-                .compact();
-    }
-
     public String generatePortalToken(User user, java.util.UUID customerId) {
         Instant now = Instant.now();
         Instant expiry = now.plus(properties.getJwt().getExpirationHours(), ChronoUnit.HOURS);
@@ -77,15 +59,6 @@ public class JwtService {
     public java.util.UUID extractCustomerId(String token) {
         String raw = getClaims(token).get("customerId", String.class);
         return raw != null ? java.util.UUID.fromString(raw) : null;
-    }
-
-    public boolean isImpersonating(String token) {
-        try {
-            Boolean flag = getClaims(token).get("impersonating", Boolean.class);
-            return Boolean.TRUE.equals(flag);
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     public java.util.UUID extractTenantId(String token) {

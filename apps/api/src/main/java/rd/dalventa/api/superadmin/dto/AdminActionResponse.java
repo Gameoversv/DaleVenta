@@ -1,5 +1,6 @@
 package rd.dalventa.api.superadmin.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.superadmin.domain.AdminAction;
 
 import java.time.Instant;
@@ -7,11 +8,11 @@ import java.util.UUID;
 
 public record AdminActionResponse(
         UUID id,
-        String actorEmail,
+        @JsonProperty("actorEmail") String actorEmail,
         String action,
-        UUID tenantId,
+        @JsonProperty("tenantId") UUID tenantId,
         String detail,
-        Instant createdAt
+        @JsonProperty("createdAt") Instant createdAt
 ) {
     public static AdminActionResponse from(AdminAction a) {
         return new AdminActionResponse(

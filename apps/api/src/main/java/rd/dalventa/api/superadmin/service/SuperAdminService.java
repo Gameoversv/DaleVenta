@@ -161,13 +161,17 @@ public class SuperAdminService {
     public ImpersonateResponse impersonate(UUID tenantId, String superAdminEmail) {
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
-        var superAdmin = userRepository.findByEmail(superAdminEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+        // Log in as the tenant's actual ADMIN user rather than minting a token whose
+        // claims don't match the authenticated principal's real role/tenant — the
+        // JWT filter authenticates by re-loading the user behind the token's email,
+        // so a synthetic "impersonation" token for the super-admin's own account
+        // resolved zero permissions (superadmin has no tenant role rows) and 403'd.
+        var adminUser = userRepository.findByTenantId(tenantId).stream()
+                .filter(u -> u.getPrimaryRole() == RoleName.ADMIN)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Este taller no tiene un administrador"));
         audit(superAdminEmail, "IMPERSONATE", tenantId, "Sesión iniciada como " + tenant.getName());
-        return new ImpersonateResponse(
-                jwtService.generateImpersonationToken(superAdmin, tenant.getId(), tenant.getName()),
-                tenant.getName()
-        );
+        return new ImpersonateResponse(jwtService.generateToken(adminUser), tenant.getName());
     }
 
     // ── User search ───────────────────────────────────────────────────────────

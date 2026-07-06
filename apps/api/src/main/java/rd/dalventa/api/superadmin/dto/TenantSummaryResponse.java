@@ -1,5 +1,6 @@
 package rd.dalventa.api.superadmin.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.domain.TenantPlan;
 import rd.dalventa.api.tenant.domain.TenantStatus;
@@ -13,10 +14,10 @@ public record TenantSummaryResponse(
         String slug,
         TenantPlan plan,
         TenantStatus status,
-        Instant trialEndsAt,
-        Instant createdAt,
-        long userCount,
-        long customerCount
+        @JsonProperty("trialEndsAt") Instant trialEndsAt,
+        @JsonProperty("createdAt") Instant createdAt,
+        @JsonProperty("userCount") long userCount,
+        @JsonProperty("customerCount") long customerCount
 ) {
     public static TenantSummaryResponse of(Tenant t, long users, long customers) {
         return new TenantSummaryResponse(

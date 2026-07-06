@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import type { AuthResponse, MeResponse, PermissionCode, UserResponse } from "@/types/auth";
 
-function landingPageFor(permissions: PermissionCode[]): string {
+function landingPageFor(user: UserResponse | undefined, permissions: PermissionCode[]): string {
+  if (user?.role === "SUPER_ADMIN") return "/super-admin";
   if (permissions.includes("DASHBOARD_VIEW")) return "/dashboard";
   if (permissions.includes("SALE_CREATE")) return "/pos";
   if (permissions.includes("CASHSHIFT_OPEN")) return "/cash-shift";
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", res.data.data.token);
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       const me = await queryClient.fetchQuery({ queryKey: ["me"], queryFn: fetchMe });
-      router.push(landingPageFor(me?.permissions ?? []));
+      router.push(landingPageFor(me?.user, me?.permissions ?? []));
     },
     [queryClient, router]
   );

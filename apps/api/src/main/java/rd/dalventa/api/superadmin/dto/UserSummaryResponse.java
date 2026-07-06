@@ -1,5 +1,6 @@
 package rd.dalventa.api.superadmin.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.auth.domain.User;
 
 import java.time.Instant;
@@ -10,9 +11,9 @@ public record UserSummaryResponse(
         String name,
         String email,
         String role,
-        UUID tenantId,
+        @JsonProperty("tenantId") UUID tenantId,
         boolean active,
-        Instant createdAt
+        @JsonProperty("createdAt") Instant createdAt
 ) {
     public static UserSummaryResponse from(User u) {
         return new UserSummaryResponse(
