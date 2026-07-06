@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import rd.dalventa.api.credit.dto.CreditAccountResponse;
+import rd.dalventa.api.credit.dto.CreditInvoiceRow;
 import rd.dalventa.api.credit.dto.CreditProfileResponse;
 import rd.dalventa.api.credit.dto.CreditTransactionResponse;
 import rd.dalventa.api.credit.dto.RecordCreditPaymentRequest;
@@ -68,5 +69,11 @@ public class CreditController {
     @PreAuthorize("@permissionService.has('CUSTOMER_EDIT')")
     public ApiResponse<List<CreditTransactionResponse>> listTransactions(@PathVariable UUID customerId) {
         return ApiResponse.ok(creditService.listTransactions(customerId));
+    }
+
+    @GetMapping("/credit-invoices")
+    @PreAuthorize("@permissionService.has('CUSTOMER_EDIT')")
+    public ApiResponse<List<CreditInvoiceRow>> listInvoices(@PathVariable UUID customerId) {
+        return ApiResponse.ok(creditService.listOutstandingInvoices(customerId));
     }
 }

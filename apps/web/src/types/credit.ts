@@ -17,6 +17,7 @@ export interface CreditTransactionResponse {
   amount: string;
   saleId: string | null;
   note: string | null;
+  payerName: string | null;
 }
 
 export interface UpdateCreditProfileRequest {
@@ -27,6 +28,16 @@ export interface UpdateCreditProfileRequest {
 export interface RecordCreditPaymentRequest {
   amount: string;
   note?: string;
+  saleId?: string;
+  payerName?: string;
+}
+
+export interface CreditInvoiceRow {
+  saleId: string;
+  createdAt: string;
+  chargeAmount: string;
+  paidAmount: string;
+  outstanding: string;
 }
 
 export interface AccountsReceivableRow {

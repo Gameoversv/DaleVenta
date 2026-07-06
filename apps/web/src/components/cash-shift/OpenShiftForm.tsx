@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
 import type { DenominationCountEntry, InventoryCountEntry } from "@/types/cash-shift";
@@ -42,8 +43,16 @@ export function OpenShiftForm({ registerId, branchId }: { registerId: string; br
         <CardTitle>Abrir turno</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <DenominationCountGrid onChange={setEntries} />
-        <InventoryCountGrid branchId={branchId} onChange={setInventoryEntries} />
+        <Tabs
+          items={[
+            { value: "cash", label: "Efectivo", content: <DenominationCountGrid onChange={setEntries} /> },
+            {
+              value: "inventory",
+              label: "Inventario",
+              content: <InventoryCountGrid branchId={branchId} onChange={setInventoryEntries} />,
+            },
+          ]}
+        />
         <Button disabled={entries.length === 0 || mutation.isPending} onClick={() => mutation.mutate()}>
           {mutation.isPending ? "Abriendo..." : "Abrir turno"}
         </Button>

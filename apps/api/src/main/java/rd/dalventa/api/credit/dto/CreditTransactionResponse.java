@@ -13,9 +13,10 @@ public record CreditTransactionResponse(
         CreditTransactionType type,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal amount,
         @JsonProperty("saleId") UUID saleId,
-        String note
+        String note,
+        @JsonProperty("payerName") String payerName
 ) {
     public static CreditTransactionResponse from(CreditTransaction t) {
-        return new CreditTransactionResponse(t.getId(), t.getType(), t.getAmount(), t.getSaleId(), t.getNote());
+        return new CreditTransactionResponse(t.getId(), t.getType(), t.getAmount(), t.getSaleId(), t.getNote(), t.getPayerName());
     }
 }

@@ -9,6 +9,7 @@ import rd.dalventa.api.credit.domain.CreditTransactionType;
 import rd.dalventa.api.credit.domain.CustomerCreditProfile;
 import rd.dalventa.api.credit.dto.AccountsReceivableRow;
 import rd.dalventa.api.credit.dto.CreditAccountResponse;
+import rd.dalventa.api.credit.dto.CreditInvoiceRow;
 import rd.dalventa.api.credit.dto.CreditProfileResponse;
 import rd.dalventa.api.credit.dto.CreditTransactionResponse;
 import rd.dalventa.api.credit.dto.RecordCreditPaymentRequest;
@@ -125,18 +126,66 @@ public class CreditService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
 
         var account = getOrCreateAccount(tenantId, customerId);
-        if (req.amount().compareTo(account.getBalance()) > 0) {
+
+        UUID targetSaleId = null;
+        if (req.saleId() != null) {
+            var charge = creditTransactionRepository.findAllByTenantIdAndSaleId(tenantId, req.saleId()).stream()
+                    .filter(t -> t.getType() == CreditTransactionType.CHARGE && t.getCreditAccountId().equals(account.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada para este cliente"));
+            var outstanding = invoiceOutstanding(tenantId, charge);
+            if (req.amount().compareTo(outstanding) > 0) {
+                throw new IllegalArgumentException("El abono no puede ser mayor al pendiente de esta factura");
+            }
+            targetSaleId = req.saleId();
+        } else if (req.amount().compareTo(account.getBalance()) > 0) {
             throw new IllegalArgumentException("El abono no puede ser mayor al balance actual");
         }
 
         account.setBalance(account.getBalance().subtract(req.amount()));
         creditAccountRepository.save(account);
 
-        var transaction = new CreditTransaction(account.getId(), CreditTransactionType.PAYMENT, req.amount(), null, userId, req.note());
+        var transaction = new CreditTransaction(account.getId(), CreditTransactionType.PAYMENT, req.amount(),
+                targetSaleId, userId, req.note(), req.payerName());
         transaction.setTenantId(tenantId);
         creditTransactionRepository.save(transaction);
 
         return CreditAccountResponse.from(account);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<CreditInvoiceRow> listOutstandingInvoices(UUID customerId) {
+        var tenantId = TenantContext.require();
+        customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+
+        var account = creditAccountRepository.findByCustomerIdAndTenantId(customerId, tenantId).orElse(null);
+        if (account == null) {
+            return java.util.List.of();
+        }
+
+        return creditTransactionRepository.findAllByTenantIdAndCreditAccountId(tenantId, account.getId())
+                .stream()
+                .filter(t -> t.getType() == CreditTransactionType.CHARGE && t.getSaleId() != null)
+                .map(charge -> {
+                    var paid = invoicePaid(tenantId, charge);
+                    var outstanding = charge.getAmount().subtract(paid);
+                    return new CreditInvoiceRow(charge.getSaleId(), charge.getCreatedAt(), charge.getAmount(), paid, outstanding);
+                })
+                .filter(row -> row.outstanding().compareTo(BigDecimal.ZERO) > 0)
+                .sorted(java.util.Comparator.comparing(CreditInvoiceRow::createdAt))
+                .toList();
+    }
+
+    private BigDecimal invoicePaid(UUID tenantId, CreditTransaction charge) {
+        return creditTransactionRepository.findAllByTenantIdAndSaleId(tenantId, charge.getSaleId()).stream()
+                .filter(t -> t.getType() == CreditTransactionType.PAYMENT)
+                .map(CreditTransaction::getAmount)
+                .reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
+    }
+
+    private BigDecimal invoiceOutstanding(UUID tenantId, CreditTransaction charge) {
+        return charge.getAmount().subtract(invoicePaid(tenantId, charge));
     }
 
     @Transactional(readOnly = true)

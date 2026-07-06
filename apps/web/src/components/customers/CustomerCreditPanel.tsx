@@ -12,6 +12,7 @@ import api from "@/lib/api";
 import type { CustomerResponse } from "@/types/customer";
 import type {
   CreditAccountResponse,
+  CreditInvoiceRow,
   CreditProfileResponse,
   CreditTransactionResponse,
   UpdateCreditProfileRequest,
@@ -37,6 +38,19 @@ async function fetchTransactions(customerId: string): Promise<CreditTransactionR
   return res.data.data;
 }
 
+async function fetchInvoices(customerId: string): Promise<CreditInvoiceRow[]> {
+  const res = await api.get<{ data: CreditInvoiceRow[] }>(`/api/customers/${customerId}/credit-invoices`);
+  return res.data.data;
+}
+
+function money(value: string): string {
+  return `RD$${Number(value).toFixed(2)}`;
+}
+
+function dateOnly(value: string): string {
+  return new Date(value).toLocaleDateString();
+}
+
 interface CustomerCreditPanelProps {
   customer: CustomerResponse;
   trigger: React.ReactNode;
@@ -53,6 +67,8 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
   const [creditLimit, setCreditLimit] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
+  const [paymentSaleId, setPaymentSaleId] = useState("");
+  const [payerName, setPayerName] = useState("");
 
   const { data: profile } = useQuery({
     queryKey: ["credit-profile", customer.id],
@@ -72,6 +88,12 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
     enabled: open && canViewCredit,
   });
 
+  const { data: invoices } = useQuery({
+    queryKey: ["credit-invoices", customer.id],
+    queryFn: () => fetchInvoices(customer.id),
+    enabled: open && canViewCredit,
+  });
+
   const profileMutation = useMutation({
     mutationFn: (values: UpdateCreditProfileRequest) =>
       api.put(`/api/customers/${customer.id}/credit-profile`, values),
@@ -88,8 +110,11 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["credit-account", customer.id] });
       queryClient.invalidateQueries({ queryKey: ["credit-transactions", customer.id] });
+      queryClient.invalidateQueries({ queryKey: ["credit-invoices", customer.id] });
       setPaymentAmount("");
       setPaymentNote("");
+      setPaymentSaleId("");
+      setPayerName("");
       toast.success("Abono registrado");
     },
     onError: (err: unknown) => toast.error(extractError(err)),
@@ -157,6 +182,48 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
             </section>
           )}
 
+          {canViewCredit && invoices && invoices.length > 0 && (
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold">Facturas pendientes</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="py-1">Fecha</th>
+                    <th className="py-1 text-right">Cargo</th>
+                    <th className="py-1 text-right">Abonado</th>
+                    <th className="py-1 text-right">Pendiente</th>
+                    {canReceivePayment && <th className="py-1"></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((inv) => (
+                    <tr key={inv.saleId} className="border-b border-border">
+                      <td className="py-1">{dateOnly(inv.createdAt)}</td>
+                      <td className="py-1 text-right">{money(inv.chargeAmount)}</td>
+                      <td className="py-1 text-right">{money(inv.paidAmount)}</td>
+                      <td className="py-1 text-right font-medium">{money(inv.outstanding)}</td>
+                      {canReceivePayment && (
+                        <td className="py-1 text-right">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setPaymentSaleId(inv.saleId);
+                              setPaymentAmount(inv.outstanding);
+                            }}
+                          >
+                            Abonar
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
           {canReceivePayment && (
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">Registrar abono</h3>
@@ -164,9 +231,36 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                 className="space-y-2"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  paymentMutation.mutate({ amount: paymentAmount, note: paymentNote || undefined });
+                  paymentMutation.mutate({
+                    amount: paymentAmount,
+                    note: paymentNote || undefined,
+                    saleId: paymentSaleId || undefined,
+                    payerName: payerName || undefined,
+                  });
                 }}
               >
+                {invoices && invoices.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-invoice">Aplicar a</Label>
+                    <select
+                      id="payment-invoice"
+                      value={paymentSaleId}
+                      onChange={(e) => {
+                        setPaymentSaleId(e.target.value);
+                        const inv = invoices.find((i) => i.saleId === e.target.value);
+                        if (inv) setPaymentAmount(inv.outstanding);
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Abono general (balance total)</option>
+                      {invoices.map((inv) => (
+                        <option key={inv.saleId} value={inv.saleId}>
+                          {dateOnly(inv.createdAt)} · pendiente {money(inv.outstanding)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="payment-amount">Monto</Label>
                   <Input
@@ -175,6 +269,15 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                     step="0.01"
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="payer-name">Nombre de quien paga (si no es el cliente)</Label>
+                  <Input
+                    id="payer-name"
+                    placeholder="Opcional, ej. familiar o tercero"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -200,6 +303,7 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="py-1">Tipo</th>
                       <th className="py-1">Monto</th>
+                      <th className="py-1">Pagado por</th>
                       <th className="py-1">Nota</th>
                     </tr>
                   </thead>
@@ -210,6 +314,7 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                           {t.type === "CHARGE" ? "Cargo" : "Abono"}
                         </td>
                         <td className="py-1">RD${t.amount}</td>
+                        <td className="py-1">{t.payerName ?? "—"}</td>
                         <td className="py-1">{t.note ?? "—"}</td>
                       </tr>
                     ))}

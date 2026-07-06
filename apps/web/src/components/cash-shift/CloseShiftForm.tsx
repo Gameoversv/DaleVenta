@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
 import type { CashShiftSummaryResponse, DenominationCountEntry, InventoryCountEntry } from "@/types/cash-shift";
@@ -46,8 +47,16 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
         <CardTitle>Cerrar turno</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <DenominationCountGrid onChange={setEntries} />
-        <InventoryCountGrid branchId={branchId} onChange={setInventoryEntries} />
+        <Tabs
+          items={[
+            { value: "cash", label: "Efectivo", content: <DenominationCountGrid onChange={setEntries} /> },
+            {
+              value: "inventory",
+              label: "Inventario",
+              content: <InventoryCountGrid branchId={branchId} onChange={setInventoryEntries} />,
+            },
+          ]}
+        />
         <div className="space-y-2">
           <Label htmlFor="close-notes">Notas (obligatorio si hay diferencia de caja o inventario)</Label>
           <textarea

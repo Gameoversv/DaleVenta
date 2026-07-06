@@ -37,6 +37,9 @@ public class CreditTransaction extends TenantAwareEntity {
     @Column
     private String note;
 
+    @Column(name = "payer_name")
+    private String payerName;
+
     public CreditTransaction(UUID creditAccountId, CreditTransactionType type, BigDecimal amount,
                               UUID saleId, UUID userId, String note) {
         this.creditAccountId = creditAccountId;
@@ -45,5 +48,11 @@ public class CreditTransaction extends TenantAwareEntity {
         this.saleId = saleId;
         this.userId = userId;
         this.note = note;
+    }
+
+    public CreditTransaction(UUID creditAccountId, CreditTransactionType type, BigDecimal amount,
+                              UUID saleId, UUID userId, String note, String payerName) {
+        this(creditAccountId, type, amount, saleId, userId, note);
+        this.payerName = payerName;
     }
 }
