@@ -191,7 +191,7 @@ function InvoiceSettingsCard() {
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="invoice-business-name">Nombre del local</Label>
+                <Label htmlFor="invoice-business-name">Nombre del negocio o local</Label>
                 <Input
                   id="invoice-business-name"
                   value={values.businessName}

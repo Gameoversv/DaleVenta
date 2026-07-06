@@ -2,14 +2,24 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Filter } from "lucide-react";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AuditLogResponse, PagedApiResponse } from "@/types/audit";
+
+const ENTITY_FILTERS = [
+  { value: "", label: "Todas" },
+  { value: "SALE", label: "Ventas" },
+  { value: "PRODUCT", label: "Productos" },
+  { value: "CASH_SHIFT", label: "Turnos de caja" },
+  { value: "DAILY_CLOSING", label: "Cierres diarios" },
+  { value: "TENANT", label: "Configuracion de factura" },
+  { value: "BRANCH_INVENTORY", label: "Inventario" },
+  { value: "USER", label: "Usuarios y permisos" },
+] as const;
 
 async function fetchAudit(page: number, entityType: string): Promise<PagedApiResponse<AuditLogResponse[]>> {
   const res = await api.get<PagedApiResponse<AuditLogResponse[]>>("/api/audit-logs", {
@@ -40,7 +50,6 @@ function actionLabel(action: string): string {
 export default function AuditPage() {
   const canViewAudit = usePermission("AUDIT_VIEW");
   const [page, setPage] = useState(0);
-  const [entityType, setEntityType] = useState("");
   const [appliedEntityType, setAppliedEntityType] = useState("");
   const { data, isLoading, isError } = useQuery({
     queryKey: ["audit-logs", page, appliedEntityType],
@@ -66,22 +75,29 @@ export default function AuditPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight">Auditoria</h1>
           <p className="text-sm text-muted-foreground">{total} eventos registrados</p>
         </div>
-        <form
-          className="flex gap-2 sm:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setPage(0);
-            setAppliedEntityType(entityType.trim().toUpperCase());
-          }}
-        >
+        <div className="flex gap-2 sm:items-end">
           <div className="space-y-2">
-            <Label htmlFor="audit-entity">Entidad</Label>
-            <Input id="audit-entity" placeholder="SALE, PRODUCT, CASH_SHIFT" value={entityType} onChange={(event) => setEntityType(event.target.value)} />
+            <Label htmlFor="audit-entity">Filtrar por</Label>
+            <select
+              id="audit-entity"
+              value={appliedEntityType}
+              onChange={(event) => {
+                setPage(0);
+                setAppliedEntityType(event.target.value);
+              }}
+              className="flex h-10 min-w-56 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {ENTITY_FILTERS.map((filter) => (
+                <option key={filter.value} value={filter.value}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
           </div>
-          <Button type="submit">
-            <Search className="h-4 w-4" />
+          <Button type="button" variant="outline" disabled>
+            <Filter className="h-4 w-4" />
           </Button>
-        </form>
+        </div>
       </div>
 
       <Card>
