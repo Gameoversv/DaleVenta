@@ -30,8 +30,10 @@ public class ProductController {
 
     @GetMapping
     @PreAuthorize("@permissionService.has('INVENTORY_VIEW')")
-    public ApiResponse<List<ProductResponse>> list() {
-        return ApiResponse.ok(productService.list());
+    public ApiResponse<List<ProductResponse>> list(
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(defaultValue = "false") boolean includeInactive) {
+        return ApiResponse.ok(productService.list(active, includeInactive));
     }
 
     @PutMapping("/{id}")

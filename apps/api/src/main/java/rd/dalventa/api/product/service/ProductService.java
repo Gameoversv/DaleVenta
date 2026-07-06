@@ -43,8 +43,14 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> list() {
-        return productRepository.findAllByTenantIdAndActiveTrue(TenantContext.require())
+    public List<ProductResponse> list(Boolean active, boolean includeInactive) {
+        var tenantId = TenantContext.require();
+        var products = includeInactive
+                ? productRepository.findAllByTenantId(tenantId)
+                : active != null
+                    ? productRepository.findAllByTenantIdAndActive(tenantId, active)
+                    : productRepository.findAllByTenantIdAndActiveTrue(tenantId);
+        return products
                 .stream().map(this::toResponse).toList();
     }
 

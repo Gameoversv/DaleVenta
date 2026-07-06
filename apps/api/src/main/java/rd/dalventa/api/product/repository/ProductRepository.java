@@ -8,7 +8,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
+    List<Product> findAllByTenantId(UUID tenantId);
     List<Product> findAllByTenantIdAndActiveTrue(UUID tenantId);
+    List<Product> findAllByTenantIdAndActive(UUID tenantId, boolean active);
     Optional<Product> findByIdAndTenantId(UUID id, UUID tenantId);
     boolean existsByTenantIdAndInternalCode(UUID tenantId, String internalCode);
     boolean existsByTenantIdAndBarcode(UUID tenantId, String barcode);
