@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import type {
   CreateUserRequest,
   PermissionEffect,
-  ResetUserPasswordResponse,
   RoleName,
   UpdateUserRequest,
   UserPermissionRow,
@@ -151,21 +150,19 @@ function CreateUserDialog() {
 
 function ResetPasswordDialog({ user }: { user: UserResponse }) {
   const [open, setOpen] = useState(false);
-  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.post<{ data: ResetUserPasswordResponse }>(`/api/users/${user.id}/reset-password`);
-      return res.data.data;
-    },
-    onSuccess: (data) => {
-      setTemporaryPassword(data.temporaryPassword);
-      toast.success("Contrasena temporal generada");
+    mutationFn: () => api.put(`/api/users/${user.id}/password`, { newPassword }),
+    onSuccess: () => {
+      toast.success("Contrasena actualizada");
+      setNewPassword("");
+      setOpen(false);
     },
     onError: (err: unknown) => {
       const message =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        "No se pudo resetear la contrasena";
+        "No se pudo cambiar la contrasena";
       toast.error(message);
     },
   });
@@ -173,30 +170,41 @@ function ResetPasswordDialog({ user }: { user: UserResponse }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Resetear contrasena">
+        <Button variant="ghost" size="icon" aria-label="Cambiar contrasena">
           <KeyRound className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Resetear contrasena</DialogTitle>
+          <DialogTitle>Cambiar contrasena</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 text-sm">
-          <p>
-            Se generara una contrasena temporal para <span className="font-medium">{user.email}</span>.
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate();
+          }}
+        >
+          <p className="text-sm">
+            Nueva contrasena para <span className="font-medium">{user.email}</span>.
           </p>
-          {temporaryPassword && (
-            <div className="rounded-md border bg-muted p-3">
-              <p className="text-muted-foreground">Contrasena temporal</p>
-              <p className="font-mono text-lg font-semibold">{temporaryPassword}</p>
-            </div>
-          )}
-        </div>
-        <DialogFooter>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-            {mutation.isPending ? "Generando..." : "Generar"}
-          </Button>
-        </DialogFooter>
+          <div className="space-y-2">
+            <Label htmlFor={`new-password-${user.id}`}>Nueva contrasena</Label>
+            <Input
+              id={`new-password-${user.id}`}
+              type="text"
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Minimo 8 caracteres"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || newPassword.length < 8}>
+              {mutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

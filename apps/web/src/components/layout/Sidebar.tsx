@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Building2,
   Package,
   Boxes,
   Wallet,
@@ -31,7 +30,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
   { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
   { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
-  { href: "/branches", label: "Sucursales", icon: Building2, permission: "SETTINGS_MANAGE" },
   { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
   { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
   { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },

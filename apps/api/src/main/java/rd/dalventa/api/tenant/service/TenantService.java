@@ -11,7 +11,11 @@ import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.auth.service.JwtService;
+import rd.dalventa.api.branch.domain.Branch;
+import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.denomination.service.DenominationService;
+import rd.dalventa.api.register.domain.Register;
+import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.dto.RegisterTenantRequest;
 import rd.dalventa.api.tenant.dto.TenantPublicResult;
@@ -34,6 +38,8 @@ public class TenantService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final DenominationService denominationService;
+    private final BranchRepository branchRepository;
+    private final RegisterRepository registerRepository;
 
     @Transactional
     public AuthResponse registerTenant(RegisterTenantRequest req) {
@@ -52,6 +58,18 @@ public class TenantService {
         tenant.setRnc(req.rnc());
         tenant = tenantRepository.save(tenant);
         denominationService.seedDefaults(tenant.getId());
+
+        // Every tenant is a single-location business by default (a second
+        // location means registering a separate tenant), so provision the
+        // one branch + register automatically instead of making the admin
+        // set it up manually.
+        var branch = new Branch("Sucursal principal", null);
+        branch.setTenantId(tenant.getId());
+        branch = branchRepository.save(branch);
+
+        var register = new Register("Caja 1", branch.getId());
+        register.setTenantId(tenant.getId());
+        registerRepository.save(register);
 
         var adminRole = roleRepository.findByName(RoleName.ADMIN)
                 .orElseThrow(() -> new IllegalStateException("Rol ADMIN no encontrado"));

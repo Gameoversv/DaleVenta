@@ -15,6 +15,7 @@ import rd.dalventa.api.auth.domain.User;
 import rd.dalventa.api.auth.dto.ChangePasswordRequest;
 import rd.dalventa.api.auth.dto.CreateUserRequest;
 import rd.dalventa.api.auth.dto.ResetUserPasswordResponse;
+import rd.dalventa.api.auth.dto.SetUserPasswordRequest;
 import rd.dalventa.api.auth.dto.UpdateUserRequest;
 import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.service.AuthService;
@@ -68,5 +69,12 @@ public class UserController {
     @PreAuthorize("@permissionService.has('USERS_MANAGE')")
     public ApiResponse<ResetUserPasswordResponse> resetPassword(@PathVariable UUID id) {
         return ApiResponse.ok(userManagementService.resetPassword(id));
+    }
+
+    @PutMapping("/{id}/password")
+    @PreAuthorize("@permissionService.has('USERS_MANAGE')")
+    public ApiResponse<Void> setPassword(@PathVariable UUID id, @Valid @RequestBody SetUserPasswordRequest request) {
+        userManagementService.setPassword(id, request.newPassword());
+        return ApiResponse.ok(null);
     }
 }

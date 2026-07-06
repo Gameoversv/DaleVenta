@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.auth.domain.RoleName;
 import rd.dalventa.api.auth.domain.User;
 import rd.dalventa.api.auth.dto.CreateUserRequest;
@@ -13,6 +15,7 @@ import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.security.SecureRandom;
@@ -31,6 +34,8 @@ public class UserManagementService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
+    private final CurrentUserProvider currentUserProvider;
 
     @Transactional(readOnly = true)
     public List<UserResponse> list() {
@@ -75,6 +80,18 @@ public class UserManagementService {
         user.setPassword(passwordEncoder.encode(temp));
         userRepository.save(user);
         return new ResetUserPasswordResponse(temp);
+    }
+
+    @Transactional
+    public void setPassword(UUID id, String newPassword) {
+        var user = findTenantUser(id);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        var actorId = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
+        auditLogService.record(AuditAction.USER_PASSWORD_SET, "USER", id, actorId, null);
     }
 
     public User getTenantStaffUser(UUID id) {
