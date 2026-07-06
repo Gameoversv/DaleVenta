@@ -229,15 +229,33 @@ public class SaleService {
     @Transactional(readOnly = true)
     public List<SaleResponse> list(java.util.UUID registerId) {
         var tenantId = TenantContext.require();
-        return saleRepository.findAllByTenantIdAndRegisterIdOrderByCreatedAtDesc(tenantId, registerId)
-                .stream().map(this::toResponse).toList();
+        var sales = hasFullSaleHistory()
+                ? saleRepository.findAllByTenantIdAndRegisterIdOrderByCreatedAtDesc(tenantId, registerId)
+                : saleRepository.findAllByTenantIdAndRegisterIdAndUserIdOrderByCreatedAtDesc(
+                        tenantId, registerId, currentUserId());
+        return sales.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<SaleResponse> listByCustomer(java.util.UUID customerId) {
         var tenantId = TenantContext.require();
-        return saleRepository.findAllByTenantIdAndCustomerIdOrderByCreatedAtDesc(tenantId, customerId)
-                .stream().map(this::toResponse).toList();
+        var sales = hasFullSaleHistory()
+                ? saleRepository.findAllByTenantIdAndCustomerIdOrderByCreatedAtDesc(tenantId, customerId)
+                : saleRepository.findAllByTenantIdAndCustomerIdAndUserIdOrderByCreatedAtDesc(
+                        tenantId, customerId, currentUserId());
+        return sales.stream().map(this::toResponse).toList();
+    }
+
+    private boolean hasFullSaleHistory() {
+        return currentUserProvider.current()
+                .map(user -> permissionResolutionService.has(user, PermissionCode.SALE_VIEW_HISTORY))
+                .orElse(false);
+    }
+
+    private java.util.UUID currentUserId() {
+        return currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
     }
 
     @Transactional(readOnly = true)
@@ -245,6 +263,9 @@ public class SaleService {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        if (!hasFullSaleHistory() && !sale.getUserId().equals(currentUserId())) {
+            throw new ResourceNotFoundException("Venta no encontrada");
+        }
         return toResponse(sale);
     }
 

@@ -187,7 +187,7 @@ function VoidSaleDialog({ registerId, sale }: { registerId: string; sale: SaleRe
 export default function SalesPage() {
   const [manualBranchId, setManualBranchId] = useState("");
   const [manualRegisterId, setManualRegisterId] = useState("");
-  const canViewSales = usePermission("SALE_VIEW_HISTORY");
+  const canViewSales = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
   const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;

@@ -23,6 +23,7 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   permission?: PermissionCode;
+  anyPermission?: PermissionCode[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -35,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
   { href: "/cash-shift/history", label: "Historial Caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
   { href: "/pos", label: "POS", icon: ShoppingCart, permission: "SALE_CREATE" },
-  { href: "/sales", label: "Ventas", icon: ReceiptText, permission: "SALE_VIEW_HISTORY" },
+  { href: "/sales", label: "Ventas", icon: ReceiptText, anyPermission: ["SALE_VIEW_HISTORY", "SALE_CREATE"] },
   { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_VIEW" },
 ];
 
@@ -61,19 +62,30 @@ function GatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
   return <NavLink item={item} active={active} />;
 }
 
+function AnyGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const permissions = item.anyPermission!;
+  /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
+  const allowedFlags = permissions.map((code) => usePermission(code));
+  /* eslint-enable react-hooks/rules-of-hooks */
+  if (!allowedFlags.some(Boolean)) return null;
+  return <NavLink item={item} active={active} />;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
       <nav className="flex flex-col gap-1 p-4">
-        {NAV_ITEMS.map((item) =>
-          item.permission ? (
-            <GatedNavLink key={item.href} item={item} active={pathname === item.href} />
-          ) : (
-            <NavLink key={item.href} item={item} active={pathname === item.href} />
-          )
-        )}
+        {NAV_ITEMS.map((item) => {
+          if (item.anyPermission) {
+            return <AnyGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+          }
+          if (item.permission) {
+            return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+          }
+          return <NavLink key={item.href} item={item} active={pathname === item.href} />;
+        })}
       </nav>
     </aside>
   );
