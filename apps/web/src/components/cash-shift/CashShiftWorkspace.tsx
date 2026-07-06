@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { OpenShiftForm } from "./OpenShiftForm";
+import { ShiftSummary } from "./ShiftSummary";
 import type { CashShiftSummaryResponse } from "@/types/cash-shift";
 
 async function fetchCurrentShift(registerId: string): Promise<CashShiftSummaryResponse | null> {
@@ -31,5 +32,7 @@ export function CashShiftWorkspace({ registerId }: { registerId: string }) {
   if (!currentShift) {
     return <OpenShiftForm registerId={registerId} />;
   }
-  return <p className="text-muted-foreground">Turno abierto (resumen pendiente).</p>;
+  return (
+    <ShiftSummary shift={currentShift} registerId={registerId} onRequestClose={() => {}} />
+  );
 }
