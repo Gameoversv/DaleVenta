@@ -8,17 +8,12 @@ import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
+import { useSoleRegister } from "@/hooks/useSoleRegister";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
-import type { RegisterResponse } from "@/types/branch";
 import type { CashMovementResponse, CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
-
-async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
-  const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
-  return res.data.data;
-}
 
 async function fetchCashShifts(registerId: string): Promise<CashShiftSummaryResponse[]> {
   const res = await api.get<{ data: CashShiftSummaryResponse[] }>("/api/cash-shifts", { params: { registerId } });
@@ -207,16 +202,19 @@ function ShiftDetailDialog({
 
 export default function CashShiftHistoryPage() {
   const [manualBranchId, setManualBranchId] = useState("");
-  const [registerId, setRegisterId] = useState("");
+  const [manualRegisterId, setManualRegisterId] = useState("");
   const canViewHistory = usePermission("CASHSHIFT_VIEW_HISTORY");
-  const { branches, hasMultiple, soleBranchId } = useSoleBranch();
-  const branchId = hasMultiple ? manualBranchId : soleBranchId;
+  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
+  const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
-  const { data: registers, isLoading: registersLoading } = useQuery({
-    queryKey: ["registers", branchId],
-    queryFn: () => fetchRegisters(branchId),
-    enabled: canViewHistory && !!branchId,
-  });
+  const {
+    registers,
+    isLoading: registersLoading,
+    hasMultiple: hasMultipleRegisters,
+    soleRegisterId,
+  } = useSoleRegister(branchId);
+  const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
+
   const { data: denominations } = useQuery({
     queryKey: ["denominations"],
     queryFn: fetchDenominations,
@@ -247,52 +245,56 @@ export default function CashShiftHistoryPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Historial de caja</h1>
 
-      <div className="flex flex-col gap-4 sm:flex-row">
-        {hasMultiple && (
-          <div className="max-w-xs flex-1 space-y-2">
-            <label htmlFor="cash-history-branch" className="text-sm font-medium">
-              Sucursal
-            </label>
-            <select
-              id="cash-history-branch"
-              value={manualBranchId}
-              onChange={(e) => {
-                setManualBranchId(e.target.value);
-                setRegisterId("");
-              }}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Selecciona una sucursal</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="cash-history-register" className="text-sm font-medium">
-            Caja
-          </label>
-          <select
-            id="cash-history-register"
-            value={registerId}
-            onChange={(e) => setRegisterId(e.target.value)}
-            disabled={!branchId || registersLoading}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">{registersLoading ? "Cargando cajas..." : "Selecciona una caja"}</option>
-            {registers?.map((register) => (
-              <option key={register.id} value={register.id}>
-                {register.name}
-              </option>
-            ))}
-          </select>
+      {(hasMultipleBranches || hasMultipleRegisters) && (
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {hasMultipleBranches && (
+            <div className="max-w-xs flex-1 space-y-2">
+              <label htmlFor="cash-history-branch" className="text-sm font-medium">
+                Sucursal
+              </label>
+              <select
+                id="cash-history-branch"
+                value={manualBranchId}
+                onChange={(e) => {
+                  setManualBranchId(e.target.value);
+                  setManualRegisterId("");
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona una sucursal</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {hasMultipleRegisters && (
+            <div className="max-w-xs flex-1 space-y-2">
+              <label htmlFor="cash-history-register" className="text-sm font-medium">
+                Caja
+              </label>
+              <select
+                id="cash-history-register"
+                value={manualRegisterId}
+                onChange={(e) => setManualRegisterId(e.target.value)}
+                disabled={!branchId || registersLoading}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">{registersLoading ? "Cargando cajas..." : "Selecciona una caja"}</option>
+                {registers.map((register) => (
+                  <option key={register.id} value={register.id}>
+                    {register.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {branchId && !registersLoading && registers?.length === 0 && (
+      {branchId && !registersLoading && registers.length === 0 && (
         <p className="text-sm text-muted-foreground">Esta sucursal no tiene cajas activas.</p>
       )}
       {shiftsLoading && <p className="text-muted-foreground">Cargando turnos...</p>}

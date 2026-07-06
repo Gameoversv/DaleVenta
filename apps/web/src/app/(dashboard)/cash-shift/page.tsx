@@ -2,36 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
+import { useSoleRegister } from "@/hooks/useSoleRegister";
 import { Button } from "@/components/ui/button";
 import { CashShiftWorkspace } from "@/components/cash-shift/CashShiftWorkspace";
-import type { RegisterResponse } from "@/types/branch";
-
-async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
-  const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
-  return res.data.data;
-}
 
 export default function CashShiftPage() {
   const [manualBranchId, setManualBranchId] = useState("");
-  const [registerId, setRegisterId] = useState("");
+  const [manualRegisterId, setManualRegisterId] = useState("");
   const canOpenCashShift = usePermission("CASHSHIFT_OPEN");
   const canManageSettings = usePermission("SETTINGS_MANAGE");
-  const { branches, isLoading: branchesLoading, isError: branchesError, hasMultiple, soleBranchId } = useSoleBranch();
-  const branchId = hasMultiple ? manualBranchId : soleBranchId;
+  const {
+    branches,
+    isLoading: branchesLoading,
+    isError: branchesError,
+    hasMultiple: hasMultipleBranches,
+    soleBranchId,
+  } = useSoleBranch();
+  const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
   const {
-    data: registers,
+    registers,
     isLoading: registersLoading,
     isError: registersError,
-  } = useQuery({
-    queryKey: ["registers", branchId],
-    queryFn: () => fetchRegisters(branchId),
-    enabled: canOpenCashShift && !!branchId,
-  });
+    hasMultiple: hasMultipleRegisters,
+    soleRegisterId,
+  } = useSoleRegister(branchId);
+  const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   if (!canOpenCashShift) {
     return (
@@ -50,7 +48,7 @@ export default function CashShiftPage() {
       {branchesError && (
         <p className="text-sm text-destructive">No se pudieron cargar las sucursales.</p>
       )}
-      {!branchesLoading && branches && branches.length === 0 && (
+      {!branchesLoading && branches.length === 0 && (
         <div className="space-y-3 rounded-md border border-border p-4">
           <p className="text-sm text-muted-foreground">
             No hay sucursales activas. Crea una sucursal y una caja antes de abrir un turno.
@@ -62,57 +60,61 @@ export default function CashShiftPage() {
           )}
         </div>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row">
-        {hasMultiple && (
-          <div className="max-w-xs flex-1 space-y-2">
-            <label htmlFor="cash-shift-branch" className="text-sm font-medium">
-              Sucursal
-            </label>
-            <select
-              id="cash-shift-branch"
-              value={manualBranchId}
-              onChange={(e) => {
-                setManualBranchId(e.target.value);
-                setRegisterId("");
-              }}
-              disabled={branchesLoading || branchesError}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Selecciona una sucursal</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
+      {(hasMultipleBranches || hasMultipleRegisters) && (
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {hasMultipleBranches && (
+            <div className="max-w-xs flex-1 space-y-2">
+              <label htmlFor="cash-shift-branch" className="text-sm font-medium">
+                Sucursal
+              </label>
+              <select
+                id="cash-shift-branch"
+                value={manualBranchId}
+                onChange={(e) => {
+                  setManualBranchId(e.target.value);
+                  setManualRegisterId("");
+                }}
+                disabled={branchesLoading || branchesError}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona una sucursal</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {hasMultipleRegisters && (
+            <div className="max-w-xs flex-1 space-y-2">
+              <label htmlFor="cash-shift-register" className="text-sm font-medium">
+                Caja
+              </label>
+              <select
+                id="cash-shift-register"
+                value={manualRegisterId}
+                onChange={(e) => setManualRegisterId(e.target.value)}
+                disabled={!branchId || registersLoading || registersError}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">
+                  {registersLoading ? "Cargando cajas..." : "Selecciona una caja"}
                 </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="cash-shift-register" className="text-sm font-medium">
-            Caja
-          </label>
-          <select
-            id="cash-shift-register"
-            value={registerId}
-            onChange={(e) => setRegisterId(e.target.value)}
-            disabled={!branchId || registersLoading || registersError}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">
-              {registersLoading ? "Cargando cajas..." : "Selecciona una caja"}
-            </option>
-            {registers?.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+                {registers.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-      </div>
+      )}
       {registersError && (
         <p className="text-sm text-destructive">No se pudieron cargar las cajas de esta sucursal.</p>
       )}
-      {branchId && !registersLoading && registers && registers.length === 0 && (
+      {branchId && !registersLoading && registers.length === 0 && (
         <div className="space-y-3 rounded-md border border-border p-4">
           <p className="text-sm text-muted-foreground">
             Esta sucursal no tiene cajas activas. Crea una caja antes de abrir el turno.
