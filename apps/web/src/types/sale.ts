@@ -43,6 +43,7 @@ export interface PaymentResponse {
 
 export interface SaleResponse {
   id: string;
+  invoiceNumber: string;
   customerId: string | null;
   status: SaleStatus;
   subtotal: string;
@@ -69,4 +70,46 @@ export interface ChangeSuggestionRequest {
 export interface ChangeSuggestionResponse {
   exact: boolean;
   combination: DenominationCountEntry[];
+}
+
+export interface InvoiceCustomerInfo {
+  name: string;
+  documentId: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
+export interface InvoiceItemResponse {
+  productName: string;
+  quantity: number;
+  unitPrice: string;
+  taxRate: string;
+  lineTotal: string;
+}
+
+export interface InvoiceBusinessInfo {
+  name: string;
+  rnc: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+}
+
+export interface InvoiceResponse {
+  id: string;
+  invoiceNumber: string;
+  status: SaleStatus;
+  createdAt: string;
+  business: InvoiceBusinessInfo;
+  branchName: string;
+  registerName: string;
+  customer: InvoiceCustomerInfo | null;
+  subtotal: string;
+  taxTotal: string;
+  discountAmount: string;
+  total: string;
+  items: InvoiceItemResponse[];
+  payments: PaymentResponse[];
 }

@@ -33,3 +33,34 @@ export interface SalesReportResponse {
   topProducts: TopProductReportItem[];
   dailySales: DailySalesReportItem[];
 }
+
+export interface DailyCloseShiftRow {
+  id: string;
+  status: string;
+  openedAt: string | null;
+  closedAt: string | null;
+  expectedCash: string;
+  countedCash: string;
+  cashDifference: string;
+}
+
+export interface DailyClosePaymentBreakdown {
+  method: PaymentMethod;
+  count: number;
+  amount: string;
+}
+
+export interface DailyCloseReportResponse {
+  date: string;
+  registerName: string;
+  completedSales: number;
+  voidedSales: number;
+  grossRevenue: string;
+  taxTotal: string;
+  discountTotal: string;
+  cashExpected: string;
+  cashCounted: string;
+  cashDifference: string;
+  payments: DailyClosePaymentBreakdown[];
+  shifts: DailyCloseShiftRow[];
+}

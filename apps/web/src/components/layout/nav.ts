@@ -9,6 +9,7 @@ import {
   History,
   Settings,
   BarChart3,
+  ClipboardCheck,
 } from "lucide-react";
 import type { PermissionCode } from "@/types/auth";
 
@@ -40,6 +41,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "DASHBOARD_VIEW" },
       { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
+      { href: "/reports/daily-close", label: "Cierre diario", icon: ClipboardCheck, permission: "REPORTS_VIEW" },
       { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
       { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
       { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },

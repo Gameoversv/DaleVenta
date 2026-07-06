@@ -36,6 +36,12 @@ public class Sale extends TenantAwareEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "invoice_sequence", nullable = false)
+    private Long invoiceSequence;
+
+    @Column(name = "invoice_number", nullable = false, length = 30)
+    private String invoiceNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SaleStatus status;

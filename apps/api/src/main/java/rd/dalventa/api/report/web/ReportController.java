@@ -8,10 +8,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import rd.dalventa.api.report.dto.SalesReportResponse;
+import rd.dalventa.api.report.dto.DailyCloseReportResponse;
+import rd.dalventa.api.report.service.DailyCloseReportService;
 import rd.dalventa.api.report.service.SalesReportService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -19,6 +22,7 @@ import java.time.LocalDate;
 public class ReportController {
 
     private final SalesReportService salesReportService;
+    private final DailyCloseReportService dailyCloseReportService;
 
     @GetMapping("/sales")
     @PreAuthorize("@permissionService.has('REPORTS_VIEW')")
@@ -26,5 +30,13 @@ public class ReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ApiResponse.ok(salesReportService.sales(from, to));
+    }
+
+    @GetMapping("/daily-close")
+    @PreAuthorize("@permissionService.has('REPORTS_VIEW')")
+    public ApiResponse<DailyCloseReportResponse> dailyClose(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) UUID registerId) {
+        return ApiResponse.ok(dailyCloseReportService.report(date, registerId));
     }
 }

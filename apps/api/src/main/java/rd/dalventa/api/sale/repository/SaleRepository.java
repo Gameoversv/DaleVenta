@@ -19,6 +19,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     List<Sale> findAllByTenantIdAndCustomerIdAndUserIdOrderByCreatedAtDesc(UUID tenantId, UUID customerId, UUID userId);
     List<Sale> findAllByTenantIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             UUID tenantId, Instant start, Instant end);
+    List<Sale> findAllByTenantIdAndRegisterIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            UUID tenantId, UUID registerId, Instant start, Instant end);
     List<Sale> findAllByTenantIdAndCashShiftId(UUID tenantId, UUID cashShiftId);
     List<Sale> findAllByTenantIdAndCustomerIdOrderByCreatedAtDesc(UUID tenantId, UUID customerId);
     long countByTenantIdAndStatusAndCreatedAtGreaterThanEqual(UUID tenantId, SaleStatus status, Instant createdAt);
@@ -31,4 +33,7 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
               and s.createdAt >= :createdAt
             """)
     BigDecimal sumTotalSince(UUID tenantId, SaleStatus status, Instant createdAt);
+
+    @Query("select coalesce(max(s.invoiceSequence), 0) from Sale s where s.tenantId = :tenantId")
+    long maxInvoiceSequence(UUID tenantId);
 }

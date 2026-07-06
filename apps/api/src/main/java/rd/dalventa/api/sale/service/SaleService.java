@@ -106,6 +106,9 @@ public class SaleService {
 
         var sale = new Sale(register.getBranchId(), req.registerId(), req.cashShiftId(), req.customerId(), userId);
         sale.setTenantId(tenantId);
+        long invoiceSequence = saleRepository.maxInvoiceSequence(tenantId) + 1;
+        sale.setInvoiceSequence(invoiceSequence);
+        sale.setInvoiceNumber("FV-%06d".formatted(invoiceSequence));
 
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;

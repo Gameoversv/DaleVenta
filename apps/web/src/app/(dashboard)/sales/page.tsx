@@ -3,7 +3,8 @@
 import type React from "react";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { Eye, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -77,6 +78,10 @@ function SaleDetailDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <p className="text-muted-foreground">Factura</p>
+              <p className="font-medium">{sale.invoiceNumber}</p>
+            </div>
             <div>
               <p className="text-muted-foreground">Fecha</p>
               <p className="font-medium">{dateTime(sale.createdAt)}</p>
@@ -311,6 +316,7 @@ export default function SalesPage() {
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="py-2">Fecha</th>
+                      <th className="py-2">Factura</th>
                       <th className="py-2">Cliente</th>
                       <th className="py-2">Estado</th>
                       <th className="py-2">Pago</th>
@@ -322,6 +328,7 @@ export default function SalesPage() {
                     {sales.map((sale) => (
                       <tr key={sale.id} className="border-b border-border">
                         <td className="py-2">{dateTime(sale.createdAt)}</td>
+                        <td className="py-2 font-medium">{sale.invoiceNumber}</td>
                         <td className="py-2">{customerName(sale.customerId)}</td>
                         <td className="py-2"><StatusBadge status={sale.status} /></td>
                         <td className="py-2">{paymentLabel(sale)}</td>
@@ -338,6 +345,11 @@ export default function SalesPage() {
                                 </Button>
                               }
                             />
+                            <Button asChild variant="ghost" size="icon" aria-label="Imprimir factura">
+                              <Link href={`/sales/${sale.id}/invoice`}>
+                                <Printer className="h-4 w-4" />
+                              </Link>
+                            </Button>
                             {canVoid && sale.status === "COMPLETED" && (
                               <VoidSaleDialog registerId={registerId} sale={sale} />
                             )}

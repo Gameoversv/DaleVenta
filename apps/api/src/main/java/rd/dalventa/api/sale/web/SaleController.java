@@ -6,8 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.sale.dto.CreateSaleRequest;
+import rd.dalventa.api.sale.dto.InvoiceResponse;
 import rd.dalventa.api.sale.dto.SaleResponse;
 import rd.dalventa.api.sale.dto.VoidSaleRequest;
+import rd.dalventa.api.sale.service.InvoiceService;
 import rd.dalventa.api.sale.service.SaleService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class SaleController {
 
     private final SaleService saleService;
+    private final InvoiceService invoiceService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -46,6 +49,12 @@ public class SaleController {
     @PreAuthorize("@permissionService.has('SALE_VIEW_HISTORY') or @permissionService.has('SALE_CREATE')")
     public ApiResponse<SaleResponse> detail(@PathVariable UUID id) {
         return ApiResponse.ok(saleService.getDetail(id));
+    }
+
+    @GetMapping("/{id}/invoice")
+    @PreAuthorize("@permissionService.has('SALE_VIEW_HISTORY') || @permissionService.has('SALE_CREATE')")
+    public ApiResponse<InvoiceResponse> invoice(@PathVariable UUID id) {
+        return ApiResponse.ok(invoiceService.getInvoice(id));
     }
 
     @PostMapping("/{id}/void")
