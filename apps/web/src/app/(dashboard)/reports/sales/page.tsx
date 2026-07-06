@@ -51,6 +51,9 @@ export default function SalesReportPage() {
     queryFn: () => fetchSalesReport(from, to),
     enabled: canViewReports,
   });
+  const dailySales = data?.dailySales ?? [];
+  const payments = data?.payments ?? [];
+  const topProducts = data?.topProducts ?? [];
 
   if (!canViewReports) {
     return (
@@ -144,7 +147,7 @@ export default function SalesReportPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.dailySales.map((day) => (
+                      {dailySales.map((day) => (
                         <tr key={day.date} className="border-b last:border-b-0">
                           <td className="py-2">{dateLabel(day.date)}</td>
                           <td className="py-2 text-right">{day.salesCount}</td>
@@ -162,7 +165,7 @@ export default function SalesReportPage() {
                 <CardTitle>Metodos de pago</CardTitle>
               </CardHeader>
               <CardContent>
-                {data.payments.length === 0 ? (
+                {payments.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No hay pagos en este rango.</p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -175,7 +178,7 @@ export default function SalesReportPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.payments.map((payment) => (
+                        {payments.map((payment) => (
                           <tr key={payment.method} className="border-b last:border-b-0">
                             <td className="py-2">{paymentLabel(payment.method)}</td>
                             <td className="py-2 text-right">{payment.paymentsCount}</td>
@@ -195,7 +198,7 @@ export default function SalesReportPage() {
               <CardTitle>Productos mas vendidos</CardTitle>
             </CardHeader>
             <CardContent>
-              {data.topProducts.length === 0 ? (
+              {topProducts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No hay productos vendidos en este rango.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -208,7 +211,7 @@ export default function SalesReportPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.topProducts.map((product) => (
+                      {topProducts.map((product) => (
                         <tr key={product.productId} className="border-b last:border-b-0">
                           <td className="py-2">{product.productName}</td>
                           <td className="py-2 text-right">{product.quantity}</td>
