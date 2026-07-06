@@ -40,6 +40,8 @@ import rd.dalventa.api.cashshift.repository.CashMovementRepository;
 import rd.dalventa.api.cashshift.repository.CashMovementDenominationRepository;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.credit.service.CreditService;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
@@ -70,6 +72,7 @@ public class SaleService {
     private final CashMovementRepository cashMovementRepository;
     private final CashMovementDenominationRepository cashMovementDenominationRepository;
     private final CreditService creditService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -299,6 +302,8 @@ public class SaleService {
         sale.setVoidedBy(userId);
         sale.setVoidReason(req.voidReason());
         saleRepository.save(sale);
+
+        auditLogService.record(AuditAction.SALE_VOID, "SALE", sale.getId(), userId, req.voidReason());
 
         return toResponse(sale);
     }

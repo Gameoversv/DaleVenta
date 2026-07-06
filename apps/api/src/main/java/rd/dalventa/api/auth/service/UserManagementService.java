@@ -77,6 +77,10 @@ public class UserManagementService {
         return new ResetUserPasswordResponse(temp);
     }
 
+    public User getTenantStaffUser(UUID id) {
+        return findTenantUser(id);
+    }
+
     private User findTenantUser(UUID id) {
         var tenantId = TenantContext.require();
         var user = userRepository.findById(id)

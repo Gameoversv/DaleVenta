@@ -22,7 +22,17 @@ export type PermissionCode =
   | "REPORTS_VIEW"
   | "PROFIT_VIEW"
   | "USERS_MANAGE"
-  | "SETTINGS_MANAGE";
+  | "SETTINGS_MANAGE"
+  | "AUDIT_VIEW";
+
+export type PermissionEffect = "GRANT" | "REVOKE";
+
+export interface UserPermissionRow {
+  code: PermissionCode;
+  fromRole: boolean;
+  override: PermissionEffect | null;
+  effective: boolean;
+}
 
 export interface UserResponse {
   id: string;

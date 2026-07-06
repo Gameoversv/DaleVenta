@@ -1,0 +1,4 @@
+ALTER TABLE audit_logs
+    ADD COLUMN updated_at TIMESTAMP   NOT NULL DEFAULT NOW(),
+    ADD COLUMN created_by VARCHAR(255),
+    ADD COLUMN updated_by VARCHAR(255);

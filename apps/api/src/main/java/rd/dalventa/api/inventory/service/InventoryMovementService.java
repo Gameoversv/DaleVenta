@@ -3,9 +3,12 @@ package rd.dalventa.api.inventory.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.inventory.domain.BranchInventory;
 import rd.dalventa.api.inventory.domain.InventoryMovement;
+import rd.dalventa.api.inventory.domain.InventoryMovementType;
 import rd.dalventa.api.inventory.dto.CreateInventoryMovementRequest;
 import rd.dalventa.api.inventory.dto.InventoryMovementResponse;
 import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
@@ -26,6 +29,7 @@ public class InventoryMovementService {
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public InventoryMovementResponse recordMovement(CreateInventoryMovementRequest req) {
@@ -61,7 +65,14 @@ public class InventoryMovementService {
         var movement = new InventoryMovement(branchInventory.getId(), req.type(), req.quantity(),
                 previousStock, newStock, req.reason(), userId);
         movement.setTenantId(tenantId);
-        return InventoryMovementResponse.from(inventoryMovementRepository.save(movement));
+        var saved = inventoryMovementRepository.save(movement);
+
+        if (req.type() == InventoryMovementType.ADJUSTMENT) {
+            auditLogService.record(AuditAction.INVENTORY_ADJUSTMENT, "BRANCH_INVENTORY",
+                    branchInventory.getId(), userId, req.reason());
+        }
+
+        return InventoryMovementResponse.from(saved);
     }
 
     private BranchInventory createBranchInventory(UUID tenantId, UUID branchId, UUID productId) {

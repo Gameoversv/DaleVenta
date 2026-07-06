@@ -22,5 +22,6 @@ public enum PermissionCode {
     REPORTS_VIEW,
     PROFIT_VIEW,
     USERS_MANAGE,
-    SETTINGS_MANAGE
+    SETTINGS_MANAGE,
+    AUDIT_VIEW
 }

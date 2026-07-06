@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Plus } from "lucide-react";
+import { KeyRound, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -11,7 +11,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { CreateUserRequest, ResetUserPasswordResponse, RoleName, UpdateUserRequest, UserResponse } from "@/types/auth";
+import type {
+  CreateUserRequest,
+  PermissionEffect,
+  ResetUserPasswordResponse,
+  RoleName,
+  UpdateUserRequest,
+  UserPermissionRow,
+  UserResponse,
+} from "@/types/auth";
+
+const PERMISSION_LABELS: Record<string, string> = {
+  INVENTORY_VIEW: "Ver inventario",
+  INVENTORY_CREATE: "Crear inventario",
+  INVENTORY_EDIT: "Editar inventario",
+  INVENTORY_ADJUST: "Ajustar inventario",
+  COST_VIEW: "Ver costos",
+  PRICE_VIEW: "Ver precios",
+  SALE_CREATE: "Crear ventas",
+  SALE_DISCOUNT: "Aplicar descuentos",
+  SALE_PRICE_OVERRIDE: "Sobrescribir precio",
+  SALE_VOID: "Anular ventas",
+  SALE_RETURN: "Devoluciones",
+  CASHSHIFT_OPEN: "Abrir turno de caja",
+  CASHSHIFT_CLOSE: "Cerrar turno de caja",
+  CASHSHIFT_VIEW_HISTORY: "Ver historial de caja",
+  CUSTOMER_CREATE: "Crear clientes",
+  CUSTOMER_EDIT: "Editar clientes",
+  CREDIT_AUTHORIZE: "Autorizar credito",
+  CREDIT_RECEIVE_PAYMENT: "Recibir abonos",
+  REPORTS_VIEW: "Ver reportes",
+  PROFIT_VIEW: "Ver ganancias",
+  USERS_MANAGE: "Administrar usuarios",
+  SETTINGS_MANAGE: "Administrar ajustes",
+  AUDIT_VIEW: "Ver auditoria",
+};
 
 type StaffRole = Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;
 
@@ -168,6 +202,102 @@ function ResetPasswordDialog({ user }: { user: UserResponse }) {
   );
 }
 
+async function fetchUserPermissions(userId: string): Promise<UserPermissionRow[]> {
+  const res = await api.get<{ data: UserPermissionRow[] }>(`/api/users/${userId}/permissions`);
+  return res.data.data;
+}
+
+function PermissionRowControl({ userId, row }: { userId: string; row: UserPermissionRow }) {
+  const queryClient = useQueryClient();
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["user-permissions", userId] });
+
+  const setOverride = useMutation({
+    mutationFn: (effect: PermissionEffect) =>
+      api.put(`/api/users/${userId}/permissions/${row.code}`, { effect }),
+    onSuccess: invalidate,
+    onError: () => toast.error("No se pudo actualizar el permiso"),
+  });
+
+  const clearOverride = useMutation({
+    mutationFn: () => api.delete(`/api/users/${userId}/permissions/${row.code}`),
+    onSuccess: invalidate,
+    onError: () => toast.error("No se pudo actualizar el permiso"),
+  });
+
+  const value = row.override ?? "ROLE_DEFAULT";
+  const pending = setOverride.isPending || clearOverride.isPending;
+
+  return (
+    <tr className="border-b last:border-b-0">
+      <td className="py-2 pr-4">
+        <p className="font-medium">{PERMISSION_LABELS[row.code] ?? row.code}</p>
+        <p className="text-xs text-muted-foreground">
+          {row.fromRole ? "Incluido por rol" : "No incluido por rol"} - efectivo: {row.effective ? "si" : "no"}
+        </p>
+      </td>
+      <td className="py-2">
+        <select
+          value={value}
+          disabled={pending}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === "ROLE_DEFAULT") {
+              clearOverride.mutate();
+            } else {
+              setOverride.mutate(next as PermissionEffect);
+            }
+          }}
+          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+        >
+          <option value="ROLE_DEFAULT">Segun rol</option>
+          <option value="GRANT">Otorgado</option>
+          <option value="REVOKE">Revocado</option>
+        </select>
+      </td>
+    </tr>
+  );
+}
+
+function PermissionsDialog({ user }: { user: UserResponse }) {
+  const [open, setOpen] = useState(false);
+  const { data: rows, isLoading } = useQuery({
+    queryKey: ["user-permissions", user.id],
+    queryFn: () => fetchUserPermissions(user.id),
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Permisos">
+          <ShieldCheck className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[80vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Permisos de {user.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2 text-sm">
+          <p className="text-muted-foreground">
+            Los permisos "segun rol" vienen del rol asignado. Otorgar o revocar crea una excepcion individual.
+          </p>
+          {isLoading && <p className="text-muted-foreground">Cargando permisos...</p>}
+          {rows && (
+            <table className="w-full text-sm">
+              <tbody>
+                {rows.map((row) => (
+                  <PermissionRowControl key={row.code} userId={user.id} row={row} />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function UserRow({ user }: { user: UserResponse }) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(user.role === "ADMIN" ? "ADMIN" : "CASHIER");
@@ -225,6 +355,7 @@ function UserRow({ user }: { user: UserResponse }) {
           >
             {user.active ? "Desactivar" : "Activar"}
           </Button>
+          <PermissionsDialog user={user} />
           <ResetPasswordDialog user={user} />
         </div>
       </td>

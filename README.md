@@ -23,11 +23,11 @@ DaleVenta handles:
 | **Testing** | JUnit 5 · Mockito · Testcontainers |
 | **Containerization** | Docker · Docker Compose |
 | **Web Server** | Nginx (reverse proxy) |
-| **Frontend** | Next.js 15 · React 19 · TypeScript *(separate repo, later phase)* |
+| **Frontend** | Next.js 15 · React 19 · TypeScript (`apps/web`) |
 
 ## Current Modules
 
-- **auth** — JWT-based authentication, login/refresh, token validation
+- **auth** — JWT-based authentication, login/refresh, token validation, user management
 - **tenant** — Multi-tenant isolation, subscription plans
 - **superadmin** — SaaS admin panel for tenant management and support
 - **shared** — Common utilities, configuration, storage, rate limiting
@@ -35,7 +35,17 @@ DaleVenta handles:
 - **customer** — Customer management with credit profile support
 - **branch** — Multi-branch organization and assignment
 - **register** — Cash register/point-of-sale station management
-- **permission** — RBAC with granular permission catalog and resolution engine
+- **permission** — RBAC with granular permission catalog, resolution engine, and per-user permission overrides (grant/revoke)
+- **product / inventory** — Products, categories, branch-level stock and movements
+- **cashshift / denomination** — Shift open/close, denomination counting, change suggestion
+- **sale** — POS checkout (cash/transfer/credit/mixed), void
+- **credit** — Customer credit accounts, accounts receivable, payments
+- **report** — Sales and payment-method reporting
+- **audit** — Centralized audit log for sensitive operations (sale void, inventory adjustment, permission overrides)
+
+## Frontend (`apps/web`)
+
+Next.js 15 dashboard covering: login, dashboard, branches, cash-shift (open/history/close), customers, inventory, POS, products, sales history, reports, and settings (users + permissions).
 
 ## Getting Started
 
@@ -109,9 +119,10 @@ See the **[Bootstrap RBAC Plan](docs/superpowers/plans/2026-07-04-bootstrap-rbac
 
 ## Testing
 
-**Current test suite:** 35 tests (all green)
+**Backend:** 32 test classes (JUnit 5 + Testcontainers)
+**Frontend E2E:** 10 Playwright specs (`apps/web/e2e`)
 
-Run all tests:
+Run all backend tests:
 ```bash
 ./mvnw test -Dspring.profiles.active=test
 ```
@@ -123,14 +134,14 @@ Run a specific test class:
 
 ## What Comes Next
 
-After this phase, each of these becomes its own plan:
+Fase 1 (MVP) is functionally complete. Remaining before closing it out:
 
-- **Products & Inventory** — Category/product management, branch-level stock
-- **POS & Sales** — Carriage and checkout flow with dynamic pricing
-- **Cash Shifts & Change** — Opening/closing with denomination algorithm
-- **Credit & Accounts Payable** — Customer credit accounts and payment tracking
-- **Frontend (apps/web)** — Next.js dashboard and POS interface
-- **Phase 2+ features** — Advanced reporting, returns, notifications, etc.
+- E2E coverage for sales, reports, and user/permission management
+- Discount-above-threshold auditing (needs a configurable threshold first)
+- Shift reopening with second-user authorization
+
+**Phase 2:** exportable reports (PDF/Excel/CSV), returns/voids with authorization flow, internal notifications, customer self-service portal.
+**Phase 3:** raw materials, recipes, production (BOM) for bakery/pastry tenants; advanced analytics.
 
 ## Support
 
