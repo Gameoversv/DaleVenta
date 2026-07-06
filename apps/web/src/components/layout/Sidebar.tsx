@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Package, Boxes, Wallet, ShoppingCart, Users, ReceiptText } from "lucide-react";
+import {
+  LayoutDashboard,
+  Building2,
+  Package,
+  Boxes,
+  Wallet,
+  ShoppingCart,
+  Users,
+  ReceiptText,
+  History,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
 import type { PermissionCode } from "@/types/auth";
@@ -16,10 +27,12 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
   { href: "/branches", label: "Sucursales", icon: Building2, permission: "SETTINGS_MANAGE" },
   { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
   { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
   { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
+  { href: "/cash-shift/history", label: "Historial Caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
   { href: "/pos", label: "POS", icon: ShoppingCart, permission: "SALE_CREATE" },
   { href: "/sales", label: "Ventas", icon: ReceiptText, permission: "SALE_CREATE" },
   { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_EDIT" },
