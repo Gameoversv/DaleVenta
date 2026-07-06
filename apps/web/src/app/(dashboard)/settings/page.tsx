@@ -146,10 +146,12 @@ function CreateDenominationDialog() {
 
 function InvoiceSettingsCard() {
   const queryClient = useQueryClient();
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [form, setForm] = useState<InvoiceSettingsResponse | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["invoice-settings"],
     queryFn: fetchInvoiceSettings,
+    enabled: invoiceOpen,
   });
 
   const values = form ?? (data ? normalizeInvoiceSettings(data) : null);
@@ -175,107 +177,111 @@ function InvoiceSettingsCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Factura e impresion</CardTitle>
+      <CardHeader className="p-0">
+        <button
+          type="button"
+          onClick={() => setInvoiceOpen((current) => !current)}
+          className="flex w-full items-center justify-between p-6 text-left"
+        >
+          <CardTitle>Factura e impresion</CardTitle>
+          {invoiceOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+        </button>
       </CardHeader>
-      <CardContent>
-        {isLoading && <p className="text-sm text-muted-foreground">Cargando configuracion...</p>}
-        {isError && <p className="text-sm text-destructive">No se pudo cargar la configuracion de factura.</p>}
-        {values && (
-          <form
-            className="space-y-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              mutation.mutate(values);
-            }}
-          >
-            <div className="grid gap-4 md:grid-cols-2">
+      {invoiceOpen && (
+        <CardContent>
+          {isLoading && <p className="text-sm text-muted-foreground">Cargando configuracion...</p>}
+          {isError && <p className="text-sm text-destructive">No se pudo cargar la configuracion de factura.</p>}
+          {values && (
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                mutation.mutate(values);
+              }}
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-business-name">Nombre del negocio o local</Label>
+                  <Input
+                    id="invoice-business-name"
+                    value={values.businessName}
+                    onChange={(event) => update("businessName", event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-phone">Telefono</Label>
+                  <Input id="invoice-phone" value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-email">Email</Label>
+                  <Input id="invoice-email" value={values.email ?? ""} onChange={(event) => update("email", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-address">Direccion</Label>
+                  <Input id="invoice-address" value={values.address ?? ""} onChange={(event) => update("address", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-city">Ciudad</Label>
+                  <Input id="invoice-city" value={values.city ?? ""} onChange={(event) => update("city", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-logo">URL del logo</Label>
+                  <Input id="invoice-logo" value={values.logoUrl ?? ""} onChange={(event) => update("logoUrl", event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-print-size">Tamano de impresion</Label>
+                  <select
+                    id="invoice-print-size"
+                    value={values.printSize}
+                    onChange={(event) => update("printSize", event.target.value as InvoicePrintSize)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="LETTER">Carta</option>
+                    <option value="THERMAL_80MM">Ticket 80mm</option>
+                    <option value="THERMAL_58MM">Ticket 58mm</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="invoice-business-name">Nombre del negocio o local</Label>
+                <Label htmlFor="invoice-footer">Mensaje final</Label>
                 <Input
-                  id="invoice-business-name"
-                  value={values.businessName}
-                  onChange={(event) => update("businessName", event.target.value)}
+                  id="invoice-footer"
+                  value={values.footerMessage ?? ""}
+                  onChange={(event) => update("footerMessage", event.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-rnc">RNC</Label>
-                <Input id="invoice-rnc" value={values.rnc ?? ""} onChange={(event) => update("rnc", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-phone">Telefono</Label>
-                <Input id="invoice-phone" value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-email">Email</Label>
-                <Input id="invoice-email" value={values.email ?? ""} onChange={(event) => update("email", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-address">Direccion</Label>
-                <Input id="invoice-address" value={values.address ?? ""} onChange={(event) => update("address", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-city">Ciudad</Label>
-                <Input id="invoice-city" value={values.city ?? ""} onChange={(event) => update("city", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-logo">URL del logo</Label>
-                <Input id="invoice-logo" value={values.logoUrl ?? ""} onChange={(event) => update("logoUrl", event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invoice-print-size">Tamano de impresion</Label>
-                <select
-                  id="invoice-print-size"
-                  value={values.printSize}
-                  onChange={(event) => update("printSize", event.target.value as InvoicePrintSize)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="LETTER">Carta</option>
-                  <option value="THERMAL_80MM">Ticket 80mm</option>
-                  <option value="THERMAL_58MM">Ticket 58mm</option>
-                </select>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="invoice-footer">Mensaje final</Label>
-              <Input
-                id="invoice-footer"
-                value={values.footerMessage ?? ""}
-                onChange={(event) => update("footerMessage", event.target.value)}
-              />
-            </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ["showLogo", "Mostrar logo"],
+                  ["showPhone", "Mostrar telefono"],
+                  ["showEmail", "Mostrar email"],
+                  ["showAddress", "Mostrar direccion"],
+                  ["showCustomer", "Mostrar cliente"],
+                  ["showTax", "Mostrar impuesto"],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(values[key as keyof InvoiceSettingsResponse])}
+                      onChange={(event) =>
+                        update(key as keyof InvoiceSettingsResponse, event.target.checked as never)
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["showLogo", "Mostrar logo"],
-                ["showRnc", "Mostrar RNC"],
-                ["showPhone", "Mostrar telefono"],
-                ["showEmail", "Mostrar email"],
-                ["showAddress", "Mostrar direccion"],
-                ["showCustomer", "Mostrar cliente"],
-                ["showTax", "Mostrar impuesto"],
-              ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(values[key as keyof InvoiceSettingsResponse])}
-                    onChange={(event) =>
-                      update(key as keyof InvoiceSettingsResponse, event.target.checked as never)
-                    }
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-
-            <Button type="submit" disabled={mutation.isPending || !values.businessName?.trim()}>
-              <Save className="h-4 w-4" />
-              {mutation.isPending ? "Guardando..." : "Guardar factura"}
-            </Button>
-          </form>
-        )}
-      </CardContent>
+              <Button type="submit" disabled={mutation.isPending || !values.businessName?.trim()}>
+                <Save className="h-4 w-4" />
+                {mutation.isPending ? "Guardando..." : "Guardar factura"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
