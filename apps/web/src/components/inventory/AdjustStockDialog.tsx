@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import type { ProductResponse } from "@/types/product";
 
 const adjustSchema = z.object({
+  productId: z.string().min(1, "Producto requerido"),
   type: z.enum(["ENTRY", "EXIT", "ADJUSTMENT"]),
   quantity: z.coerce.number().int().positive("Cantidad debe ser mayor a cero"),
   reason: z.string().min(1, "Motivo requerido"),
@@ -22,14 +24,18 @@ type AdjustFormOutput = z.output<typeof adjustSchema>;
 
 interface AdjustStockDialogProps {
   branchId: string;
-  productId: string;
-  productName: string;
+  /** Preselected product (per-row trigger). Omit to let the user pick from `products` (page-level trigger). */
+  productId?: string;
+  productName?: string;
+  /** Required when `productId` is omitted, so the user can pick which product to adjust. */
+  products?: ProductResponse[];
   trigger: React.ReactNode;
 }
 
-export function AdjustStockDialog({ branchId, productId, productName, trigger }: AdjustStockDialogProps) {
+export function AdjustStockDialog({ branchId, productId, productName, products, trigger }: AdjustStockDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const needsProductPicker = !productId;
 
   const {
     register,
@@ -38,12 +44,12 @@ export function AdjustStockDialog({ branchId, productId, productName, trigger }:
     formState: { errors, isSubmitting },
   } = useForm<AdjustFormInput, unknown, AdjustFormOutput>({
     resolver: zodResolver(adjustSchema),
-    defaultValues: { type: "ENTRY", quantity: 1, reason: "" },
+    defaultValues: { productId: productId ?? "", type: "ENTRY", quantity: 1, reason: "" },
   });
 
   const mutation = useMutation({
     mutationFn: (values: AdjustFormOutput) =>
-      api.post("/api/inventory/movements", { branchId, productId, ...values }),
+      api.post("/api/inventory/movements", { branchId, ...values }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", branchId] });
       setOpen(false);
@@ -61,9 +67,27 @@ export function AdjustStockDialog({ branchId, productId, productName, trigger }:
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajustar stock de {productName}</DialogTitle>
+          <DialogTitle>{needsProductPicker ? "Ajustar stock" : `Ajustar stock de ${productName}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-4">
+          {needsProductPicker && (
+            <div className="space-y-2">
+              <Label htmlFor="adjust-product">Producto</Label>
+              <select
+                id="adjust-product"
+                {...register("productId")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona un producto</option>
+                {products?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.description}
+                  </option>
+                ))}
+              </select>
+              {errors.productId && <p className="text-sm text-destructive">{errors.productId.message}</p>}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="adjust-type">Tipo</Label>
             <select
