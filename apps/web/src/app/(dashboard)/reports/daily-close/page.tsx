@@ -34,11 +34,28 @@ function isoDate(date: Date): string {
 }
 
 function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
+  const amount = Number(value ?? 0);
+  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
 }
 
 function dateTime(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "-";
+}
+
+function numberValue(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function fieldValue(record: unknown, names: string[], fallback: string | number = 0): string | number {
+  const source = record as Record<string, unknown> | null | undefined;
+  for (const name of names) {
+    const value = source?.[name];
+    if (value !== undefined && value !== null && value !== "") {
+      return value as string | number;
+    }
+  }
+  return fallback;
 }
 
 function MetricCard({
@@ -166,10 +183,10 @@ export default function DailyCloseReportPage() {
             <p>{data.date} - {data.registerName}</p>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
-            <MetricCard label="Ingresos" value={money(data.grossRevenue)} icon={DollarSign} tone="primary" />
-            <MetricCard label="Efectivo esperado" value={money(data.cashExpected)} icon={Banknote} tone="success" />
-            <MetricCard label="Efectivo contado" value={money(data.cashCounted)} icon={Calculator} tone="info" />
-            <MetricCard label="Diferencia" value={money(data.cashDifference)} icon={Calculator} tone="warning" />
+            <MetricCard label="Ingresos" value={money(fieldValue(data, ["grossRevenue", "revenue", "totalRevenue", "salesTotal"]))} icon={DollarSign} tone="primary" />
+            <MetricCard label="Efectivo esperado" value={money(fieldValue(data, ["cashExpected", "expectedCash"]))} icon={Banknote} tone="success" />
+            <MetricCard label="Efectivo contado" value={money(fieldValue(data, ["cashCounted", "countedCash"]))} icon={Calculator} tone="info" />
+            <MetricCard label="Diferencia" value={money(fieldValue(data, ["cashDifference", "difference"]))} icon={Calculator} tone="warning" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -178,10 +195,10 @@ export default function DailyCloseReportPage() {
                 <CardTitle>Resumen</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-                <p>Ventas completadas: <span className="font-medium">{data.completedSales}</span></p>
-                <p>Ventas anuladas: <span className="font-medium">{data.voidedSales}</span></p>
-                <p>Impuesto: <span className="font-mono-money font-medium">{money(data.taxTotal)}</span></p>
-                <p>Descuento: <span className="font-mono-money font-medium">{money(data.discountTotal)}</span></p>
+                <p>Ventas completadas: <span className="font-medium">{numberValue(fieldValue(data, ["completedSales", "salesCount"]))}</span></p>
+                <p>Ventas anuladas: <span className="font-medium">{numberValue(fieldValue(data, ["voidedSales", "cancelledSales"]))}</span></p>
+                <p>Impuesto: <span className="font-mono-money font-medium">{money(fieldValue(data, ["taxTotal", "tax"]))}</span></p>
+                <p>Descuento: <span className="font-mono-money font-medium">{money(fieldValue(data, ["discountTotal", "discountAmount", "discount"]))}</span></p>
               </CardContent>
             </Card>
 
@@ -190,7 +207,7 @@ export default function DailyCloseReportPage() {
                 <CardTitle>Pagos</CardTitle>
               </CardHeader>
               <CardContent>
-                {data.payments.length === 0 ? (
+                {(data.payments ?? []).length === 0 ? (
                   <p className="text-sm text-muted-foreground">No hay pagos para esta fecha.</p>
                 ) : (
                   <table className="w-full text-sm">
@@ -202,11 +219,11 @@ export default function DailyCloseReportPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.payments.map((payment) => (
+                      {(data.payments ?? []).map((payment) => (
                         <tr key={payment.method} className="border-b last:border-b-0">
                           <td className="py-2"><PaymentMethodBadge method={payment.method} /></td>
-                          <td className="py-2 text-right">{payment.count}</td>
-                          <td className="py-2 text-right font-mono-money">{money(payment.amount)}</td>
+                          <td className="py-2 text-right">{numberValue(fieldValue(payment, ["count", "paymentsCount"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(payment, ["amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -221,7 +238,7 @@ export default function DailyCloseReportPage() {
               <CardTitle>Turnos incluidos</CardTitle>
             </CardHeader>
             <CardContent>
-              {data.shifts.length === 0 ? (
+              {(data.shifts ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">No hay turnos abiertos en esta fecha.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -237,14 +254,14 @@ export default function DailyCloseReportPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.shifts.map((shift) => (
+                      {(data.shifts ?? []).map((shift) => (
                         <tr key={shift.id} className="border-b last:border-b-0">
                           <td className="py-2">{shift.status}</td>
                           <td className="py-2">{dateTime(shift.openedAt)}</td>
                           <td className="py-2">{dateTime(shift.closedAt)}</td>
-                          <td className="py-2 text-right font-mono-money">{money(shift.expectedCash)}</td>
-                          <td className="py-2 text-right font-mono-money">{money(shift.countedCash)}</td>
-                          <td className="py-2 text-right font-mono-money">{money(shift.cashDifference)}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["expectedCash", "cashExpected"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["countedCash", "cashCounted"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["cashDifference", "difference"]))}</td>
                         </tr>
                       ))}
                     </tbody>

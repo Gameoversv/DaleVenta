@@ -56,11 +56,28 @@ function isoDate(date: Date): string {
 }
 
 function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
+  const amount = Number(value ?? 0);
+  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
 }
 
 function dateLabel(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString();
+}
+
+function numberValue(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function fieldValue(record: unknown, names: string[], fallback: string | number = 0): string | number {
+  const source = record as Record<string, unknown> | null | undefined;
+  for (const name of names) {
+    const value = source?.[name];
+    if (value !== undefined && value !== null && value !== "") {
+      return value as string | number;
+    }
+  }
+  return fallback;
 }
 
 export default function SalesReportPage() {
@@ -82,6 +99,10 @@ export default function SalesReportPage() {
   const dailySales = data?.dailySales ?? [];
   const payments = data?.payments ?? [];
   const topProducts = data?.topProducts ?? [];
+  const completedSales = numberValue(fieldValue(data, ["completedSales", "salesCount"]));
+  const voidedSales = numberValue(fieldValue(data, ["voidedSales", "cancelledSales"]));
+  const grossRevenue = fieldValue(data, ["grossRevenue", "revenue", "totalRevenue", "salesTotal"]);
+  const averageTicket = fieldValue(data, ["averageTicket", "avgTicket"]);
 
   if (!canViewReports) {
     return (
@@ -125,10 +146,10 @@ export default function SalesReportPage() {
       {data && (
         <>
           <div className="grid gap-4 md:grid-cols-4">
-            <MetricCard label="Ingresos" value={money(data.grossRevenue)} icon={DollarSign} tone="primary" />
-            <MetricCard label="Ventas completadas" value={String(data.completedSales)} icon={Receipt} tone="success" />
-            <MetricCard label="Ticket promedio" value={money(data.averageTicket)} icon={Ticket} tone="info" />
-            <MetricCard label="Anuladas" value={String(data.voidedSales)} icon={XCircle} tone="danger" />
+            <MetricCard label="Ingresos" value={money(grossRevenue)} icon={DollarSign} tone="primary" />
+            <MetricCard label="Ventas completadas" value={String(completedSales)} icon={Receipt} tone="success" />
+            <MetricCard label="Ticket promedio" value={money(averageTicket)} icon={Ticket} tone="info" />
+            <MetricCard label="Anuladas" value={String(voidedSales)} icon={XCircle} tone="danger" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -150,8 +171,8 @@ export default function SalesReportPage() {
                       {dailySales.map((day) => (
                         <tr key={day.date} className="border-b last:border-b-0">
                           <td className="py-2">{dateLabel(day.date)}</td>
-                          <td className="py-2 text-right">{day.salesCount}</td>
-                          <td className="py-2 text-right font-mono-money">{money(day.revenue)}</td>
+                          <td className="py-2 text-right">{numberValue(fieldValue(day, ["salesCount", "count"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(day, ["revenue", "amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -183,8 +204,8 @@ export default function SalesReportPage() {
                             <td className="py-2">
                               <PaymentMethodBadge method={payment.method} />
                             </td>
-                            <td className="py-2 text-right">{payment.paymentsCount}</td>
-                            <td className="py-2 text-right font-mono-money">{money(payment.amount)}</td>
+                            <td className="py-2 text-right">{numberValue(fieldValue(payment, ["paymentsCount", "count"]))}</td>
+                            <td className="py-2 text-right font-mono-money">{money(fieldValue(payment, ["amount", "total"]))}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -216,8 +237,8 @@ export default function SalesReportPage() {
                       {topProducts.map((product) => (
                         <tr key={product.productId} className="border-b last:border-b-0">
                           <td className="py-2">{product.productName}</td>
-                          <td className="py-2 text-right">{product.quantity}</td>
-                          <td className="py-2 text-right font-mono-money">{money(product.revenue)}</td>
+                          <td className="py-2 text-right">{numberValue(fieldValue(product, ["quantity", "count"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{money(fieldValue(product, ["revenue", "amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
