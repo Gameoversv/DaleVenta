@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Banknote, Landmark, Wallet2 } from "lucide-react";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +54,12 @@ interface CheckoutPanelProps {
   isSubmitting: boolean;
   onConfirm: (payment: PaymentRequest, discountAmount: number) => void;
 }
+
+const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Banknote; activeClass: string }> = [
+  { id: "CASH", label: "Efectivo", icon: Banknote, activeClass: "border-cash bg-cash/10 text-cash" },
+  { id: "TRANSFER", label: "Transferencia", icon: Landmark, activeClass: "border-transfer bg-transfer/10 text-transfer" },
+  { id: "CREDIT", label: "Credito", icon: Wallet2, activeClass: "border-credit bg-credit/10 text-credit" },
+];
 
 export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled, isSubmitting, onConfirm }: CheckoutPanelProps) {
   const canDiscount = usePermission("SALE_DISCOUNT");
@@ -128,30 +136,36 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
             />
           </div>
         )}
-        <p className="text-sm font-medium">Total a cobrar: RD${total.toFixed(2)}</p>
-        <div className="flex gap-2">
-          <Button type="button" variant={method === "CASH" ? "default" : "outline"} size="sm" onClick={() => setMethod("CASH")}>
-            Efectivo
-          </Button>
-          <Button
-            type="button"
-            variant={method === "TRANSFER" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMethod("TRANSFER")}
-          >
-            Transferencia
-          </Button>
-          <Button
-            type="button"
-            variant={method === "CREDIT" ? "default" : "outline"}
-            size="sm"
-            disabled={!customer}
-            title={!customer ? "Selecciona un cliente para vender a credito" : undefined}
-            onClick={() => setMethod("CREDIT")}
-          >
-            Credito
-          </Button>
+
+        <div className="rounded-xl bg-primary/5 p-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total a cobrar</p>
+          <p className="font-mono-money font-display text-4xl font-extrabold text-primary">RD${total.toFixed(2)}</p>
         </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {METHOD_TILES.map((tile) => {
+            const Icon = tile.icon;
+            const active = method === tile.id;
+            const isCreditDisabled = tile.id === "CREDIT" && !customer;
+            return (
+              <button
+                key={tile.id}
+                type="button"
+                disabled={isCreditDisabled}
+                title={isCreditDisabled ? "Selecciona un cliente para vender a credito" : undefined}
+                onClick={() => setMethod(tile.id)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                  active ? tile.activeClass : "border-border text-muted-foreground hover:bg-secondary"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {tile.label}
+              </button>
+            );
+          })}
+        </div>
+
         {method === "CASH" ? (
           <div className="space-y-3">
             <DenominationCountGrid onChange={setReceivedEntries} />
@@ -209,7 +223,7 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
             )}
           </div>
         )}
-        <Button disabled={!canConfirm} onClick={handleConfirm}>
+        <Button size="lg" className="w-full" variant="accent" disabled={!canConfirm} onClick={handleConfirm}>
           {isSubmitting ? "Cobrando..." : "Cobrar"}
         </Button>
       </CardContent>

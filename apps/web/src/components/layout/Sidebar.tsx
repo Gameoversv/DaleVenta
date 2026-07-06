@@ -1,44 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Package,
-  Boxes,
-  Wallet,
-  ShoppingCart,
-  Users,
-  ReceiptText,
-  History,
-  Settings,
-  BarChart3,
-} from "lucide-react";
+import Link from "next/link";
+import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
-import type { PermissionCode } from "@/types/auth";
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  permission?: PermissionCode;
-  anyPermission?: PermissionCode[];
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "DASHBOARD_VIEW" },
-  { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
-  { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
-  { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
-  { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
-  { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
-  { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
-  { href: "/cash-shift/history", label: "Historial Caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
-  { href: "/pos", label: "POS", icon: ShoppingCart, permission: "SALE_CREATE" },
-  { href: "/sales", label: "Ventas", icon: ReceiptText, anyPermission: ["SALE_VIEW_HISTORY", "SALE_CREATE"] },
-  { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_VIEW" },
-];
+import { NAV_SECTIONS, type NavItem, type NavSection } from "@/components/layout/nav";
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
@@ -46,12 +13,13 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent",
-        active && "bg-sidebar-accent text-foreground"
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
+        active && "bg-sidebar-accent text-sidebar-foreground"
       )}
     >
-      <Icon className="h-4 w-4" />
-      {item.label}
+      {active && <span className="absolute left-0 top-1/2 h-4 -translate-y-1/2 w-0.5 rounded-full bg-sidebar-primary" />}
+      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-sidebar-primary" : "text-sidebar-foreground/50")} />
+      <span className="truncate">{item.label}</span>
     </Link>
   );
 }
@@ -71,21 +39,42 @@ function AnyGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
   return <NavLink item={item} active={active} />;
 }
 
+function NavSectionBlock({ section, pathname }: { section: NavSection; pathname: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+        {section.label}
+      </p>
+      {section.items.map((item) => {
+        if (item.anyPermission) {
+          return <AnyGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+        }
+        if (item.permission) {
+          return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+        }
+        return <NavLink key={item.href} item={item} active={pathname === item.href} />;
+      })}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
-      <nav className="flex flex-col gap-1 p-4">
-        {NAV_ITEMS.map((item) => {
-          if (item.anyPermission) {
-            return <AnyGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-          }
-          if (item.permission) {
-            return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-          }
-          return <NavLink key={item.href} item={item} active={pathname === item.href} />;
-        })}
+    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
+      <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/15">
+          <Zap className="h-4 w-4 text-sidebar-primary" />
+        </div>
+        <div className="leading-tight">
+          <p className="font-display text-sm font-bold text-sidebar-foreground">DaleVenta</p>
+        </div>
+      </div>
+      <nav className="flex flex-col gap-5 p-4">
+        {NAV_SECTIONS.map((section) => (
+          <NavSectionBlock key={section.label} section={section} pathname={pathname} />
+        ))}
       </nav>
     </aside>
   );

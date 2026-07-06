@@ -5,40 +5,117 @@
 :root {
   color-scheme: light;
 
-  --background: #ffffff;
-  --foreground: #18181b;
+  /* DaleVenta brand: warm teal-emerald primary, cream surface, coral accent. */
+  --background: #faf7f2;
+  --foreground: #1c2320;
 
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: #1c2320;
 
   --popover: #ffffff;
-  --popover-foreground: #18181b;
+  --popover-foreground: #1c2320;
 
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --primary: #0f6b5c;
+  --primary-foreground: #f6fdfb;
 
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
+  --secondary: #eef0ea;
+  --secondary-foreground: #1c2320;
 
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
+  --muted: #f1ede4;
+  --muted-foreground: #6b6459;
 
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  /* shadcn-internal neutral hover surface (dropdown/dialog/nav hover states) */
+  --accent: #f1ede4;
+  --accent-foreground: #1c2320;
 
-  --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
+  /* DaleVenta brand coral - reserved for CTAs, highlighted actions, badges */
+  --brand-accent: #e8734a;
+  --brand-accent-foreground: #fff8f4;
 
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #a1a1aa;
+  --destructive: #dc2626;
+  --destructive-foreground: #fef2f2;
 
-  --sidebar: #fafafa;
-  --sidebar-foreground: #3f3f46;
-  --sidebar-accent: #f0f0f1;
-  --sidebar-border: #e4e4e7;
+  --border: #e7e1d4;
+  --input: #e7e1d4;
+  --ring: #0f6b5c;
 
-  --radius: 0.5rem;
+  --success: #16a34a;
+  --success-foreground: #f0fdf4;
+  --warning: #d97706;
+  --warning-foreground: #fffbeb;
+  --info: #2563eb;
+  --info-foreground: #eff6ff;
+  --credit: #7c3aed;
+  --credit-foreground: #f5f3ff;
+  --cash: #16a34a;
+  --transfer: #2563eb;
+
+  --sidebar: #14211d;
+  --sidebar-foreground: #cfe0da;
+  --sidebar-accent: #1e3730;
+  --sidebar-border: #23372f;
+  --sidebar-primary: #2fae93;
+
+  --radius: 0.75rem;
+
+  --shadow-card: 0 1px 2px 0 rgb(28 35 32 / 0.04), 0 1px 3px 0 rgb(28 35 32 / 0.06);
+  --shadow-elevated: 0 4px 12px -2px rgb(28 35 32 / 0.08), 0 2px 4px -2px rgb(28 35 32 / 0.05);
+}
+
+:root[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+
+  --background: #101614;
+  --foreground: #eef3f0;
+
+  --card: #171f1c;
+  --card-foreground: #eef3f0;
+
+  --popover: #171f1c;
+  --popover-foreground: #eef3f0;
+
+  --primary: #2fae93;
+  --primary-foreground: #0a1512;
+
+  --secondary: #1e2622;
+  --secondary-foreground: #eef3f0;
+
+  --muted: #1a211e;
+  --muted-foreground: #9aa39d;
+
+  --accent: #1e2622;
+  --accent-foreground: #eef3f0;
+
+  --brand-accent: #ef8f66;
+  --brand-accent-foreground: #1c1008;
+
+  --destructive: #f87171;
+  --destructive-foreground: #2a0a0a;
+
+  --border: #263029;
+  --input: #263029;
+  --ring: #2fae93;
+
+  --success: #4ade80;
+  --success-foreground: #06210f;
+  --warning: #fbbf24;
+  --warning-foreground: #2b1c02;
+  --info: #60a5fa;
+  --info-foreground: #071b36;
+  --credit: #a78bfa;
+  --credit-foreground: #1c1330;
+  --cash: #4ade80;
+  --transfer: #60a5fa;
+
+  --sidebar: #0c1412;
+  --sidebar-foreground: #b9c9c2;
+  --sidebar-accent: #182521;
+  --sidebar-border: #1c2925;
+  --sidebar-primary: #2fae93;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 0 rgb(0 0 0 / 0.4);
+  --shadow-elevated: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
@@ -56,21 +133,55 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-credit: var(--credit);
+  --color-credit-foreground: var(--credit-foreground);
+  --color-cash: var(--cash);
+  --color-transfer: var(--transfer);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-primary: var(--sidebar-primary);
+
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-elevated: var(--shadow-elevated);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.font-mono-money {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }

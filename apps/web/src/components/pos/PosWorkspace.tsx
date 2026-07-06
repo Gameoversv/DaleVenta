@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SaleWorkspace } from "./SaleWorkspace";
 import type { CashShiftSummaryResponse } from "@/types/cash-shift";
 
@@ -33,14 +35,20 @@ export function PosWorkspace({ registerId }: { registerId: string }) {
 
   if (!currentShift) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No hay turno abierto en esta caja</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Link href="/cash-shift" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-            Abrir turno
-          </Link>
+      <Card className="mx-auto max-w-md">
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
+            <Wallet className="h-6 w-6 text-warning" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-display text-base font-semibold">Turno de caja cerrado</p>
+            <p className="text-sm text-muted-foreground">
+              Debes abrir una caja antes de iniciar ventas.
+            </p>
+          </div>
+          <Button asChild className="mt-2">
+            <Link href="/cash-shift">Abrir turno</Link>
+          </Button>
         </CardContent>
       </Card>
     );

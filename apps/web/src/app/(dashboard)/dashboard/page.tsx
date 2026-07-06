@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Boxes, CircleDollarSign, ShoppingCart, Users, Wallet, AlertTriangle } from "lucide-react";
+import { Boxes, CircleDollarSign, ShoppingCart, Users, Wallet, AlertTriangle, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSummaryResponse } from "@/types/dashboard";
 
@@ -28,22 +29,42 @@ interface MetricCardProps {
   detail: string;
   href: string;
   icon: typeof ShoppingCart;
+  tone?: "primary" | "success" | "warning" | "info" | "credit";
 }
 
-function MetricCard({ title, value, detail, href, icon: Icon }: MetricCardProps) {
+const TONE_STYLES: Record<NonNullable<MetricCardProps["tone"]>, string> = {
+  primary: "bg-primary/10 text-primary",
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  info: "bg-info/10 text-info",
+  credit: "bg-credit/10 text-credit",
+};
+
+function MetricCard({ title, value, detail, href, icon: Icon, tone = "primary" }: MetricCardProps) {
   return (
-    <Link href={href} className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Card className="h-full transition-colors hover:bg-accent/40">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-semibold">{value}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
+    <Link href={href} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card className="h-full transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)]">
+        <CardContent className="flex items-start justify-between gap-3 p-5">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="font-mono-money font-display text-2xl font-bold tracking-tight">{value}</p>
+            <p className="truncate text-xs text-muted-foreground">{detail}</p>
+          </div>
+          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", TONE_STYLES[tone])}>
+            <Icon className="h-5 w-5" />
+          </div>
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="font-mono-money text-sm font-semibold">{value}</span>
+    </div>
   );
 }
 
@@ -59,7 +80,7 @@ export default function DashboardPage() {
   if (!canView) {
     return (
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="font-display text-2xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">No tienes permiso para ver el dashboard.</p>
       </div>
     );
@@ -67,23 +88,34 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Bienvenido, {user?.name}</p>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Hola, {user?.name?.split(" ")[0]}</h1>
+          <p className="text-sm text-muted-foreground">Este es el resumen de tu negocio hoy.</p>
+        </div>
+        <div className="hidden items-center gap-1.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-medium text-success sm:flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          Sistema operativo
+        </div>
       </div>
 
       {isLoading && <p className="text-muted-foreground">Cargando resumen...</p>}
-      {isError && <p className="text-sm text-destructive">No se pudo cargar el resumen del negocio.</p>}
+      {isError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          No se pudo cargar el resumen del negocio. Intenta de nuevo en unos segundos.
+        </div>
+      )}
 
       {data && (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <MetricCard
               title="Ventas de hoy"
               value={data.salesToday.toString()}
               detail={`${formatMoney(data.revenueToday)} facturados`}
               href="/pos"
               icon={ShoppingCart}
+              tone="primary"
             />
             <MetricCard
               title="Cajas abiertas"
@@ -91,6 +123,7 @@ export default function DashboardPage() {
               detail="Turnos actualmente en operacion"
               href="/cash-shift"
               icon={Wallet}
+              tone="success"
             />
             <MetricCard
               title="Stock bajo"
@@ -98,68 +131,56 @@ export default function DashboardPage() {
               detail="Productos por debajo del minimo"
               href="/inventory"
               icon={AlertTriangle}
+              tone="warning"
             />
             <MetricCard
               title="Clientes activos"
               value={data.activeCustomers.toString()}
-              detail="Clientes disponibles para venta y credito"
+              detail="Disponibles para venta y credito"
               href="/customers"
               icon={Users}
+              tone="info"
             />
             <MetricCard
               title="Cuentas por cobrar"
               value={formatMoney(data.accountsReceivable)}
               detail="Balance pendiente de clientes"
-              href="/customers"
+              href="/reports/accounts-receivable"
               icon={CircleDollarSign}
+              tone="credit"
             />
             <MetricCard
               title="Inventario"
-              value="Ver"
-              detail="Consulta existencias por sucursal"
+              value="Ver detalle"
+              detail="Existencias por sucursal"
               href="/inventory"
               icon={Boxes}
+              tone="primary"
             />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <TrendingUp className="h-4 w-4 text-primary" />
                 <CardTitle>Operacion de hoy</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <span className="text-muted-foreground">Ingresos registrados</span>
-                  <span className="font-medium">{formatMoney(data.revenueToday)}</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <span className="text-muted-foreground">Ventas completadas</span>
-                  <span className="font-medium">{data.salesToday}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Turnos abiertos</span>
-                  <span className="font-medium">{data.openCashShifts}</span>
-                </div>
+              <CardContent className="pt-0">
+                <DetailRow label="Ingresos registrados" value={formatMoney(data.revenueToday)} />
+                <DetailRow label="Ventas completadas" value={data.salesToday.toString()} />
+                <DetailRow label="Turnos abiertos" value={data.openCashShifts.toString()} />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 <CardTitle>Atencion requerida</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <span className="text-muted-foreground">Productos con stock bajo</span>
-                  <span className="font-medium">{data.lowStockItems}</span>
-                </div>
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <span className="text-muted-foreground">Balance pendiente</span>
-                  <span className="font-medium">{formatMoney(data.accountsReceivable)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Clientes activos</span>
-                  <span className="font-medium">{data.activeCustomers}</span>
-                </div>
+              <CardContent className="pt-0">
+                <DetailRow label="Productos con stock bajo" value={data.lowStockItems.toString()} />
+                <DetailRow label="Balance pendiente" value={formatMoney(data.accountsReceivable)} />
+                <DetailRow label="Clientes activos" value={data.activeCustomers.toString()} />
               </CardContent>
             </Card>
           </div>
