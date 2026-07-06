@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,14 @@ function dateOnly(value: string | null): string {
 
 const STATUSES: TenantStatus[] = ["PENDING", "TRIAL", "ACTIVE", "SUSPENDED", "CANCELLED"];
 const PLANS: TenantPlan[] = ["STARTER", "PRO", "ENTERPRISE"];
+
+const STATUS_VARIANT: Record<TenantStatus, "warning" | "info" | "success" | "danger" | "secondary"> = {
+  PENDING: "warning",
+  TRIAL: "info",
+  ACTIVE: "success",
+  SUSPENDED: "danger",
+  CANCELLED: "secondary",
+};
 
 function ExtendTrialDialog({ tenantId }: { tenantId: string }) {
   const [open, setOpen] = useState(false);
@@ -125,9 +134,12 @@ export default function SuperAdminTenantDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-          <p className="text-sm text-muted-foreground">{tenant.slug}</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight">{tenant.name}</h1>
+            <p className="text-sm text-muted-foreground">{tenant.slug}</p>
+          </div>
+          <Badge variant={STATUS_VARIANT[tenant.status]}>{tenant.status}</Badge>
         </div>
         <div className="flex gap-2">
           {tenant.status === "PENDING" && (
@@ -223,10 +235,14 @@ export default function SuperAdminTenantDetailPage() {
               </thead>
               <tbody>
                 {tenant.owners.map((owner) => (
-                  <tr key={owner.id} className="border-b border-border">
+                  <tr key={owner.id} className="border-b border-border last:border-0">
                     <td className="py-2">{owner.name}</td>
-                    <td className="py-2">{owner.email}</td>
-                    <td className="py-2">{owner.active ? "Activo" : "Inactivo"}</td>
+                    <td className="py-2 text-muted-foreground">{owner.email}</td>
+                    <td className="py-2">
+                      <Badge variant={owner.active ? "success" : "secondary"}>
+                        {owner.active ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import api from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { AdminActionResponse } from "@/types/superadmin";
 
 interface AuditPage {
@@ -30,35 +31,37 @@ export default function SuperAdminAuditPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Auditoria</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Auditoria</h1>
+        <p className="text-sm text-muted-foreground">{total} acciones registradas</p>
+      </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>{total} acciones registradas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
+        <CardContent className="p-0">
+          {isLoading && <p className="p-6 text-sm text-muted-foreground">Cargando...</p>}
           {entries.length === 0 && !isLoading && (
-            <p className="text-sm text-muted-foreground">Sin acciones registradas.</p>
+            <p className="p-6 text-sm text-muted-foreground">Sin acciones registradas.</p>
           )}
           {entries.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="py-2">Fecha</th>
-                    <th className="py-2">Actor</th>
-                    <th className="py-2">Accion</th>
-                    <th className="py-2">Detalle</th>
+                    <th className="px-4 py-3">Fecha</th>
+                    <th className="px-4 py-3">Actor</th>
+                    <th className="px-4 py-3">Accion</th>
+                    <th className="px-4 py-3">Detalle</th>
                   </tr>
                 </thead>
                 <tbody>
                   {entries.map((a) => (
-                    <tr key={a.id} className="border-b border-border">
-                      <td className="py-2">{dateTime(a.createdAt)}</td>
-                      <td className="py-2">{a.actorEmail}</td>
-                      <td className="py-2 font-medium">{a.action}</td>
-                      <td className="py-2 text-muted-foreground">{a.detail ?? "-"}</td>
+                    <tr key={a.id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 text-muted-foreground">{dateTime(a.createdAt)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{a.actorEmail}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline">{a.action}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{a.detail ?? "-"}</td>
                     </tr>
                   ))}
                 </tbody>

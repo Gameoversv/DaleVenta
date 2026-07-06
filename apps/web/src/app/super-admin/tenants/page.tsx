@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { ChevronDown, CheckCircle, LogIn } from "lucide-react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,12 +52,12 @@ const STATUS_LABELS: Record<TenantStatus, string> = {
   CANCELLED: "Cancelado",
 };
 
-const STATUS_COLORS: Record<TenantStatus, string> = {
-  PENDING: "bg-violet-500/15 text-violet-600",
-  TRIAL: "bg-amber-500/15 text-amber-600",
-  ACTIVE: "bg-emerald-500/15 text-emerald-600",
-  SUSPENDED: "bg-orange-500/15 text-orange-600",
-  CANCELLED: "bg-rose-500/15 text-rose-600",
+const STATUS_VARIANT: Record<TenantStatus, "warning" | "info" | "success" | "danger" | "secondary"> = {
+  PENDING: "warning",
+  TRIAL: "info",
+  ACTIVE: "success",
+  SUSPENDED: "danger",
+  CANCELLED: "secondary",
 };
 
 function dateOnly(value: string | null): string {
@@ -134,7 +135,7 @@ export default function SuperAdminTenantsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Tenants</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Tenants</h1>
         <p className="text-sm text-muted-foreground">{total} tenants registrados</p>
       </div>
 
@@ -156,50 +157,45 @@ export default function SuperAdminTenantsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Tenants</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
-          {isError && <p className="text-sm text-destructive">No se pudieron cargar los tenants.</p>}
+        <CardContent className="p-0">
+          {isLoading && <p className="p-6 text-sm text-muted-foreground">Cargando...</p>}
+          {isError && <p className="p-6 text-sm text-destructive">No se pudieron cargar los tenants.</p>}
           {tenants.length === 0 && !isLoading && (
-            <p className="text-sm text-muted-foreground">No hay tenants para este filtro.</p>
+            <p className="p-6 text-sm text-muted-foreground">No hay tenants para este filtro.</p>
           )}
           {tenants.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="py-2">Nombre</th>
-                    <th className="py-2">Plan</th>
-                    <th className="py-2">Estado</th>
-                    <th className="py-2">Trial vence</th>
-                    <th className="py-2 text-right">Usuarios</th>
-                    <th className="py-2 text-right">Clientes</th>
-                    <th className="py-2">Creado</th>
-                    <th className="py-2"></th>
+                    <th className="px-4 py-3">Nombre</th>
+                    <th className="px-4 py-3">Plan</th>
+                    <th className="px-4 py-3">Estado</th>
+                    <th className="px-4 py-3">Trial vence</th>
+                    <th className="px-4 py-3 text-right">Usuarios</th>
+                    <th className="px-4 py-3 text-right">Clientes</th>
+                    <th className="px-4 py-3">Creado</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {tenants.map((t) => (
-                    <tr key={t.id} className="border-b border-border">
-                      <td className="py-2">
+                    <tr key={t.id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3">
                         <Link href={`/super-admin/tenants/${t.id}`} className="font-medium hover:underline">
                           {t.name}
                         </Link>
                         <p className="text-xs text-muted-foreground">{t.slug}</p>
                       </td>
-                      <td className="py-2">{t.plan}</td>
-                      <td className="py-2">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[t.status]}`}>
-                          {STATUS_LABELS[t.status]}
-                        </span>
+                      <td className="px-4 py-3 text-muted-foreground">{t.plan}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_VARIANT[t.status]}>{STATUS_LABELS[t.status]}</Badge>
                       </td>
-                      <td className="py-2">{dateOnly(t.trialEndsAt)}</td>
-                      <td className="py-2 text-right">{t.userCount}</td>
-                      <td className="py-2 text-right">{t.customerCount}</td>
-                      <td className="py-2">{dateOnly(t.createdAt)}</td>
-                      <td className="py-2">
+                      <td className="px-4 py-3 text-muted-foreground">{dateOnly(t.trialEndsAt)}</td>
+                      <td className="px-4 py-3 text-right">{t.userCount}</td>
+                      <td className="px-4 py-3 text-right">{t.customerCount}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{dateOnly(t.createdAt)}</td>
+                      <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           {t.status === "PENDING" && (
                             <Button
