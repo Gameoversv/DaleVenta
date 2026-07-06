@@ -30,11 +30,32 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
 
 async function fetchInvoiceSettings(): Promise<InvoiceSettingsResponse> {
   const res = await api.get<{ data: InvoiceSettingsResponse }>("/api/settings/invoice");
-  return res.data.data;
+  return normalizeInvoiceSettings(res.data.data);
 }
 
 function denominationTypeLabel(type: DenominationType) {
   return type === "BILL" ? "Billete" : "Moneda";
+}
+
+function normalizeInvoiceSettings(raw: Partial<InvoiceSettingsResponse> & { name?: string } = {}): InvoiceSettingsResponse {
+  return {
+    businessName: raw.businessName ?? raw.name ?? "",
+    rnc: raw.rnc ?? null,
+    phone: raw.phone ?? null,
+    email: raw.email ?? null,
+    address: raw.address ?? null,
+    city: raw.city ?? null,
+    logoUrl: raw.logoUrl ?? null,
+    footerMessage: raw.footerMessage ?? null,
+    printSize: raw.printSize ?? "LETTER",
+    showLogo: raw.showLogo ?? true,
+    showRnc: raw.showRnc ?? true,
+    showPhone: raw.showPhone ?? true,
+    showEmail: raw.showEmail ?? true,
+    showAddress: raw.showAddress ?? true,
+    showCustomer: raw.showCustomer ?? true,
+    showTax: raw.showTax ?? true,
+  };
 }
 
 function CreateDenominationDialog() {
@@ -131,9 +152,9 @@ function InvoiceSettingsCard() {
     queryFn: fetchInvoiceSettings,
   });
 
-  const values = form ?? data;
+  const values = form ?? (data ? normalizeInvoiceSettings(data) : null);
   const mutation = useMutation({
-    mutationFn: (payload: InvoiceSettingsResponse) => api.put("/api/settings/invoice", payload),
+    mutationFn: (payload: InvoiceSettingsResponse) => api.put("/api/settings/invoice", normalizeInvoiceSettings(payload)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoice-settings"] });
       queryClient.invalidateQueries({ queryKey: ["invoice"] });
@@ -149,7 +170,7 @@ function InvoiceSettingsCard() {
   });
 
   const update = <K extends keyof InvoiceSettingsResponse>(key: K, value: InvoiceSettingsResponse[K]) => {
-    setForm((current) => ({ ...(current ?? data!), [key]: value }));
+    setForm((current) => ({ ...normalizeInvoiceSettings(current ?? data), [key]: value }));
   };
 
   return (
@@ -248,7 +269,7 @@ function InvoiceSettingsCard() {
               ))}
             </div>
 
-            <Button type="submit" disabled={mutation.isPending || !values.businessName.trim()}>
+            <Button type="submit" disabled={mutation.isPending || !values.businessName?.trim()}>
               <Save className="h-4 w-4" />
               {mutation.isPending ? "Guardando..." : "Guardar factura"}
             </Button>
