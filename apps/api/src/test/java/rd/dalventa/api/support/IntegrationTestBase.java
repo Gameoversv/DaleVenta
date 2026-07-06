@@ -29,6 +29,7 @@ import rd.dalventa.api.sale.repository.TransferPaymentDetailRepository;
 import rd.dalventa.api.credit.repository.CustomerCreditProfileRepository;
 import rd.dalventa.api.credit.repository.CreditAccountRepository;
 import rd.dalventa.api.credit.repository.CreditTransactionRepository;
+import rd.dalventa.api.audit.repository.AuditLogRepository;
 
 import java.util.Map;
 
@@ -63,8 +64,10 @@ public abstract class IntegrationTestBase {
     @Autowired protected CustomerCreditProfileRepository customerCreditProfileRepository;
     @Autowired protected CreditAccountRepository creditAccountRepository;
     @Autowired protected CreditTransactionRepository creditTransactionRepository;
+    @Autowired protected AuditLogRepository auditLogRepository;
 
     protected void cleanAll() {
+        auditLogRepository.deleteAll();
         customerCreditProfileRepository.deleteAll();
         creditTransactionRepository.deleteAll();
         creditAccountRepository.deleteAll();

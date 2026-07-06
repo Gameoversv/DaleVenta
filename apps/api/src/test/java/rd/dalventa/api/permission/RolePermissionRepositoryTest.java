@@ -22,8 +22,8 @@ class RolePermissionRepositoryTest {
 
     @Test
     void findByRole_returnsOnlyThatRolesPermissions() {
-        // The migration seeds CASHIER with: INVENTORY_VIEW, SALE_CREATE, CASHSHIFT_OPEN,
-        // CASHSHIFT_CLOSE, CUSTOMER_CREATE, CREDIT_RECEIVE_PAYMENT
+        // The migrations seed CASHIER with: INVENTORY_VIEW, SALE_CREATE, CASHSHIFT_OPEN,
+        // CASHSHIFT_CLOSE, CUSTOMER_VIEW, CREDIT_RECEIVE_PAYMENT
         // and ADMIN with all permissions.
         // This test verifies the repository can filter by role correctly.
 
@@ -39,7 +39,7 @@ class RolePermissionRepositoryTest {
                         PermissionCode.SALE_CREATE,
                         PermissionCode.CASHSHIFT_OPEN,
                         PermissionCode.CASHSHIFT_CLOSE,
-                        PermissionCode.CUSTOMER_CREATE,
+                        PermissionCode.CUSTOMER_VIEW,
                         PermissionCode.CREDIT_RECEIVE_PAYMENT);
 
         // Verify ADMIN has more permissions than CASHIER

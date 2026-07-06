@@ -47,8 +47,9 @@ class BranchIntegrationTest extends IntegrationTestBase {
 
         mockMvc.perform(get("/api/branches").header("Authorization", "Bearer " + tokenA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].name").value("Sucursal A"));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[?(@.name == 'Sucursal A')].name").value("Sucursal A"))
+                .andExpect(jsonPath("$.data[?(@.name == 'Sucursal B')]").isEmpty());
     }
 
     @Test

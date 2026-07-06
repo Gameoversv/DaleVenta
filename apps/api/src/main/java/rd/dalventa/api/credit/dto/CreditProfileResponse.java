@@ -13,6 +13,7 @@ public record CreditProfileResponse(
         @JsonProperty("creditLimit") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal creditLimit
 ) {
     public static CreditProfileResponse from(CustomerCreditProfile profile) {
-        return new CreditProfileResponse(profile.getCustomerId(), profile.isCreditEnabled(), profile.getCreditLimit());
+        var limit = profile.getCreditLimit() != null ? profile.getCreditLimit() : BigDecimal.ZERO.setScale(2);
+        return new CreditProfileResponse(profile.getCustomerId(), profile.isCreditEnabled(), limit);
     }
 }
