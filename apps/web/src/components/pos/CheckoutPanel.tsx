@@ -99,7 +99,11 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
   });
 
   const creditAvailable =
-    creditProfile && creditAccount ? Number(creditProfile.creditLimit) - Number(creditAccount.balance) : null;
+    creditProfile && creditAccount
+      ? creditProfile.creditLimit == null
+        ? Infinity
+        : Number(creditProfile.creditLimit) - Number(creditAccount.balance)
+      : null;
   const creditEligible = !!customer && creditProfile?.creditEnabled === true;
   const creditWithinLimit = creditAvailable !== null && total <= creditAvailable;
 
@@ -213,9 +217,12 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
             {customer && creditEligible && creditAccount && creditProfile && (
               <>
                 <p className="text-sm">
-                  Balance actual: RD${creditAccount.balance} · Limite: RD${creditProfile.creditLimit}
+                  Balance actual: RD${creditAccount.balance} · Limite:{" "}
+                  {creditProfile.creditLimit == null ? "Sin limite" : `RD$${creditProfile.creditLimit}`}
                 </p>
-                <p className="text-sm font-medium">Disponible: RD${creditAvailable?.toFixed(2)}</p>
+                <p className="text-sm font-medium">
+                  Disponible: {creditAvailable === Infinity ? "Sin limite" : `RD$${creditAvailable?.toFixed(2)}`}
+                </p>
                 {!creditWithinLimit && (
                   <p className="text-sm text-destructive">Excede el credito disponible.</p>
                 )}
