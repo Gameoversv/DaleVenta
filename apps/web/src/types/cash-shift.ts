@@ -1,0 +1,51 @@
+export interface DenominationResponse {
+  id: string;
+  value: string;
+  type: "BILL" | "COIN";
+  active: boolean;
+}
+
+export interface DenominationCountEntry {
+  denominationId: string;
+  quantity: number;
+}
+
+export type CashShiftStatus = "OPEN" | "CLOSED";
+
+export interface CashShiftDenominationEntry {
+  denominationId: string;
+  openingQuantity: number;
+  currentQuantity: number;
+  closingQuantity: number | null;
+}
+
+export interface CashShiftSummaryResponse {
+  id: string;
+  registerId: string;
+  status: CashShiftStatus;
+  openedAt: string;
+  closedAt: string | null;
+  openingTotal: string;
+  expectedCash: string | null;
+  countedCash: string | null;
+  cashDifference: string | null;
+  denominations: CashShiftDenominationEntry[];
+}
+
+export interface OpenCashShiftRequest {
+  registerId: string;
+  openingCounts: DenominationCountEntry[];
+}
+
+export type CashMovementType = "ENTRY" | "WITHDRAWAL" | "EXPENSE";
+
+export interface CreateCashMovementRequest {
+  type: CashMovementType;
+  reason: string;
+  denominations: DenominationCountEntry[];
+}
+
+export interface CloseCashShiftRequest {
+  closingCounts: DenominationCountEntry[];
+  closingNotes?: string;
+}
