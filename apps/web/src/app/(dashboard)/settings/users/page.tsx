@@ -44,6 +44,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   USERS_MANAGE: "Administrar usuarios",
   SETTINGS_MANAGE: "Administrar ajustes",
   AUDIT_VIEW: "Ver auditoria",
+  DASHBOARD_VIEW: "Ver dashboard",
+  SALE_VIEW_HISTORY: "Ver historial de ventas",
+  CUSTOMER_VIEW: "Ver clientes",
 };
 
 type StaffRole = Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;

@@ -26,7 +26,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "DASHBOARD_VIEW" },
   { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
   { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
   { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
@@ -35,8 +35,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
   { href: "/cash-shift/history", label: "Historial Caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
   { href: "/pos", label: "POS", icon: ShoppingCart, permission: "SALE_CREATE" },
-  { href: "/sales", label: "Ventas", icon: ReceiptText, permission: "SALE_CREATE" },
-  { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_EDIT" },
+  { href: "/sales", label: "Ventas", icon: ReceiptText, permission: "SALE_VIEW_HISTORY" },
+  { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_VIEW" },
 ];
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {

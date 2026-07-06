@@ -29,7 +29,7 @@ public class SaleController {
     }
 
     @GetMapping
-    @PreAuthorize("@permissionService.has('SALE_CREATE')")
+    @PreAuthorize("@permissionService.has('SALE_VIEW_HISTORY')")
     public ApiResponse<List<SaleResponse>> list(
             @RequestParam(required = false) UUID registerId,
             @RequestParam(required = false) UUID customerId) {
@@ -43,7 +43,7 @@ public class SaleController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("@permissionService.has('SALE_CREATE')")
+    @PreAuthorize("@permissionService.has('SALE_VIEW_HISTORY')")
     public ApiResponse<SaleResponse> detail(@PathVariable UUID id) {
         return ApiResponse.ok(saleService.getDetail(id));
     }

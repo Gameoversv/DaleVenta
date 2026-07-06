@@ -19,15 +19,27 @@ async function fetchCustomers(q: string): Promise<CustomerResponse[]> {
 
 export default function CustomersPage() {
   const [query, setQuery] = useState("");
+  const canView = usePermission("CUSTOMER_VIEW");
   const canCreate = usePermission("CUSTOMER_CREATE");
   const canEdit = usePermission("CUSTOMER_EDIT");
   const canReceivePayment = usePermission("CREDIT_RECEIVE_PAYMENT");
+  const canViewSalesHistory = usePermission("SALE_VIEW_HISTORY");
   const canManageCredit = canEdit || canReceivePayment;
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers", query],
     queryFn: () => fetchCustomers(query),
+    enabled: canView,
   });
+
+  if (!canView) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Clientes</h1>
+        <p className="text-muted-foreground">No tienes permiso para ver clientes.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -77,15 +89,17 @@ export default function CustomersPage() {
                         }
                       />
                     )}
-                    <CustomerPurchaseHistoryDialog
-                      customer={customer}
-                      trigger={
-                        <Button variant="ghost" size="sm" aria-label={`Historial de ${customer.fullName}`}>
-                          <History className="h-4 w-4" />
-                          Compras
-                        </Button>
-                      }
-                    />
+                    {canViewSalesHistory && (
+                      <CustomerPurchaseHistoryDialog
+                        customer={customer}
+                        trigger={
+                          <Button variant="ghost" size="sm" aria-label={`Historial de ${customer.fullName}`}>
+                            <History className="h-4 w-4" />
+                            Compras
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                 </td>
                 <td className="py-2 text-right">

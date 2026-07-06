@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import rd.dalventa.api.customer.dto.CreateCustomerRequest;
 import rd.dalventa.api.customer.dto.CustomerResponse;
@@ -22,6 +23,7 @@ public class CustomerController {
     private final CustomerService service;
 
     @GetMapping
+    @PreAuthorize("@permissionService.has('CUSTOMER_VIEW')")
     public ApiResponse<Iterable<CustomerResponse>> list(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "0") int page,
@@ -33,17 +35,20 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@permissionService.has('CUSTOMER_VIEW')")
     public ApiResponse<CustomerResponse> get(@PathVariable UUID id) {
         return ApiResponse.ok(service.findById(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@permissionService.has('CUSTOMER_CREATE')")
     public ApiResponse<CustomerResponse> create(@Valid @RequestBody CreateCustomerRequest req) {
         return ApiResponse.ok(service.create(req));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@permissionService.has('CUSTOMER_EDIT')")
     public ApiResponse<CustomerResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCustomerRequest req
@@ -53,6 +58,7 @@ public class CustomerController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@permissionService.has('CUSTOMER_EDIT')")
     public void delete(@PathVariable UUID id) {
         service.delete(id);
     }

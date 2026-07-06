@@ -5,6 +5,7 @@ import { Boxes, CircleDollarSign, ShoppingCart, Users, Wallet, AlertTriangle } f
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { usePermission } from "@/hooks/usePermission";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSummaryResponse } from "@/types/dashboard";
 
@@ -48,10 +49,21 @@ function MetricCard({ title, value, detail, href, icon: Icon }: MetricCardProps)
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const canView = usePermission("DASHBOARD_VIEW");
   const { data, isError, isLoading } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: fetchDashboardSummary,
+    enabled: canView,
   });
+
+  if (!canView) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-muted-foreground">No tienes permiso para ver el dashboard.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

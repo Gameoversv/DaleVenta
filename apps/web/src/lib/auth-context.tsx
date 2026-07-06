@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import type { AuthResponse, MeResponse, PermissionCode, UserResponse } from "@/types/auth";
 
+function landingPageFor(permissions: PermissionCode[]): string {
+  if (permissions.includes("DASHBOARD_VIEW")) return "/dashboard";
+  if (permissions.includes("SALE_CREATE")) return "/pos";
+  if (permissions.includes("CASHSHIFT_OPEN")) return "/cash-shift";
+  return "/customers";
+}
+
 interface AuthContextValue {
   user: UserResponse | null;
   permissions: PermissionCode[];
@@ -39,7 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.post<{ data: AuthResponse }>("/api/auth/login", { email, password });
       localStorage.setItem("token", res.data.data.token);
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      router.push("/dashboard");
+      const me = await queryClient.fetchQuery({ queryKey: ["me"], queryFn: fetchMe });
+      router.push(landingPageFor(me?.permissions ?? []));
     },
     [queryClient, router]
   );
