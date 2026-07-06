@@ -57,6 +57,12 @@ public class CashShiftController {
         return ApiResponse.ok(cashMovementService.recordMovement(id, req));
     }
 
+    @GetMapping("/{id}/movements")
+    @PreAuthorize("@permissionService.has('CASHSHIFT_VIEW_HISTORY')")
+    public ApiResponse<List<CashMovementResponse>> movements(@PathVariable UUID id) {
+        return ApiResponse.ok(cashMovementService.list(id));
+    }
+
     @PostMapping("/change-suggestion")
     @PreAuthorize("@permissionService.has('CASHSHIFT_OPEN')")
     public ApiResponse<ChangeSuggestionResponse> changeSuggestion(@Valid @RequestBody ChangeSuggestionRequest req) {

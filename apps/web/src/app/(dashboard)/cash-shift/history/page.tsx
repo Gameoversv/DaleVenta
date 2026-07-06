@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
 import type { BranchResponse, RegisterResponse } from "@/types/branch";
-import type { CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
+import type { CashMovementResponse, CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
 
 async function fetchBranches(): Promise<BranchResponse[]> {
   const res = await api.get<{ data: BranchResponse[] }>("/api/branches");
@@ -26,6 +26,11 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 
 async function fetchCashShifts(registerId: string): Promise<CashShiftSummaryResponse[]> {
   const res = await api.get<{ data: CashShiftSummaryResponse[] }>("/api/cash-shifts", { params: { registerId } });
+  return res.data.data;
+}
+
+async function fetchCashMovements(cashShiftId: string): Promise<CashMovementResponse[]> {
+  const res = await api.get<{ data: CashMovementResponse[] }>(`/api/cash-shifts/${cashShiftId}/movements`);
   return res.data.data;
 }
 
@@ -46,6 +51,16 @@ function differenceClass(value: string | null): string {
   const difference = Number(value ?? "0");
   if (difference === 0) return "text-emerald-600";
   return "text-amber-600";
+}
+
+function movementTypeLabel(type: CashMovementResponse["type"]): string {
+  if (type === "ENTRY") return "Entrada";
+  if (type === "WITHDRAWAL") return "Retiro";
+  return "Gasto";
+}
+
+function movementTypeClass(type: CashMovementResponse["type"]): string {
+  return type === "ENTRY" ? "text-emerald-600" : "text-rose-600";
 }
 
 function StatusBadge({ status }: { status: CashShiftSummaryResponse["status"] }) {
@@ -69,8 +84,26 @@ function ShiftDetailDialog({
   shift: CashShiftSummaryResponse;
   trigger: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  const {
+    data: movements,
+    isLoading: movementsLoading,
+    isError: movementsError,
+  } = useQuery({
+    queryKey: ["cash-shift-movements", shift.id],
+    queryFn: () => fetchCashMovements(shift.id),
+    enabled: open,
+  });
+
+  const movementDenominationsLabel = (movement: CashMovementResponse) => {
+    if (movement.denominations.length === 0) return "-";
+    return movement.denominations
+      .map((entry) => `${entry.quantity} x ${denominationLabel(entry.denominationId)}`)
+      .join(", ");
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
@@ -135,6 +168,41 @@ function ShiftDetailDialog({
               ))}
             </tbody>
           </table>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Movimientos</h3>
+            {movementsLoading && <p className="text-sm text-muted-foreground">Cargando movimientos...</p>}
+            {movementsError && <p className="text-sm text-destructive">No se pudieron cargar los movimientos.</p>}
+            {!movementsLoading && !movementsError && movements?.length === 0 && (
+              <p className="text-sm text-muted-foreground">Este turno no tiene movimientos registrados.</p>
+            )}
+            {movements && movements.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="py-2">Fecha</th>
+                    <th className="py-2">Tipo</th>
+                    <th className="py-2">Motivo</th>
+                    <th className="py-2">Denominaciones</th>
+                    <th className="py-2 text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map((movement) => (
+                    <tr key={movement.id} className="border-b border-border">
+                      <td className="py-2">{dateTime(movement.createdAt)}</td>
+                      <td className={cn("py-2 font-medium", movementTypeClass(movement.type))}>
+                        {movementTypeLabel(movement.type)}
+                      </td>
+                      <td className="py-2">{movement.reason}</td>
+                      <td className="py-2">{movementDenominationsLabel(movement)}</td>
+                      <td className="py-2 text-right">{money(movement.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

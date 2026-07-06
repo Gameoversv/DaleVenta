@@ -45,6 +45,17 @@ export interface CreateCashMovementRequest {
   denominations: DenominationCountEntry[];
 }
 
+export interface CashMovementResponse {
+  id: string;
+  type: CashMovementType;
+  amount: string;
+  reason: string;
+  createdAt: string | null;
+  userId: string;
+  saleId: string | null;
+  denominations: DenominationCountEntry[];
+}
+
 export interface CloseCashShiftRequest {
   closingCounts: DenominationCountEntry[];
   closingNotes?: string;

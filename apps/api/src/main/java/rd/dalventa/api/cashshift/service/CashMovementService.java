@@ -19,9 +19,11 @@ import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +39,32 @@ public class CashMovementService {
     @Transactional
     public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req) {
         return recordMovement(cashShiftId, req, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CashMovementResponse> list(UUID cashShiftId) {
+        cashShiftService.requireShiftInTenant(cashShiftId);
+        var tenantId = TenantContext.require();
+        var movements = cashMovementRepository.findAllByTenantIdAndCashShiftIdOrderByCreatedAtDesc(tenantId, cashShiftId);
+        if (movements.isEmpty()) {
+            return List.of();
+        }
+
+        var movementIds = movements.stream().map(CashMovement::getId).toList();
+        var denominationsByMovement = cashMovementDenominationRepository
+                .findAllByTenantIdAndCashMovementIdIn(tenantId, movementIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        CashMovementDenomination::getCashMovementId,
+                        Collectors.mapping(
+                                d -> new DenominationCountEntry(d.getDenominationId(), d.getQuantity()),
+                                Collectors.toList()
+                        )
+                ));
+
+        return movements.stream()
+                .map(m -> CashMovementResponse.from(m, denominationsByMovement.getOrDefault(m.getId(), List.of())))
+                .toList();
     }
 
     @Transactional
