@@ -73,7 +73,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
             tracksInventory: values.tracksInventory,
             active: product!.active,
           })
-        : api.post("/api/products", values),
+        : api.post("/api/products", { ...values, barcode: values.barcode || undefined }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setOpen(false);
