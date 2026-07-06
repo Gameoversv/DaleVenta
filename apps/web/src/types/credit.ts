@@ -28,3 +28,11 @@ export interface RecordCreditPaymentRequest {
   amount: string;
   note?: string;
 }
+
+export interface AccountsReceivableRow {
+  customerId: string;
+  customerName: string;
+  phone: string | null;
+  balance: string;
+  creditLimit: string;
+}

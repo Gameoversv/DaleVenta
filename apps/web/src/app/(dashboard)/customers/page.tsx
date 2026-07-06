@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Plus, Wallet } from "lucide-react";
+import { History, Pencil, Plus, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePermission } from "@/hooks/usePermission";
 import api from "@/lib/api";
 import { CustomerFormDialog } from "@/components/customers/CustomerFormDialog";
 import { CustomerCreditPanel } from "@/components/customers/CustomerCreditPanel";
+import { CustomerPurchaseHistoryDialog } from "@/components/customers/CustomerPurchaseHistoryDialog";
 import type { CustomerResponse } from "@/types/customer";
 
 async function fetchCustomers(q: string): Promise<CustomerResponse[]> {
@@ -64,17 +65,28 @@ export default function CustomersPage() {
                 <td className="py-2">{customer.phone ?? "—"}</td>
                 <td className="py-2">{customer.documentId ?? "—"}</td>
                 <td className="py-2">
-                  {canManageCredit && (
-                    <CustomerCreditPanel
+                  <div className="flex items-center gap-1">
+                    {canManageCredit && (
+                      <CustomerCreditPanel
+                        customer={customer}
+                        trigger={
+                          <Button variant="ghost" size="sm">
+                            <Wallet className="h-4 w-4" />
+                            Credito
+                          </Button>
+                        }
+                      />
+                    )}
+                    <CustomerPurchaseHistoryDialog
                       customer={customer}
                       trigger={
-                        <Button variant="ghost" size="sm">
-                          <Wallet className="h-4 w-4" />
-                          Credito
+                        <Button variant="ghost" size="sm" aria-label={`Historial de ${customer.fullName}`}>
+                          <History className="h-4 w-4" />
+                          Compras
                         </Button>
                       }
                     />
-                  )}
+                  </div>
                 </td>
                 <td className="py-2 text-right">
                   {canEdit && (

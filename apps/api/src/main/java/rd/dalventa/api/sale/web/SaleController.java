@@ -30,7 +30,15 @@ public class SaleController {
 
     @GetMapping
     @PreAuthorize("@permissionService.has('SALE_CREATE')")
-    public ApiResponse<List<SaleResponse>> list(@RequestParam UUID registerId) {
+    public ApiResponse<List<SaleResponse>> list(
+            @RequestParam(required = false) UUID registerId,
+            @RequestParam(required = false) UUID customerId) {
+        if (customerId != null) {
+            return ApiResponse.ok(saleService.listByCustomer(customerId));
+        }
+        if (registerId == null) {
+            throw new IllegalArgumentException("Debe indicar registerId o customerId");
+        }
         return ApiResponse.ok(saleService.list(registerId));
     }
 

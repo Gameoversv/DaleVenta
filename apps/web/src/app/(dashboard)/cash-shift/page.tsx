@@ -135,7 +135,7 @@ export default function CashShiftPage() {
           )}
         </div>
       )}
-      {registerId && <CashShiftWorkspace key={registerId} registerId={registerId} />}
+      {registerId && <CashShiftWorkspace key={registerId} registerId={registerId} branchId={branchId} />}
     </div>
   );
 }

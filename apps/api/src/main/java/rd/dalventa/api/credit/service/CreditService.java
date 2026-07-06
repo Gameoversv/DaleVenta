@@ -7,6 +7,7 @@ import rd.dalventa.api.credit.domain.CreditAccount;
 import rd.dalventa.api.credit.domain.CreditTransaction;
 import rd.dalventa.api.credit.domain.CreditTransactionType;
 import rd.dalventa.api.credit.domain.CustomerCreditProfile;
+import rd.dalventa.api.credit.dto.AccountsReceivableRow;
 import rd.dalventa.api.credit.dto.CreditAccountResponse;
 import rd.dalventa.api.credit.dto.CreditProfileResponse;
 import rd.dalventa.api.credit.dto.CreditTransactionResponse;
@@ -136,6 +137,26 @@ public class CreditService {
         creditTransactionRepository.save(transaction);
 
         return CreditAccountResponse.from(account);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<AccountsReceivableRow> listReceivables() {
+        var tenantId = TenantContext.require();
+        return creditAccountRepository.findByTenantIdAndBalanceGreaterThanOrderByBalanceDesc(tenantId, BigDecimal.ZERO)
+                .stream()
+                .map(account -> {
+                    var customer = customerRepository.findById(account.getCustomerId()).orElse(null);
+                    var profile = customerCreditProfileRepository
+                            .findByCustomerIdAndTenantId(account.getCustomerId(), tenantId)
+                            .orElse(null);
+                    return new AccountsReceivableRow(
+                            account.getCustomerId(),
+                            customer != null ? customer.getFirstName() + " " + customer.getLastName() : "Cliente eliminado",
+                            customer != null ? customer.getPhone() : null,
+                            account.getBalance(),
+                            profile != null ? profile.getCreditLimit() : BigDecimal.ZERO.setScale(2));
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)

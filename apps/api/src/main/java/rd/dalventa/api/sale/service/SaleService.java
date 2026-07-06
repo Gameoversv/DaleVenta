@@ -234,6 +234,13 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
+    public List<SaleResponse> listByCustomer(java.util.UUID customerId) {
+        var tenantId = TenantContext.require();
+        return saleRepository.findAllByTenantIdAndCustomerIdOrderByCreatedAtDesc(tenantId, customerId)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public SaleResponse getDetail(java.util.UUID id) {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)

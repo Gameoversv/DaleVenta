@@ -18,6 +18,7 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     List<Sale> findAllByTenantIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             UUID tenantId, Instant start, Instant end);
     List<Sale> findAllByTenantIdAndCashShiftId(UUID tenantId, UUID cashShiftId);
+    List<Sale> findAllByTenantIdAndCustomerIdOrderByCreatedAtDesc(UUID tenantId, UUID customerId);
     long countByTenantIdAndStatusAndCreatedAtGreaterThanEqual(UUID tenantId, SaleStatus status, Instant createdAt);
 
     @Query("""

@@ -7,15 +7,20 @@ import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.cashshift.domain.CashShift;
 import rd.dalventa.api.cashshift.domain.CashShiftDenomination;
 import rd.dalventa.api.cashshift.domain.CashShiftStatus;
+import rd.dalventa.api.cashshift.domain.ShiftInventoryCount;
 import rd.dalventa.api.cashshift.dto.CashShiftDenominationEntry;
 import rd.dalventa.api.cashshift.dto.CashShiftSummaryResponse;
 import rd.dalventa.api.cashshift.dto.CloseCashShiftRequest;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
+import rd.dalventa.api.cashshift.dto.InventoryCountEntry;
 import rd.dalventa.api.cashshift.dto.OpenCashShiftRequest;
+import rd.dalventa.api.cashshift.dto.ShiftInventoryCountEntry;
 import rd.dalventa.api.cashshift.repository.CashMovementRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftDenominationRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
+import rd.dalventa.api.cashshift.repository.ShiftInventoryCountRepository;
 import rd.dalventa.api.denomination.repository.DenominationRepository;
+import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
@@ -36,6 +41,8 @@ public class CashShiftService {
     private final DenominationRepository denominationRepository;
     private final CurrentUserProvider currentUserProvider;
     private final CashMovementRepository cashMovementRepository;
+    private final ShiftInventoryCountRepository shiftInventoryCountRepository;
+    private final BranchInventoryRepository branchInventoryRepository;
 
     @Transactional
     public CashShiftSummaryResponse open(OpenCashShiftRequest req) {
@@ -70,6 +77,12 @@ public class CashShiftService {
             var csd = new CashShiftDenomination(shift.getId(), entry.denominationId(), entry.quantity());
             csd.setTenantId(tenantId);
             cashShiftDenominationRepository.save(csd);
+        }
+
+        for (InventoryCountEntry entry : req.inventoryCounts()) {
+            var sic = new ShiftInventoryCount(shift.getId(), entry.productId(), entry.quantity());
+            sic.setTenantId(tenantId);
+            shiftInventoryCountRepository.save(sic);
         }
 
         return buildSummary(shift);
@@ -115,9 +128,29 @@ public class CashShiftService {
         BigDecimal expectedCash = computeExpectedCash(shift, tenantId);
 
         BigDecimal difference = countedCash.subtract(expectedCash);
-        if (difference.compareTo(BigDecimal.ZERO) != 0
+
+        var register = registerRepository.findByIdAndTenantId(shift.getRegisterId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+
+        boolean hasInventoryDiscrepancy = false;
+        for (InventoryCountEntry entry : req.inventoryCounts()) {
+            var sic = shiftInventoryCountRepository.findByCashShiftIdAndProductId(id, entry.productId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no contado en la apertura de este turno"));
+            int expectedQuantity = branchInventoryRepository
+                    .findByTenantIdAndBranchIdAndProductId(tenantId, register.getBranchId(), entry.productId())
+                    .map(bi -> bi.getCurrentStock())
+                    .orElse(0);
+            sic.setClosingQuantity(entry.quantity());
+            sic.setExpectedQuantity(expectedQuantity);
+            shiftInventoryCountRepository.save(sic);
+            if (entry.quantity() != expectedQuantity) {
+                hasInventoryDiscrepancy = true;
+            }
+        }
+
+        if ((difference.compareTo(BigDecimal.ZERO) != 0 || hasInventoryDiscrepancy)
                 && (req.closingNotes() == null || req.closingNotes().isBlank())) {
-            throw new IllegalArgumentException("Se requiere una nota explicando la diferencia de caja");
+            throw new IllegalArgumentException("Se requiere una nota explicando la diferencia de caja o inventario");
         }
 
         shift.setExpectedCash(expectedCash);
@@ -162,6 +195,9 @@ public class CashShiftService {
         BigDecimal expectedCash = shift.getStatus() == CashShiftStatus.OPEN
                 ? computeExpectedCash(shift, TenantContext.require())
                 : shift.getExpectedCash();
-        return CashShiftSummaryResponse.from(shift, expectedCash, denominations);
+        List<ShiftInventoryCountEntry> inventoryCounts = shiftInventoryCountRepository
+                .findAllByCashShiftId(shift.getId())
+                .stream().map(ShiftInventoryCountEntry::from).toList();
+        return CashShiftSummaryResponse.from(shift, expectedCash, denominations, inventoryCounts);
     }
 }

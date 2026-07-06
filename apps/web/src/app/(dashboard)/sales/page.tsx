@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BranchResponse, RegisterResponse } from "@/types/branch";
+import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
 
@@ -28,6 +29,11 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
+  return res.data.data;
+}
+
+async function fetchCustomers(): Promise<CustomerResponse[]> {
+  const res = await api.get<{ data: CustomerResponse[] }>("/api/customers", { params: { size: 500 } });
   return res.data.data;
 }
 
@@ -62,10 +68,12 @@ function StatusBadge({ status }: { status: SaleResponse["status"] }) {
 
 function SaleDetailDialog({
   productName,
+  customerName,
   sale,
   trigger,
 }: {
   productName: (id: string) => string;
+  customerName: (id: string | null) => string;
   sale: SaleResponse;
   trigger: React.ReactNode;
 }) {
@@ -81,6 +89,10 @@ function SaleDetailDialog({
             <div>
               <p className="text-muted-foreground">Fecha</p>
               <p className="font-medium">{dateTime(sale.createdAt)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Cliente</p>
+              <p className="font-medium">{customerName(sale.customerId)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Estado</p>
@@ -202,6 +214,11 @@ export default function SalesPage() {
     queryFn: fetchProducts,
     enabled: canViewSales,
   });
+  const { data: customers } = useQuery({
+    queryKey: ["customers-all"],
+    queryFn: fetchCustomers,
+    enabled: canViewSales,
+  });
   const { data: sales, isLoading: salesLoading, isError } = useQuery({
     queryKey: ["sales", registerId],
     queryFn: () => fetchSales(registerId),
@@ -213,6 +230,12 @@ export default function SalesPage() {
     [products]
   );
   const productName = (id: string) => productById.get(id) ?? id;
+
+  const customerById = useMemo(
+    () => new Map((customers ?? []).map((customer) => [customer.id, customer.fullName])),
+    [customers]
+  );
+  const customerName = (id: string | null) => (id ? customerById.get(id) ?? id : "Cliente de contado");
 
   if (!canViewSales) {
     return (
@@ -291,6 +314,7 @@ export default function SalesPage() {
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="py-2">Fecha</th>
+                      <th className="py-2">Cliente</th>
                       <th className="py-2">Estado</th>
                       <th className="py-2">Pago</th>
                       <th className="py-2 text-right">Total</th>
@@ -301,6 +325,7 @@ export default function SalesPage() {
                     {sales.map((sale) => (
                       <tr key={sale.id} className="border-b border-border">
                         <td className="py-2">{dateTime(sale.createdAt)}</td>
+                        <td className="py-2">{customerName(sale.customerId)}</td>
                         <td className="py-2"><StatusBadge status={sale.status} /></td>
                         <td className="py-2">{paymentLabel(sale)}</td>
                         <td className="py-2 text-right font-medium">{money(sale.total)}</td>
@@ -309,6 +334,7 @@ export default function SalesPage() {
                             <SaleDetailDialog
                               sale={sale}
                               productName={productName}
+                              customerName={customerName}
                               trigger={
                                 <Button variant="ghost" size="icon" aria-label="Ver detalle">
                                   <Eye className="h-4 w-4" />

@@ -30,7 +30,7 @@ function errorMessage(error: unknown): string {
   );
 }
 
-export function CashShiftWorkspace({ registerId }: { registerId: string }) {
+export function CashShiftWorkspace({ registerId, branchId }: { registerId: string; branchId: string }) {
   const queryClient = useQueryClient();
   const [closing, setClosing] = useState(false);
   const [closedShift, setClosedShift] = useState<CashShiftSummaryResponse | null>(null);
@@ -59,12 +59,13 @@ export function CashShiftWorkspace({ registerId }: { registerId: string }) {
     return <p className="text-sm text-destructive">{errorMessage(error)}</p>;
   }
   if (!currentShift) {
-    return <OpenShiftForm registerId={registerId} />;
+    return <OpenShiftForm registerId={registerId} branchId={branchId} />;
   }
   if (closing) {
     return (
       <CloseShiftForm
         shift={currentShift}
+        branchId={branchId}
         onCancel={() => setClosing(false)}
         onClosed={(closed) => {
           setClosing(false);

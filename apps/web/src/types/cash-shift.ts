@@ -19,6 +19,18 @@ export interface CashShiftDenominationEntry {
   closingQuantity: number | null;
 }
 
+export interface InventoryCountEntry {
+  productId: string;
+  quantity: number;
+}
+
+export interface ShiftInventoryCountEntry {
+  productId: string;
+  openingQuantity: number;
+  closingQuantity: number | null;
+  expectedQuantity: number | null;
+}
+
 export interface CashShiftSummaryResponse {
   id: string;
   registerId: string;
@@ -30,11 +42,13 @@ export interface CashShiftSummaryResponse {
   countedCash: string | null;
   cashDifference: string | null;
   denominations: CashShiftDenominationEntry[];
+  inventoryCounts: ShiftInventoryCountEntry[];
 }
 
 export interface OpenCashShiftRequest {
   registerId: string;
   openingCounts: DenominationCountEntry[];
+  inventoryCounts: InventoryCountEntry[];
 }
 
 export type CashMovementType = "ENTRY" | "WITHDRAWAL" | "EXPENSE";
@@ -59,4 +73,5 @@ export interface CashMovementResponse {
 export interface CloseCashShiftRequest {
   closingCounts: DenominationCountEntry[];
   closingNotes?: string;
+  inventoryCounts: InventoryCountEntry[];
 }

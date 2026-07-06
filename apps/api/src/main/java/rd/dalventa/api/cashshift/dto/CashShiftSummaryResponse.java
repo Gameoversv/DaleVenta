@@ -20,11 +20,14 @@ public record CashShiftSummaryResponse(
         @JsonProperty("expectedCash") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal expectedCash,
         @JsonProperty("countedCash") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal countedCash,
         @JsonProperty("cashDifference") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal cashDifference,
-        List<CashShiftDenominationEntry> denominations
+        List<CashShiftDenominationEntry> denominations,
+        @JsonProperty("inventoryCounts") List<ShiftInventoryCountEntry> inventoryCounts
 ) {
-    public static CashShiftSummaryResponse from(CashShift shift, BigDecimal expectedCash, List<CashShiftDenominationEntry> denominations) {
+    public static CashShiftSummaryResponse from(CashShift shift, BigDecimal expectedCash,
+                                                 List<CashShiftDenominationEntry> denominations,
+                                                 List<ShiftInventoryCountEntry> inventoryCounts) {
         return new CashShiftSummaryResponse(shift.getId(), shift.getRegisterId(), shift.getStatus(),
                 shift.getOpenedAt(), shift.getClosedAt(), shift.getOpeningTotal(), expectedCash,
-                shift.getCountedCash(), shift.getCashDifference(), denominations);
+                shift.getCountedCash(), shift.getCashDifference(), denominations, inventoryCounts);
     }
 }

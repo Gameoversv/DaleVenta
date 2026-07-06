@@ -10,5 +10,10 @@ import java.util.UUID;
 
 public record OpenCashShiftRequest(
         @JsonProperty("registerId") @NotNull UUID registerId,
-        @JsonProperty("openingCounts") @NotEmpty @Valid List<DenominationCountEntry> openingCounts
-) {}
+        @JsonProperty("openingCounts") @NotEmpty @Valid List<DenominationCountEntry> openingCounts,
+        @JsonProperty("inventoryCounts") @Valid List<InventoryCountEntry> inventoryCounts
+) {
+    public List<InventoryCountEntry> inventoryCounts() {
+        return inventoryCounts == null ? List.of() : inventoryCounts;
+    }
+}

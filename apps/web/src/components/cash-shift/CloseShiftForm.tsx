@@ -8,16 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { DenominationCountGrid } from "./DenominationCountGrid";
-import type { CashShiftSummaryResponse, DenominationCountEntry } from "@/types/cash-shift";
+import { InventoryCountGrid } from "./InventoryCountGrid";
+import type { CashShiftSummaryResponse, DenominationCountEntry, InventoryCountEntry } from "@/types/cash-shift";
 
 interface CloseShiftFormProps {
   shift: CashShiftSummaryResponse;
+  branchId: string;
   onCancel: () => void;
   onClosed: (closed: CashShiftSummaryResponse) => void;
 }
 
-export function CloseShiftForm({ shift, onCancel, onClosed }: CloseShiftFormProps) {
+export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShiftFormProps) {
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
+  const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
   const [notes, setNotes] = useState("");
 
   const mutation = useMutation({
@@ -25,6 +28,7 @@ export function CloseShiftForm({ shift, onCancel, onClosed }: CloseShiftFormProp
       api.post<{ data: CashShiftSummaryResponse }>(`/api/cash-shifts/${shift.id}/close`, {
         closingCounts: entries,
         closingNotes: notes || undefined,
+        inventoryCounts: inventoryEntries,
       }),
     onSuccess: (res) => {
       onClosed(res.data.data);
@@ -43,8 +47,9 @@ export function CloseShiftForm({ shift, onCancel, onClosed }: CloseShiftFormProp
       </CardHeader>
       <CardContent className="space-y-4">
         <DenominationCountGrid onChange={setEntries} />
+        <InventoryCountGrid branchId={branchId} onChange={setInventoryEntries} />
         <div className="space-y-2">
-          <Label htmlFor="close-notes">Notas (obligatorio si hay diferencia de caja)</Label>
+          <Label htmlFor="close-notes">Notas (obligatorio si hay diferencia de caja o inventario)</Label>
           <textarea
             id="close-notes"
             value={notes}
