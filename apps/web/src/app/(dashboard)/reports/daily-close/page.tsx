@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BarChart3, Banknote, Calculator, DollarSign, Printer } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BarChart3, Banknote, Calculator, DollarSign, LockKeyhole, Printer } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
-import type { DailyCloseReportResponse } from "@/types/report";
+import type { DailyCloseReportResponse, DailyClosingResponse } from "@/types/report";
 
 const TONES = {
   primary: "bg-primary/10 text-primary",
@@ -26,6 +27,11 @@ async function fetchDailyClose(date: string, registerId: string): Promise<DailyC
   const res = await api.get<{ data: DailyCloseReportResponse }>("/api/reports/daily-close", {
     params: { date, registerId: registerId || undefined },
   });
+  return res.data.data;
+}
+
+async function fetchDailyClosings(): Promise<DailyClosingResponse[]> {
+  const res = await api.get<{ data: DailyClosingResponse[] }>("/api/reports/daily-closings");
   return res.data.data;
 }
 
@@ -86,6 +92,7 @@ function MetricCard({
 
 export default function DailyCloseReportPage() {
   const canViewReports = usePermission("REPORTS_VIEW");
+  const queryClient = useQueryClient();
   const today = useMemo(() => isoDate(new Date()), []);
   const [date, setDate] = useState(today);
   const [manualBranchId, setManualBranchId] = useState("");
@@ -105,6 +112,28 @@ export default function DailyCloseReportPage() {
     queryFn: () => fetchDailyClose(date, registerId),
     enabled: canViewReports && !!date,
   });
+  const { data: closings } = useQuery({
+    queryKey: ["daily-closings"],
+    queryFn: fetchDailyClosings,
+    enabled: canViewReports,
+  });
+  const saveClosing = useMutation({
+    mutationFn: () =>
+      api.post<{ data: DailyClosingResponse }>("/api/reports/daily-close", null, {
+        params: { date, registerId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-closings"] });
+      toast.success("Cierre diario guardado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        "No se pudo guardar el cierre diario";
+      toast.error(message);
+    },
+  });
+  const closingSaved = (closings ?? []).some((closing) => closing.closeDate === date && closing.registerId === registerId);
 
   if (!canViewReports) {
     return (
@@ -169,6 +198,13 @@ export default function DailyCloseReportPage() {
           </Button>
           <Button variant="outline" onClick={() => window.print()} disabled={!data}>
             <Printer className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={() => saveClosing.mutate()}
+            disabled={!data || !registerId || closingSaved || saveClosing.isPending}
+          >
+            <LockKeyhole className="h-4 w-4" />
+            {closingSaved ? "Guardado" : saveClosing.isPending ? "Guardando..." : "Guardar cierre"}
           </Button>
         </div>
       </div>
@@ -262,6 +298,44 @@ export default function DailyCloseReportPage() {
                           <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["expectedCash", "cashExpected"]))}</td>
                           <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["countedCash", "cashCounted"]))}</td>
                           <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["cashDifference", "difference"]))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="print:hidden">
+            <CardHeader>
+              <CardTitle>Cierres guardados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(closings ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todavia no hay cierres diarios guardados.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="py-2">No.</th>
+                        <th className="py-2">Fecha</th>
+                        <th className="py-2">Caja</th>
+                        <th className="py-2">Usuario</th>
+                        <th className="py-2 text-right">Ingresos</th>
+                        <th className="py-2 text-right">Diferencia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(closings ?? []).slice(0, 20).map((closing) => (
+                        <tr key={closing.id} className="border-b last:border-b-0">
+                          <td className="py-2 font-medium">{closing.closeNumber}</td>
+                          <td className="py-2">{closing.closeDate}</td>
+                          <td className="py-2">{closing.registerName}</td>
+                          <td className="py-2">{closing.closedByName}</td>
+                          <td className="py-2 text-right font-mono-money">{money(closing.grossRevenue)}</td>
+                          <td className="py-2 text-right font-mono-money">{money(closing.cashDifference)}</td>
                         </tr>
                       ))}
                     </tbody>

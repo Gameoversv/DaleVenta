@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import rd.dalventa.api.report.dto.DailyClosingResponse;
 import rd.dalventa.api.report.dto.SalesReportResponse;
 import rd.dalventa.api.report.dto.DailyCloseReportResponse;
 import rd.dalventa.api.report.service.DailyCloseReportService;
@@ -38,5 +40,19 @@ public class ReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) UUID registerId) {
         return ApiResponse.ok(dailyCloseReportService.report(date, registerId));
+    }
+
+    @PostMapping("/daily-close")
+    @PreAuthorize("@permissionService.has('REPORTS_VIEW')")
+    public ApiResponse<DailyClosingResponse> saveDailyClose(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam UUID registerId) {
+        return ApiResponse.ok(dailyCloseReportService.close(date, registerId));
+    }
+
+    @GetMapping("/daily-closings")
+    @PreAuthorize("@permissionService.has('REPORTS_VIEW')")
+    public ApiResponse<java.util.List<DailyClosingResponse>> dailyClosings() {
+        return ApiResponse.ok(dailyCloseReportService.closings());
     }
 }

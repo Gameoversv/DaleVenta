@@ -42,6 +42,7 @@ import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.credit.service.CreditService;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
+import rd.dalventa.api.report.service.DailyCloseReportService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
@@ -50,6 +51,8 @@ import rd.dalventa.api.shared.web.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +76,7 @@ public class SaleService {
     private final CashMovementDenominationRepository cashMovementDenominationRepository;
     private final CreditService creditService;
     private final AuditLogService auditLogService;
+    private final DailyCloseReportService dailyCloseReportService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -84,6 +88,9 @@ public class SaleService {
         var cashShift = cashShiftRepository.findByIdAndTenantId(req.cashShiftId(), tenantId)
                 .filter(s -> s.getStatus() == CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
+        if (dailyCloseReportService.isClosed(tenantId, LocalDate.now(ZoneId.systemDefault()), req.registerId())) {
+            throw new IllegalArgumentException("No se puede vender: esta caja ya tiene cierre diario guardado para hoy");
+        }
 
         if (req.customerId() != null) {
             customerRepository.findByIdAndTenantIdAndActiveTrue(req.customerId(), tenantId)
@@ -294,6 +301,10 @@ public class SaleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado"));
         if (cashShift.getStatus() != CashShiftStatus.OPEN) {
             throw new IllegalArgumentException("No se puede anular: el turno de esta venta ya esta cerrado");
+        }
+        var saleDate = LocalDate.ofInstant(sale.getCreatedAt(), ZoneId.systemDefault());
+        if (dailyCloseReportService.isClosed(tenantId, saleDate, sale.getRegisterId())) {
+            throw new IllegalArgumentException("No se puede anular: esta caja ya tiene cierre diario guardado para la fecha de la venta");
         }
 
         var userId = currentUserProvider.current()

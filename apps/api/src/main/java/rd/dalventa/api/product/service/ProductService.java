@@ -3,6 +3,8 @@ package rd.dalventa.api.product.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.permission.domain.PermissionCode;
 import rd.dalventa.api.permission.service.PermissionResolutionService;
 import rd.dalventa.api.product.domain.Product;
@@ -25,6 +27,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final PermissionResolutionService permissionResolutionService;
     private final CurrentUserProvider currentUserProvider;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public ProductResponse create(CreateProductRequest req) {
@@ -59,6 +62,10 @@ public class ProductService {
         var tenantId = TenantContext.require();
         var product = productRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+        var previousActive = product.isActive();
+        var previousCost = product.getCost();
+        var previousSalePrice = product.getSalePrice();
+        var previousWholesalePrice = product.getWholesalePrice();
 
         product.setCategoryId(req.categoryId());
         product.setDescription(req.description());
@@ -69,7 +76,21 @@ public class ProductService {
         product.setTaxRate(req.taxRate());
         product.setTracksInventory(req.tracksInventory());
         product.setActive(req.active());
-        return toResponse(productRepository.save(product));
+        product = productRepository.save(product);
+        var actorId = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
+        if (previousActive != product.isActive()) {
+            auditLogService.record(AuditAction.PRODUCT_STATUS_CHANGE, "PRODUCT", product.getId(), actorId,
+                    product.getDescription() + " -> " + (product.isActive() ? "Activo" : "Inactivo"));
+        }
+        if (previousCost.compareTo(product.getCost()) != 0
+                || previousSalePrice.compareTo(product.getSalePrice()) != 0
+                || previousWholesalePrice.compareTo(product.getWholesalePrice()) != 0) {
+            auditLogService.record(AuditAction.PRODUCT_PRICE_CHANGE, "PRODUCT", product.getId(), actorId,
+                    "Precios actualizados para " + product.getDescription());
+        }
+        return toResponse(product);
     }
 
     private ProductResponse toResponse(Product product) {

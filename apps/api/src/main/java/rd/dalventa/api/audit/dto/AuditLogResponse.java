@@ -9,6 +9,7 @@ import java.util.UUID;
 public record AuditLogResponse(
         UUID id,
         @JsonProperty("actorUserId") UUID actorUserId,
+        @JsonProperty("actorName") String actorName,
         String action,
         @JsonProperty("entityType") String entityType,
         @JsonProperty("entityId") UUID entityId,
@@ -16,7 +17,11 @@ public record AuditLogResponse(
         @JsonProperty("createdAt") Instant createdAt) {
 
     public static AuditLogResponse from(AuditLog log) {
-        return new AuditLogResponse(log.getId(), log.getActorUserId(), log.getAction(),
+        return from(log, null);
+    }
+
+    public static AuditLogResponse from(AuditLog log, String actorName) {
+        return new AuditLogResponse(log.getId(), log.getActorUserId(), actorName, log.getAction(),
                 log.getEntityType(), log.getEntityId(), log.getReason(), log.getCreatedAt());
     }
 }

@@ -3,10 +3,16 @@ package rd.dalventa.api.report.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
+import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.cashshift.domain.CashShift;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
+import rd.dalventa.api.report.domain.DailyClosing;
+import rd.dalventa.api.report.dto.DailyClosingResponse;
 import rd.dalventa.api.report.dto.DailyCloseReportResponse;
+import rd.dalventa.api.report.repository.DailyClosingRepository;
 import rd.dalventa.api.sale.domain.Payment;
 import rd.dalventa.api.sale.domain.PaymentMethod;
 import rd.dalventa.api.sale.domain.Sale;
@@ -14,6 +20,8 @@ import rd.dalventa.api.sale.domain.SaleStatus;
 import rd.dalventa.api.sale.repository.PaymentRepository;
 import rd.dalventa.api.sale.repository.SaleRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.shared.security.CurrentUserProvider;
+import rd.dalventa.api.shared.web.DuplicateResourceException;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.math.BigDecimal;
@@ -34,6 +42,10 @@ public class DailyCloseReportService {
     private final PaymentRepository paymentRepository;
     private final CashShiftRepository cashShiftRepository;
     private final RegisterRepository registerRepository;
+    private final DailyClosingRepository dailyClosingRepository;
+    private final CurrentUserProvider currentUserProvider;
+    private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public DailyCloseReportResponse report(LocalDate date, UUID registerId) {
@@ -83,6 +95,65 @@ public class DailyCloseReportService {
                         ))
                         .toList()
         );
+    }
+
+    @Transactional
+    public DailyClosingResponse close(LocalDate date, UUID registerId) {
+        if (registerId == null) {
+            throw new IllegalArgumentException("Selecciona una caja para guardar el cierre diario");
+        }
+        var tenantId = TenantContext.require();
+        var register = registerRepository.findByIdAndTenantId(registerId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        if (dailyClosingRepository.existsByTenantIdAndCloseDateAndRegisterId(tenantId, date, registerId)) {
+            throw new DuplicateResourceException("Esta caja ya tiene cierre guardado para esa fecha");
+        }
+
+        var report = report(date, registerId);
+        var user = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"));
+        long sequence = dailyClosingRepository.maxCloseSequence(tenantId) + 1;
+
+        var closing = new DailyClosing();
+        closing.setTenantId(tenantId);
+        closing.setCloseSequence(sequence);
+        closing.setCloseNumber("CD-%06d".formatted(sequence));
+        closing.setCloseDate(date);
+        closing.setRegisterId(registerId);
+        closing.setClosedBy(user.getId());
+        closing.setClosedAt(java.time.Instant.now());
+        closing.setCompletedSales(report.completedSales());
+        closing.setVoidedSales(report.voidedSales());
+        closing.setGrossRevenue(report.grossRevenue());
+        closing.setTaxTotal(report.taxTotal());
+        closing.setDiscountTotal(report.discountTotal());
+        closing.setCashExpected(report.cashExpected());
+        closing.setCashCounted(report.cashCounted());
+        closing.setCashDifference(report.cashDifference());
+        closing = dailyClosingRepository.save(closing);
+
+        auditLogService.record(AuditAction.DAILY_CLOSE_CREATE, "DAILY_CLOSING", closing.getId(), user.getId(),
+                "Cierre " + closing.getCloseNumber() + " para " + date + " / " + register.getName());
+        return toResponse(closing);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyClosingResponse> closings() {
+        return dailyClosingRepository.findAllByTenantIdOrderByCloseDateDescClosedAtDesc(TenantContext.require())
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isClosed(UUID tenantId, LocalDate date, UUID registerId) {
+        return dailyClosingRepository.existsByTenantIdAndCloseDateAndRegisterId(tenantId, date, registerId);
+    }
+
+    private DailyClosingResponse toResponse(DailyClosing closing) {
+        var registerName = registerRepository.findById(closing.getRegisterId()).map(r -> r.getName()).orElse("-");
+        var userName = userRepository.findById(closing.getClosedBy())
+                .map(user -> user.getName() + " (" + user.getEmail() + ")")
+                .orElse(closing.getClosedBy().toString());
+        return DailyClosingResponse.from(closing, registerName, userName);
     }
 
     private List<DailyCloseReportResponse.PaymentBreakdown> paymentBreakdown(UUID tenantId, List<UUID> saleIds) {

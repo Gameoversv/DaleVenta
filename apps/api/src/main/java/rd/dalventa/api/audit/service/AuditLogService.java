@@ -9,6 +9,7 @@ import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.domain.AuditLog;
 import rd.dalventa.api.audit.dto.AuditLogResponse;
 import rd.dalventa.api.audit.repository.AuditLogRepository;
+import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 
 import java.util.UUID;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public void record(AuditAction action, String entityType, UUID entityId, UUID actorUserId, String reason) {
@@ -29,13 +31,19 @@ public class AuditLogService {
     public Page<AuditLogResponse> list(Pageable pageable) {
         var tenantId = TenantContext.require();
         return auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId, pageable)
-                .map(AuditLogResponse::from);
+                .map(log -> AuditLogResponse.from(log, actorName(log.getActorUserId())));
     }
 
     public Page<AuditLogResponse> listForEntity(String entityType, UUID entityId, Pageable pageable) {
         var tenantId = TenantContext.require();
         return auditLogRepository
                 .findAllByTenantIdAndEntityTypeAndEntityIdOrderByCreatedAtDesc(tenantId, entityType, entityId, pageable)
-                .map(AuditLogResponse::from);
+                .map(log -> AuditLogResponse.from(log, actorName(log.getActorUserId())));
+    }
+
+    private String actorName(UUID actorUserId) {
+        return userRepository.findById(actorUserId)
+                .map(user -> user.getName() + " (" + user.getEmail() + ")")
+                .orElse(actorUserId.toString());
     }
 }

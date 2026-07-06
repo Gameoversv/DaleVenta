@@ -64,3 +64,21 @@ export interface DailyCloseReportResponse {
   payments: DailyClosePaymentBreakdown[];
   shifts: DailyCloseShiftRow[];
 }
+
+export interface DailyClosingResponse {
+  id: string;
+  closeNumber: string;
+  closeDate: string;
+  registerId: string;
+  registerName: string;
+  closedByName: string;
+  closedAt: string;
+  completedSales: number;
+  voidedSales: number;
+  grossRevenue: string;
+  taxTotal: string;
+  discountTotal: string;
+  cashExpected: string;
+  cashCounted: string;
+  cashDifference: string;
+}

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.cashshift.domain.CashShift;
 import rd.dalventa.api.cashshift.domain.CashShiftDenomination;
 import rd.dalventa.api.cashshift.domain.CashShiftStatus;
@@ -43,6 +45,7 @@ public class CashShiftService {
     private final CashMovementRepository cashMovementRepository;
     private final ShiftInventoryCountRepository shiftInventoryCountRepository;
     private final BranchInventoryRepository branchInventoryRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public CashShiftSummaryResponse open(OpenCashShiftRequest req) {
@@ -160,6 +163,9 @@ public class CashShiftService {
         shift.setStatus(CashShiftStatus.CLOSED);
         shift.setClosedAt(java.time.Instant.now());
         cashShiftRepository.save(shift);
+        auditLogService.record(AuditAction.CASH_SHIFT_CLOSE, "CASH_SHIFT", shift.getId(),
+                currentUserProvider.current().orElseThrow(() -> new IllegalStateException("Usuario no autenticado")).getId(),
+                "Turno cerrado. Diferencia: " + difference);
 
         return buildSummary(shift);
     }

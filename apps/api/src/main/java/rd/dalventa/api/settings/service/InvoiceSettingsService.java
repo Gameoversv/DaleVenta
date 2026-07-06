@@ -3,9 +3,12 @@ package rd.dalventa.api.settings.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rd.dalventa.api.audit.domain.AuditAction;
+import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.settings.dto.InvoiceSettingsRequest;
 import rd.dalventa.api.settings.dto.InvoiceSettingsResponse;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 
@@ -14,6 +17,8 @@ import rd.dalventa.api.tenant.repository.TenantRepository;
 public class InvoiceSettingsService {
 
     private final TenantRepository tenantRepository;
+    private final CurrentUserProvider currentUserProvider;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public InvoiceSettingsResponse get() {
@@ -39,7 +44,13 @@ public class InvoiceSettingsService {
         tenant.setInvoiceShowAddress(req.showAddress());
         tenant.setInvoiceShowCustomer(req.showCustomer());
         tenant.setInvoiceShowTax(req.showTax());
-        return InvoiceSettingsResponse.from(tenantRepository.save(tenant));
+        tenant = tenantRepository.save(tenant);
+        var actorId = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
+        auditLogService.record(AuditAction.INVOICE_SETTINGS_UPDATE, "TENANT", tenant.getId(), actorId,
+                "Configuracion de factura actualizada");
+        return InvoiceSettingsResponse.from(tenant);
     }
 
     private rd.dalventa.api.tenant.domain.Tenant requireTenant() {
