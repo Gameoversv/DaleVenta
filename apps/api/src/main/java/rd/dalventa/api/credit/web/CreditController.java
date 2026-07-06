@@ -32,6 +32,12 @@ public class CreditController {
     private final CreditService creditService;
     private final CurrentUserProvider currentUserProvider;
 
+    @GetMapping("/credit-profile")
+    @PreAuthorize("@permissionService.has('CUSTOMER_EDIT')")
+    public ApiResponse<CreditProfileResponse> getProfile(@PathVariable UUID customerId) {
+        return ApiResponse.ok(creditService.getProfile(customerId));
+    }
+
     @PutMapping("/credit-profile")
     @PreAuthorize("@permissionService.has('CREDIT_AUTHORIZE')")
     public ApiResponse<CreditProfileResponse> updateProfile(

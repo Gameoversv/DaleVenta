@@ -46,6 +46,34 @@ class CreditProfileIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void getCreditProfile_beforeAnyUpdate_returnsDisabledDefault() throws Exception {
+        var s = setup("admin6@dalventa.test");
+
+        mockMvc.perform(get("/api/customers/" + s.customerId() + "/credit-profile")
+                        .header("Authorization", "Bearer " + s.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.creditEnabled").value(false))
+                .andExpect(jsonPath("$.data.creditLimit").value("0.00"));
+    }
+
+    @Test
+    void getCreditProfile_afterUpdate_returnsPersistedValues() throws Exception {
+        var s = setup("admin7@dalventa.test");
+
+        mockMvc.perform(put("/api/customers/" + s.customerId() + "/credit-profile")
+                        .header("Authorization", "Bearer " + s.token())
+                        .contentType("application/json")
+                        .content("{\"creditEnabled\":true,\"creditLimit\":\"3000.00\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/customers/" + s.customerId() + "/credit-profile")
+                        .header("Authorization", "Bearer " + s.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.creditEnabled").value(true))
+                .andExpect(jsonPath("$.data.creditLimit").value("3000.00"));
+    }
+
+    @Test
     void getCreditAccount_beforeAnyActivity_returnsZeroBalance() throws Exception {
         var s = setup("admin2@dalventa.test");
 

@@ -50,6 +50,17 @@ public class CreditService {
     }
 
     @Transactional(readOnly = true)
+    public CreditProfileResponse getProfile(UUID customerId) {
+        var tenantId = TenantContext.require();
+        customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+
+        var profile = customerCreditProfileRepository.findByCustomerIdAndTenantId(customerId, tenantId)
+                .orElseGet(() -> new CustomerCreditProfile(customerId));
+        return CreditProfileResponse.from(profile);
+    }
+
+    @Transactional(readOnly = true)
     public CreditAccountResponse getAccount(UUID customerId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
