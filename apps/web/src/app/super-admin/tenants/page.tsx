@@ -2,10 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ChevronDown, CheckCircle, LogIn } from "lucide-react";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TenantStatus, TenantSummaryResponse } from "@/types/superadmin";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { ImpersonateResponse, TenantPlan, TenantStatus, TenantSummaryResponse } from "@/types/superadmin";
 
 interface TenantsPage {
   data: TenantSummaryResponse[];
@@ -19,30 +30,101 @@ async function fetchTenants(status: string, page: number): Promise<TenantsPage> 
   return res.data;
 }
 
-const STATUSES: TenantStatus[] = ["PENDING", "TRIAL", "ACTIVE", "SUSPENDED", "CANCELLED"];
-
-function statusLabel(status: TenantStatus): string {
-  const labels: Record<TenantStatus, string> = {
-    PENDING: "Pendiente",
-    TRIAL: "Trial",
-    ACTIVE: "Activo",
-    SUSPENDED: "Suspendido",
-    CANCELLED: "Cancelado",
-  };
-  return labels[status];
+function extractError(err: unknown): string {
+  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Error";
 }
+
+const STATUS_FILTERS: Array<{ label: string; value: string }> = [
+  { label: "Todos", value: "" },
+  { label: "Pendientes", value: "PENDING" },
+  { label: "Trial", value: "TRIAL" },
+  { label: "Activos", value: "ACTIVE" },
+  { label: "Suspendidos", value: "SUSPENDED" },
+  { label: "Cancelados", value: "CANCELLED" },
+];
+
+const STATUS_LABELS: Record<TenantStatus, string> = {
+  PENDING: "Pendiente",
+  TRIAL: "Trial",
+  ACTIVE: "Activo",
+  SUSPENDED: "Suspendido",
+  CANCELLED: "Cancelado",
+};
+
+const STATUS_COLORS: Record<TenantStatus, string> = {
+  PENDING: "bg-violet-500/15 text-violet-600",
+  TRIAL: "bg-amber-500/15 text-amber-600",
+  ACTIVE: "bg-emerald-500/15 text-emerald-600",
+  SUSPENDED: "bg-orange-500/15 text-orange-600",
+  CANCELLED: "bg-rose-500/15 text-rose-600",
+};
 
 function dateOnly(value: string | null): string {
   return value ? new Date(value).toLocaleDateString() : "-";
 }
 
 export default function SuperAdminTenantsPage() {
+  const router = useRouter();
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["sa-tenants", status, page],
     queryFn: () => fetchTenants(status, page),
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/approve`),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Tenant aprobado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TenantStatus }) =>
+      api.patch(`/api/super-admin/tenants/${id}/status`, { status }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Estado actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const planMutation = useMutation({
+    mutationFn: ({ id, plan }: { id: string; plan: TenantPlan }) =>
+      api.patch(`/api/super-admin/tenants/${id}/plan`, { plan }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Plan actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const extendTrialMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/extend-trial`, null, { params: { days: 30 } }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Trial extendido 30 dias");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${id}/impersonate`);
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("token", data.token);
+      toast.success(`Sesion iniciada como ${data.tenantName}`);
+      router.push("/dashboard");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
   });
 
   const tenants = data?.data ?? [];
@@ -51,28 +133,31 @@ export default function SuperAdminTenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-2xl font-semibold">Tenants</h1>
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(0);
-          }}
-          className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Todos los estados</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {statusLabel(s)}
-            </option>
-          ))}
-        </select>
+        <p className="text-sm text-muted-foreground">{total} tenants registrados</p>
+      </div>
+
+      <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
+        {STATUS_FILTERS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => {
+              setStatus(opt.value);
+              setPage(0);
+            }}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              status === opt.value ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{total} tenants</CardTitle>
+          <CardTitle>Tenants</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
@@ -92,6 +177,7 @@ export default function SuperAdminTenantsPage() {
                     <th className="py-2 text-right">Usuarios</th>
                     <th className="py-2 text-right">Clientes</th>
                     <th className="py-2">Creado</th>
+                    <th className="py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -101,13 +187,86 @@ export default function SuperAdminTenantsPage() {
                         <Link href={`/super-admin/tenants/${t.id}`} className="font-medium hover:underline">
                           {t.name}
                         </Link>
+                        <p className="text-xs text-muted-foreground">{t.slug}</p>
                       </td>
                       <td className="py-2">{t.plan}</td>
-                      <td className="py-2">{statusLabel(t.status)}</td>
+                      <td className="py-2">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[t.status]}`}>
+                          {STATUS_LABELS[t.status]}
+                        </span>
+                      </td>
                       <td className="py-2">{dateOnly(t.trialEndsAt)}</td>
                       <td className="py-2 text-right">{t.userCount}</td>
                       <td className="py-2 text-right">{t.customerCount}</td>
                       <td className="py-2">{dateOnly(t.createdAt)}</td>
+                      <td className="py-2">
+                        <div className="flex items-center justify-end gap-2">
+                          {t.status === "PENDING" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1 px-2 text-xs"
+                              disabled={approveMutation.isPending}
+                              onClick={() => approveMutation.mutate(t.id)}
+                            >
+                              <CheckCircle className="h-3 w-3" /> Aprobar
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                                Acciones <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => impersonateMutation.mutate(t.id)}>
+                                <LogIn className="mr-2 h-3.5 w-3.5" /> Impersonar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => extendTrialMutation.mutate(t.id)}>
+                                +30 dias trial
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.status === "ACTIVE"}
+                                onClick={() => statusMutation.mutate({ id: t.id, status: "ACTIVE" })}
+                              >
+                                Activar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={t.status === "SUSPENDED"}
+                                onClick={() => statusMutation.mutate({ id: t.id, status: "SUSPENDED" })}
+                              >
+                                Suspender
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={t.status === "CANCELLED"}
+                                onClick={() => statusMutation.mutate({ id: t.id, status: "CANCELLED" })}
+                              >
+                                Cancelar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.plan === "STARTER"}
+                                onClick={() => planMutation.mutate({ id: t.id, plan: "STARTER" })}
+                              >
+                                Plan Starter
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={t.plan === "PRO"}
+                                onClick={() => planMutation.mutate({ id: t.id, plan: "PRO" })}
+                              >
+                                Plan Pro
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={t.plan === "ENTERPRISE"}
+                                onClick={() => planMutation.mutate({ id: t.id, plan: "ENTERPRISE" })}
+                              >
+                                Plan Enterprise
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
