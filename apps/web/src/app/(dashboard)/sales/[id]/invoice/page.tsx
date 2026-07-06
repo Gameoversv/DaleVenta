@@ -16,11 +16,28 @@ async function fetchInvoice(id: string): Promise<InvoiceResponse> {
 }
 
 function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
+  const amount = Number(value ?? 0);
+  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
 }
 
 function dateTime(value: string): string {
   return new Date(value).toLocaleString();
+}
+
+function fieldValue(record: unknown, names: string[], fallback: string | number = 0): string | number {
+  const source = record as Record<string, unknown> | null | undefined;
+  for (const name of names) {
+    const value = source?.[name];
+    if (value !== undefined && value !== null && value !== "") {
+      return value as string | number;
+    }
+  }
+  return fallback;
+}
+
+function itemName(item: unknown, index: number): string {
+  const value = fieldValue(item, ["productName", "description", "name", "productId"], `Producto ${index + 1}`);
+  return String(value);
 }
 
 export default function InvoicePage() {
@@ -90,8 +107,6 @@ export default function InvoicePage() {
             </div>
             <div className="sm:text-right">
               <p className="font-medium">Venta</p>
-              <p className="text-muted-foreground">Sucursal: {data.branchName}</p>
-              <p className="text-muted-foreground">Caja: {data.registerName}</p>
               <p className="text-muted-foreground">Estado: {data.status === "COMPLETED" ? "Completada" : "Anulada"}</p>
             </div>
           </div>
@@ -108,11 +123,11 @@ export default function InvoicePage() {
               </thead>
               <tbody>
                 {data.items.map((item, index) => (
-                  <tr key={`${item.productName}-${index}`} className="border-b border-border">
-                    <td className="py-2">{item.productName}</td>
-                    <td className="py-2 text-right">{item.quantity}</td>
-                    <td className="py-2 text-right">{money(item.unitPrice)}</td>
-                    <td className="py-2 text-right">{money(item.lineTotal)}</td>
+                  <tr key={`${itemName(item, index)}-${index}`} className="border-b border-border">
+                    <td className="py-2">{itemName(item, index)}</td>
+                    <td className="py-2 text-right">{fieldValue(item, ["quantity", "qty"], 0)}</td>
+                    <td className="py-2 text-right">{money(fieldValue(item, ["unitPrice", "price"]))}</td>
+                    <td className="py-2 text-right">{money(fieldValue(item, ["lineTotal", "total", "amount"]))}</td>
                   </tr>
                 ))}
               </tbody>
