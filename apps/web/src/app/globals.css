@@ -5,114 +5,121 @@
 :root {
   color-scheme: light;
 
-  /* DaleVenta brand: warm teal-emerald primary, cream surface, coral accent. */
-  --background: #faf7f2;
-  --foreground: #1c2320;
+  /* DaleVenta brand: navy primary, sky-blue secondary, coral accent. Clean enterprise SaaS. */
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   --card: #ffffff;
-  --card-foreground: #1c2320;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #1c2320;
+  --popover-foreground: #0f172a;
 
-  --primary: #0f6b5c;
-  --primary-foreground: #f6fdfb;
+  --primary: #172554;
+  --primary-foreground: #f8fafc;
 
-  --secondary: #eef0ea;
-  --secondary-foreground: #1c2320;
+  --secondary: #eef2f7;
+  --secondary-foreground: #0f172a;
 
-  --muted: #f1ede4;
-  --muted-foreground: #6b6459;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
   /* shadcn-internal neutral hover surface (dropdown/dialog/nav hover states) */
-  --accent: #f1ede4;
-  --accent-foreground: #1c2320;
+  --accent: #eef2f7;
+  --accent-foreground: #0f172a;
+
+  /* DaleVenta brand secondary - sky blue, used for links/secondary emphasis/info */
+  --brand-secondary: #38bdf8;
+  --brand-secondary-foreground: #04263a;
 
   /* DaleVenta brand coral - reserved for CTAs, highlighted actions, badges */
-  --brand-accent: #e8734a;
-  --brand-accent-foreground: #fff8f4;
+  --brand-accent: #fb7185;
+  --brand-accent-foreground: #2a0a10;
 
-  --destructive: #dc2626;
+  --destructive: #ef4444;
   --destructive-foreground: #fef2f2;
 
-  --border: #e7e1d4;
-  --input: #e7e1d4;
-  --ring: #0f6b5c;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #172554;
 
-  --success: #16a34a;
-  --success-foreground: #f0fdf4;
-  --warning: #d97706;
+  --success: #10b981;
+  --success-foreground: #ecfdf5;
+  --warning: #f59e0b;
   --warning-foreground: #fffbeb;
-  --info: #2563eb;
-  --info-foreground: #eff6ff;
+  --info: #38bdf8;
+  --info-foreground: #04263a;
   --credit: #7c3aed;
   --credit-foreground: #f5f3ff;
-  --cash: #16a34a;
-  --transfer: #2563eb;
+  --cash: #10b981;
+  --transfer: #38bdf8;
 
-  --sidebar: #14211d;
-  --sidebar-foreground: #cfe0da;
-  --sidebar-accent: #1e3730;
-  --sidebar-border: #23372f;
-  --sidebar-primary: #2fae93;
+  --sidebar: #172554;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-accent: #1e3369;
+  --sidebar-border: #24397a;
+  --sidebar-primary: #38bdf8;
 
   --radius: 0.75rem;
 
-  --shadow-card: 0 1px 2px 0 rgb(28 35 32 / 0.04), 0 1px 3px 0 rgb(28 35 32 / 0.06);
-  --shadow-elevated: 0 4px 12px -2px rgb(28 35 32 / 0.08), 0 2px 4px -2px rgb(28 35 32 / 0.05);
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-elevated: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
 }
 
 :root[data-theme="dark"],
 .dark {
   color-scheme: dark;
 
-  --background: #101614;
-  --foreground: #eef3f0;
+  --background: #0a1120;
+  --foreground: #e2e8f0;
 
-  --card: #171f1c;
-  --card-foreground: #eef3f0;
+  --card: #111a2e;
+  --card-foreground: #e2e8f0;
 
-  --popover: #171f1c;
-  --popover-foreground: #eef3f0;
+  --popover: #111a2e;
+  --popover-foreground: #e2e8f0;
 
-  --primary: #2fae93;
-  --primary-foreground: #0a1512;
+  --primary: #60a5fa;
+  --primary-foreground: #071226;
 
-  --secondary: #1e2622;
-  --secondary-foreground: #eef3f0;
+  --secondary: #1a2438;
+  --secondary-foreground: #e2e8f0;
 
-  --muted: #1a211e;
-  --muted-foreground: #9aa39d;
+  --muted: #16213a;
+  --muted-foreground: #94a3b8;
 
-  --accent: #1e2622;
-  --accent-foreground: #eef3f0;
+  --accent: #1a2438;
+  --accent-foreground: #e2e8f0;
 
-  --brand-accent: #ef8f66;
-  --brand-accent-foreground: #1c1008;
+  --brand-secondary: #38bdf8;
+  --brand-secondary-foreground: #04263a;
+
+  --brand-accent: #fb7185;
+  --brand-accent-foreground: #2a0a10;
 
   --destructive: #f87171;
   --destructive-foreground: #2a0a0a;
 
-  --border: #263029;
-  --input: #263029;
-  --ring: #2fae93;
+  --border: #22304d;
+  --input: #22304d;
+  --ring: #60a5fa;
 
-  --success: #4ade80;
-  --success-foreground: #06210f;
+  --success: #34d399;
+  --success-foreground: #052e20;
   --warning: #fbbf24;
   --warning-foreground: #2b1c02;
-  --info: #60a5fa;
-  --info-foreground: #071b36;
+  --info: #38bdf8;
+  --info-foreground: #04263a;
   --credit: #a78bfa;
   --credit-foreground: #1c1330;
-  --cash: #4ade80;
-  --transfer: #60a5fa;
+  --cash: #34d399;
+  --transfer: #38bdf8;
 
-  --sidebar: #0c1412;
-  --sidebar-foreground: #b9c9c2;
-  --sidebar-accent: #182521;
-  --sidebar-border: #1c2925;
-  --sidebar-primary: #2fae93;
+  --sidebar: #08122a;
+  --sidebar-foreground: #aebcd6;
+  --sidebar-accent: #14213d;
+  --sidebar-border: #1a2848;
+  --sidebar-primary: #38bdf8;
 
   --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 0 rgb(0 0 0 / 0.4);
   --shadow-elevated: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
@@ -133,6 +140,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-secondary-foreground: var(--brand-secondary-foreground);
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-destructive: var(--destructive);

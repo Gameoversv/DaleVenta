@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
-import type { CashShiftSummaryResponse, DenominationCountEntry, InventoryCountEntry } from "@/types/cash-shift";
+import type {
+  CashShiftSummaryResponse,
+  DenominationCountEntry,
+  DenominationResponse,
+  InventoryCountEntry,
+} from "@/types/cash-shift";
 
 interface CloseShiftFormProps {
   shift: CashShiftSummaryResponse;
@@ -19,10 +26,29 @@ interface CloseShiftFormProps {
   onClosed: (closed: CashShiftSummaryResponse) => void;
 }
 
+async function fetchDenominations(): Promise<DenominationResponse[]> {
+  const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
+  return res.data.data;
+}
+
+function money(value: number): string {
+  return `RD$${value.toFixed(2)}`;
+}
+
 export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShiftFormProps) {
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
   const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
   const [notes, setNotes] = useState("");
+  const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
+
+  const countedCash = entries.reduce((sum, e) => {
+    const denom = denominations?.find((d) => d.id === e.denominationId);
+    return sum + (denom ? Number(denom.value) * e.quantity : 0);
+  }, 0);
+  const expectedCash = Number(shift.expectedCash ?? "0");
+  const difference = countedCash - expectedCash;
+  const hasCounted = entries.length > 0;
+  const isSquare = difference === 0;
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -47,6 +73,45 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
         <CardTitle>Cerrar turno</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-border p-3">
+            <p className="text-xs text-muted-foreground">Efectivo esperado</p>
+            <p className="font-mono-money text-lg font-bold">{money(expectedCash)}</p>
+          </div>
+          <div className="rounded-lg border border-border p-3">
+            <p className="text-xs text-muted-foreground">Efectivo contado</p>
+            <p className="font-mono-money text-lg font-bold">{hasCounted ? money(countedCash) : "-"}</p>
+          </div>
+          <div
+            className={cn(
+              "col-span-2 rounded-lg border p-3 sm:col-span-2",
+              !hasCounted
+                ? "border-border"
+                : isSquare
+                  ? "border-success/30 bg-success/5"
+                  : "border-warning/30 bg-warning/5"
+            )}
+          >
+            <p className="text-xs text-muted-foreground">Diferencia</p>
+            <div className="flex items-center gap-1.5">
+              {hasCounted && (isSquare ? <CheckCircle2 className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning" />)}
+              <p
+                className={cn(
+                  "font-mono-money text-lg font-bold",
+                  hasCounted && (isSquare ? "text-success" : "text-warning")
+                )}
+              >
+                {hasCounted ? money(difference) : "-"}
+              </p>
+            </div>
+            {hasCounted && (
+              <p className="text-xs text-muted-foreground">
+                {isSquare ? "Caja cuadrada" : difference > 0 ? "Sobrante" : "Faltante"}
+              </p>
+            )}
+          </div>
+        </div>
+
         <Tabs
           items={[
             { value: "cash", label: "Efectivo", content: <DenominationCountGrid onChange={setEntries} /> },
@@ -58,12 +123,13 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
           ]}
         />
         <div className="space-y-2">
-          <Label htmlFor="close-notes">Notas (obligatorio si hay diferencia de caja o inventario)</Label>
+          <Label htmlFor="close-notes">Notas {!isSquare && hasCounted && <span className="text-warning">(obligatorio: hay diferencia de caja)</span>}</Label>
           <textarea
             id="close-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
+            placeholder="Explica la diferencia de caja o cualquier observacion del turno..."
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>

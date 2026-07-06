@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CashMovementDialog } from "./CashMovementDialog";
 import { formatDenominationValue } from "./DenominationCountGrid";
@@ -31,8 +32,9 @@ export function ShiftSummary({ shift, registerId, onRequestClose }: ShiftSummary
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>Turno abierto</CardTitle>
+        <Badge variant="success">Activo</Badge>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
@@ -42,11 +44,11 @@ export function ShiftSummary({ shift, registerId, onRequestClose }: ShiftSummary
           </div>
           <div>
             <p className="text-muted-foreground">Total de apertura</p>
-            <p className="font-medium">RD${shift.openingTotal}</p>
+            <p className="font-mono-money font-semibold">RD${shift.openingTotal}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Efectivo esperado</p>
-            <p className="font-medium">RD${shift.expectedCash}</p>
+            <p className="font-mono-money font-semibold">RD${shift.expectedCash}</p>
           </div>
         </div>
         <table className="w-full text-sm">
