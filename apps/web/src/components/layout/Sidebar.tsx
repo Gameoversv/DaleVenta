@@ -13,6 +13,7 @@ import {
   ReceiptText,
   History,
   Settings,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
@@ -27,6 +28,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
   { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
   { href: "/branches", label: "Sucursales", icon: Building2, permission: "SETTINGS_MANAGE" },
   { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },

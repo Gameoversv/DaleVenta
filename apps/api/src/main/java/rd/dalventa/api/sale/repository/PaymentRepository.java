@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     List<Payment> findAllBySaleId(UUID saleId);
+    List<Payment> findAllByTenantIdAndSaleIdIn(UUID tenantId, List<UUID> saleIds);
 }
