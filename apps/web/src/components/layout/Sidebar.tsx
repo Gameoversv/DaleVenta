@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Package, Boxes, Wallet, ShoppingCart, Users } from "lucide-react";
+import { LayoutDashboard, Building2, Package, Boxes, Wallet, ShoppingCart, Users, ReceiptText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
 import type { PermissionCode } from "@/types/auth";
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
   { href: "/cash-shift", label: "Turno de Caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
   { href: "/pos", label: "POS", icon: ShoppingCart, permission: "SALE_CREATE" },
+  { href: "/sales", label: "Ventas", icon: ReceiptText, permission: "SALE_CREATE" },
   { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_EDIT" },
 ];
 

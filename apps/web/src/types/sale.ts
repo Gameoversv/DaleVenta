@@ -49,6 +49,9 @@ export interface SaleResponse {
   taxTotal: string;
   discountAmount: string;
   total: string;
+  createdAt: string;
+  voidedAt: string | null;
+  voidReason: string | null;
   items: SaleItemResponse[];
   payments: PaymentResponse[];
 }

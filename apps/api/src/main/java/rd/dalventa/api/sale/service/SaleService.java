@@ -226,7 +226,7 @@ public class SaleService {
     @Transactional(readOnly = true)
     public List<SaleResponse> list(java.util.UUID registerId) {
         var tenantId = TenantContext.require();
-        return saleRepository.findAllByTenantIdAndRegisterId(tenantId, registerId)
+        return saleRepository.findAllByTenantIdAndRegisterIdOrderByCreatedAtDesc(tenantId, registerId)
                 .stream().map(this::toResponse).toList();
     }
 
