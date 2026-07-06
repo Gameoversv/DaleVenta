@@ -123,11 +123,14 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
   useEffect(() => {
     if (profile) {
       setCreditEnabled(profile.creditEnabled);
-      setCreditLimit(profile.creditLimit);
+      setCreditLimit(profile.creditLimit ?? "");
     }
   }, [profile]);
 
-  const available = account && profile ? (Number(profile.creditLimit) - Number(account.balance)).toFixed(2) : null;
+  const available =
+    account && profile && profile.creditLimit != null
+      ? (Number(profile.creditLimit) - Number(account.balance)).toFixed(2)
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -145,7 +148,10 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                 className="space-y-2"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  profileMutation.mutate({ creditEnabled, creditLimit });
+                  profileMutation.mutate({
+                    creditEnabled,
+                    creditLimit: creditLimit.trim() === "" ? null : creditLimit,
+                  });
                 }}
               >
                 <div className="flex items-center gap-2">
@@ -158,8 +164,13 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                   <Label htmlFor="credit-enabled">Credito habilitado</Label>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="credit-limit">Limite de credito</Label>
-                  <Input id="credit-limit" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} />
+                  <Label htmlFor="credit-limit">Limite de credito (vacio = credito abierto, sin limite)</Label>
+                  <Input
+                    id="credit-limit"
+                    placeholder="Sin limite"
+                    value={creditLimit}
+                    onChange={(e) => setCreditLimit(e.target.value)}
+                  />
                 </div>
                 <Button type="submit" size="sm" disabled={profileMutation.isPending}>
                   {profileMutation.isPending ? "Guardando..." : "Guardar perfil"}
@@ -167,7 +178,11 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
               </form>
             ) : (
               <p className="text-sm text-muted-foreground">
-                {profile?.creditEnabled ? `Habilitado, limite RD$${profile.creditLimit}` : "Credito no habilitado"}
+                {profile?.creditEnabled
+                  ? profile.creditLimit != null
+                    ? `Habilitado, limite RD$${profile.creditLimit}`
+                    : "Habilitado, credito abierto (sin limite)"
+                  : "Credito no habilitado"}
               </p>
             )}
           </section>

@@ -31,6 +31,7 @@ export function InventoryCountGrid({ branchId, onChange }: InventoryCountGridPro
   });
   const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [search, setSearch] = useState("");
 
   const productById = useMemo(
     () => new Map((products ?? []).map((p) => [p.id, p])),
@@ -41,6 +42,19 @@ export function InventoryCountGrid({ branchId, onChange }: InventoryCountGridPro
     () => (inventory ?? []).filter((row) => productById.get(row.productId)?.tracksInventory !== false),
     [inventory, productById]
   );
+
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return trackedRows;
+    return trackedRows.filter((row) => {
+      const product = productById.get(row.productId);
+      return (
+        product?.description.toLowerCase().includes(q) ||
+        product?.internalCode.toLowerCase().includes(q) ||
+        product?.barcode?.toLowerCase().includes(q)
+      );
+    });
+  }, [trackedRows, productById, search]);
 
   useEffect(() => {
     if (trackedRows.length === 0) return;
@@ -88,9 +102,22 @@ export function InventoryCountGrid({ branchId, onChange }: InventoryCountGridPro
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Conteo de inventario</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium">Conteo de inventario</p>
+        <p className="text-xs text-muted-foreground">
+          {visibleRows.length} de {trackedRows.length} productos
+        </p>
+      </div>
+      <Input
+        placeholder="Buscar producto por nombre, codigo o barcode..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      {visibleRows.length === 0 && (
+        <p className="text-sm text-muted-foreground">Ningun producto coincide con la busqueda.</p>
+      )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {trackedRows.map((row) => {
+        {visibleRows.map((row) => {
           const product = productById.get(row.productId);
           return (
             <div key={row.productId} className="space-y-1">

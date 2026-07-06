@@ -7,5 +7,5 @@ import java.math.BigDecimal;
 
 public record UpdateCreditProfileRequest(
         @JsonProperty("creditEnabled") @NotNull boolean creditEnabled,
-        @JsonProperty("creditLimit") @NotNull BigDecimal creditLimit
+        @JsonProperty("creditLimit") BigDecimal creditLimit
 ) {}

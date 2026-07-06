@@ -5,14 +5,10 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
+import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { Button } from "@/components/ui/button";
 import { CashShiftWorkspace } from "@/components/cash-shift/CashShiftWorkspace";
-import type { BranchResponse, RegisterResponse } from "@/types/branch";
-
-async function fetchBranches(): Promise<BranchResponse[]> {
-  const res = await api.get<{ data: BranchResponse[] }>("/api/branches");
-  return res.data.data;
-}
+import type { RegisterResponse } from "@/types/branch";
 
 async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
   const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
@@ -20,20 +16,13 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 }
 
 export default function CashShiftPage() {
-  const [branchId, setBranchId] = useState("");
+  const [manualBranchId, setManualBranchId] = useState("");
   const [registerId, setRegisterId] = useState("");
   const canOpenCashShift = usePermission("CASHSHIFT_OPEN");
   const canManageSettings = usePermission("SETTINGS_MANAGE");
+  const { branches, isLoading: branchesLoading, isError: branchesError, hasMultiple, soleBranchId } = useSoleBranch();
+  const branchId = hasMultiple ? manualBranchId : soleBranchId;
 
-  const {
-    data: branches,
-    isLoading: branchesLoading,
-    isError: branchesError,
-  } = useQuery({
-    queryKey: ["branches"],
-    queryFn: fetchBranches,
-    enabled: canOpenCashShift,
-  });
   const {
     data: registers,
     isLoading: registersLoading,
@@ -74,30 +63,30 @@ export default function CashShiftPage() {
         </div>
       )}
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="cash-shift-branch" className="text-sm font-medium">
-            Sucursal
-          </label>
-          <select
-            id="cash-shift-branch"
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              setRegisterId("");
-            }}
-            disabled={branchesLoading || branchesError}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">
-              {branchesLoading ? "Cargando sucursales..." : "Selecciona una sucursal"}
-            </option>
-            {branches?.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {hasMultiple && (
+          <div className="max-w-xs flex-1 space-y-2">
+            <label htmlFor="cash-shift-branch" className="text-sm font-medium">
+              Sucursal
+            </label>
+            <select
+              id="cash-shift-branch"
+              value={manualBranchId}
+              onChange={(e) => {
+                setManualBranchId(e.target.value);
+                setRegisterId("");
+              }}
+              disabled={branchesLoading || branchesError}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecciona una sucursal</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="max-w-xs flex-1 space-y-2">
           <label htmlFor="cash-shift-register" className="text-sm font-medium">
             Caja

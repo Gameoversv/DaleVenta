@@ -24,8 +24,9 @@ public class CustomerCreditProfile extends TenantAwareEntity {
     @Column(name = "credit_enabled", nullable = false)
     private boolean creditEnabled = false;
 
-    @Column(name = "credit_limit", nullable = false)
-    private BigDecimal creditLimit = BigDecimal.ZERO.setScale(2);
+    // Null means open credit (no cap): charge() skips the limit check.
+    @Column(name = "credit_limit")
+    private BigDecimal creditLimit;
 
     public CustomerCreditProfile(UUID customerId) {
         this.customerId = customerId;

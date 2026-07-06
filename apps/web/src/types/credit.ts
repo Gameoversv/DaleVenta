@@ -1,7 +1,7 @@
 export interface CreditProfileResponse {
   customerId: string;
   creditEnabled: boolean;
-  creditLimit: string;
+  creditLimit: string | null;
 }
 
 export interface CreditAccountResponse {
@@ -22,7 +22,7 @@ export interface CreditTransactionResponse {
 
 export interface UpdateCreditProfileRequest {
   creditEnabled: boolean;
-  creditLimit: string;
+  creditLimit: string | null;
 }
 
 export interface RecordCreditPaymentRequest {
@@ -45,5 +45,5 @@ export interface AccountsReceivableRow {
   customerName: string;
   phone: string | null;
   balance: string;
-  creditLimit: string;
+  creditLimit: string | null;
 }

@@ -47,7 +47,7 @@ public class CreditService {
                     return p;
                 });
         profile.setCreditEnabled(req.creditEnabled());
-        profile.setCreditLimit(req.creditLimit().setScale(2, RoundingMode.HALF_UP));
+        profile.setCreditLimit(req.creditLimit() != null ? req.creditLimit().setScale(2, RoundingMode.HALF_UP) : null);
         return CreditProfileResponse.from(customerCreditProfileRepository.save(profile));
     }
 
@@ -96,7 +96,7 @@ public class CreditService {
 
         var account = getOrCreateAccount(tenantId, customerId);
         var newBalance = account.getBalance().add(amount);
-        if (newBalance.compareTo(profile.getCreditLimit()) > 0) {
+        if (profile.getCreditLimit() != null && newBalance.compareTo(profile.getCreditLimit()) > 0) {
             throw new IllegalArgumentException("La venta excede el limite de credito disponible");
         }
 

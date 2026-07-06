@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePermission } from "@/hooks/usePermission";
 import api from "@/lib/api";
 import type { CustomerResponse } from "@/types/customer";
 
@@ -21,6 +22,8 @@ const customerSchema = z.object({
   email: z.string().optional(),
   address: z.string().optional(),
   documentId: z.string().optional(),
+  creditEnabled: z.boolean().optional(),
+  creditLimit: z.string().optional(),
 });
 type CustomerForm = z.infer<typeof customerSchema>;
 
@@ -33,11 +36,13 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!customer;
+  const canAuthorizeCredit = usePermission("CREDIT_AUTHORIZE");
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CustomerForm>({
     resolver: zodResolver(customerSchema),
@@ -49,12 +54,29 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
       email: customer?.email ?? "",
       address: customer?.address ?? "",
       documentId: customer?.documentId ?? "",
+      creditEnabled: false,
+      creditLimit: "",
     },
   });
 
+  const creditEnabled = watch("creditEnabled");
+
   const mutation = useMutation({
-    mutationFn: (values: CustomerForm) =>
-      isEdit ? api.put(`/api/customers/${customer!.id}`, values) : api.post("/api/customers", values),
+    mutationFn: async (values: CustomerForm) => {
+      const { creditEnabled: wantsCredit, creditLimit, ...customerFields } = values;
+      if (isEdit) {
+        return api.put(`/api/customers/${customer!.id}`, customerFields);
+      }
+      const res = await api.post<{ data: CustomerResponse }>("/api/customers", customerFields);
+      const created = res.data.data;
+      if (wantsCredit && canAuthorizeCredit) {
+        await api.put(`/api/customers/${created.id}/credit-profile`, {
+          creditEnabled: true,
+          creditLimit: creditLimit && creditLimit.trim() !== "" ? creditLimit : null,
+        });
+      }
+      return res;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       setOpen(false);
@@ -107,6 +129,22 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
             <Label htmlFor="customer-document-id">Documento</Label>
             <Input id="customer-document-id" {...register("documentId")} />
           </div>
+          {!isEdit && canAuthorizeCredit && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center gap-2">
+                <input id="customer-credit-enabled" type="checkbox" {...register("creditEnabled")} />
+                <Label htmlFor="customer-credit-enabled">Cliente tiene credito</Label>
+              </div>
+              {creditEnabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="customer-credit-limit">
+                    Limite de credito (opcional, vacio = credito abierto)
+                  </Label>
+                  <Input id="customer-credit-limit" placeholder="Sin limite" {...register("creditLimit")} />
+                </div>
+              )}
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Guardando..." : "Guardar"}

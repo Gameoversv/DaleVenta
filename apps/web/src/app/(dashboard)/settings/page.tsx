@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -129,6 +129,8 @@ export default function SettingsPage() {
     enabled: canManageSettings,
   });
 
+  const [denominationsOpen, setDenominationsOpen] = useState(false);
+
   const orderedDenominations = useMemo(
     () =>
       [...(denominations ?? [])].sort((a, b) => {
@@ -155,10 +157,20 @@ export default function SettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <button
+          type="button"
+          onClick={() => setDenominationsOpen((v) => !v)}
+          className="flex w-full items-center justify-between p-6 text-left"
+        >
           <CardTitle>Denominaciones de caja</CardTitle>
-        </CardHeader>
-        <CardContent>
+          {denominationsOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+        {denominationsOpen && (
+        <CardContent className="pt-0">
           {isLoading && <p className="text-sm text-muted-foreground">Cargando denominaciones...</p>}
           {isError && <p className="text-sm text-destructive">No se pudieron cargar las denominaciones.</p>}
           {!isLoading && !isError && orderedDenominations.length === 0 && (
@@ -189,6 +201,7 @@ export default function SettingsPage() {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       <Card>

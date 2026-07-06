@@ -82,9 +82,9 @@ export default function AccountsReceivablePage() {
                       <td className="py-2 font-medium">{row.customerName}</td>
                       <td className="py-2">{row.phone ?? "—"}</td>
                       <td className="py-2 text-right text-destructive">{money(row.balance)}</td>
-                      <td className="py-2 text-right">{money(row.creditLimit)}</td>
+                      <td className="py-2 text-right">{row.creditLimit != null ? money(row.creditLimit) : "Sin limite"}</td>
                       <td className="py-2 text-right">
-                        {money((Number(row.creditLimit) - Number(row.balance)).toFixed(2))}
+                        {row.creditLimit != null ? money((Number(row.creditLimit) - Number(row.balance)).toFixed(2)) : "—"}
                       </td>
                     </tr>
                   ))}

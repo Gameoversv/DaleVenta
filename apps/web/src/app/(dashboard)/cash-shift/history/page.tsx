@@ -7,17 +7,13 @@ import { Eye } from "lucide-react";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/usePermission";
+import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
-import type { BranchResponse, RegisterResponse } from "@/types/branch";
+import type { RegisterResponse } from "@/types/branch";
 import type { CashMovementResponse, CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
-
-async function fetchBranches(): Promise<BranchResponse[]> {
-  const res = await api.get<{ data: BranchResponse[] }>("/api/branches");
-  return res.data.data;
-}
 
 async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
   const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
@@ -210,15 +206,12 @@ function ShiftDetailDialog({
 }
 
 export default function CashShiftHistoryPage() {
-  const [branchId, setBranchId] = useState("");
+  const [manualBranchId, setManualBranchId] = useState("");
   const [registerId, setRegisterId] = useState("");
   const canViewHistory = usePermission("CASHSHIFT_VIEW_HISTORY");
+  const { branches, hasMultiple, soleBranchId } = useSoleBranch();
+  const branchId = hasMultiple ? manualBranchId : soleBranchId;
 
-  const { data: branches, isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
-    queryFn: fetchBranches,
-    enabled: canViewHistory,
-  });
   const { data: registers, isLoading: registersLoading } = useQuery({
     queryKey: ["registers", branchId],
     queryFn: () => fetchRegisters(branchId),
@@ -255,27 +248,29 @@ export default function CashShiftHistoryPage() {
       <h1 className="text-2xl font-semibold">Historial de caja</h1>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="cash-history-branch" className="text-sm font-medium">
-            Sucursal
-          </label>
-          <select
-            id="cash-history-branch"
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              setRegisterId("");
-            }}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">{branchesLoading ? "Cargando sucursales..." : "Selecciona una sucursal"}</option>
-            {branches?.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {hasMultiple && (
+          <div className="max-w-xs flex-1 space-y-2">
+            <label htmlFor="cash-history-branch" className="text-sm font-medium">
+              Sucursal
+            </label>
+            <select
+              id="cash-history-branch"
+              value={manualBranchId}
+              onChange={(e) => {
+                setManualBranchId(e.target.value);
+                setRegisterId("");
+              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecciona una sucursal</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="max-w-xs flex-1 space-y-2">
           <label htmlFor="cash-history-register" className="text-sm font-medium">
             Caja

@@ -7,20 +7,16 @@ import { Eye, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
+import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { BranchResponse, RegisterResponse } from "@/types/branch";
+import type { RegisterResponse } from "@/types/branch";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
-
-async function fetchBranches(): Promise<BranchResponse[]> {
-  const res = await api.get<{ data: BranchResponse[] }>("/api/branches");
-  return res.data.data;
-}
 
 async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
   const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
@@ -194,16 +190,13 @@ function VoidSaleDialog({ registerId, sale }: { registerId: string; sale: SaleRe
 }
 
 export default function SalesPage() {
-  const [branchId, setBranchId] = useState("");
+  const [manualBranchId, setManualBranchId] = useState("");
   const [registerId, setRegisterId] = useState("");
   const canViewSales = usePermission("SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
+  const { branches, hasMultiple, soleBranchId } = useSoleBranch();
+  const branchId = hasMultiple ? manualBranchId : soleBranchId;
 
-  const { data: branches, isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
-    queryFn: fetchBranches,
-    enabled: canViewSales,
-  });
   const { data: registers, isLoading: registersLoading } = useQuery({
     queryKey: ["registers", branchId],
     queryFn: () => fetchRegisters(branchId),
@@ -251,27 +244,29 @@ export default function SalesPage() {
       <h1 className="text-2xl font-semibold">Historial de ventas</h1>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="sales-branch" className="text-sm font-medium">
-            Sucursal
-          </label>
-          <select
-            id="sales-branch"
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              setRegisterId("");
-            }}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">{branchesLoading ? "Cargando sucursales..." : "Selecciona una sucursal"}</option>
-            {branches?.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {hasMultiple && (
+          <div className="max-w-xs flex-1 space-y-2">
+            <label htmlFor="sales-branch" className="text-sm font-medium">
+              Sucursal
+            </label>
+            <select
+              id="sales-branch"
+              value={manualBranchId}
+              onChange={(e) => {
+                setManualBranchId(e.target.value);
+                setRegisterId("");
+              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecciona una sucursal</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="max-w-xs flex-1 space-y-2">
           <label htmlFor="sales-register" className="text-sm font-medium">
             Caja

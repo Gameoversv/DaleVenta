@@ -4,12 +4,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { PosWorkspace } from "@/components/pos/PosWorkspace";
-import type { BranchResponse, RegisterResponse } from "@/types/branch";
-
-async function fetchBranches(): Promise<BranchResponse[]> {
-  const res = await api.get<{ data: BranchResponse[] }>("/api/branches");
-  return res.data.data;
-}
+import { useSoleBranch } from "@/hooks/useSoleBranch";
+import type { RegisterResponse } from "@/types/branch";
 
 async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
   const res = await api.get<{ data: RegisterResponse[] }>("/api/registers", { params: { branchId } });
@@ -17,10 +13,11 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 }
 
 export default function PosPage() {
-  const [branchId, setBranchId] = useState("");
+  const [manualBranchId, setManualBranchId] = useState("");
   const [registerId, setRegisterId] = useState("");
+  const { branches, hasMultiple, soleBranchId } = useSoleBranch();
+  const branchId = hasMultiple ? manualBranchId : soleBranchId;
 
-  const { data: branches } = useQuery({ queryKey: ["branches"], queryFn: fetchBranches });
   const { data: registers } = useQuery({
     queryKey: ["registers", branchId],
     queryFn: () => fetchRegisters(branchId),
@@ -31,27 +28,29 @@ export default function PosPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">POS</h1>
       <div className="flex gap-4">
-        <div className="max-w-xs flex-1 space-y-2">
-          <label htmlFor="pos-branch" className="text-sm font-medium">
-            Sucursal
-          </label>
-          <select
-            id="pos-branch"
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              setRegisterId("");
-            }}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Selecciona una sucursal</option>
-            {branches?.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {hasMultiple && (
+          <div className="max-w-xs flex-1 space-y-2">
+            <label htmlFor="pos-branch" className="text-sm font-medium">
+              Sucursal
+            </label>
+            <select
+              id="pos-branch"
+              value={manualBranchId}
+              onChange={(e) => {
+                setManualBranchId(e.target.value);
+                setRegisterId("");
+              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecciona una sucursal</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="max-w-xs flex-1 space-y-2">
           <label htmlFor="pos-register" className="text-sm font-medium">
             Caja
