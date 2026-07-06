@@ -115,6 +115,16 @@ export default function SuperAdminTenantDetailPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const fiscalModuleMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/fiscal-module`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Modulo fiscal actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const impersonateMutation = useMutation({
     mutationFn: async () => {
       const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${tenantId}/impersonate`);
@@ -168,6 +178,12 @@ export default function SuperAdminTenantDetailPage() {
             <p>Telefono: <span className="text-muted-foreground">{tenant.phone ?? "-"}</span></p>
             <p>Email: <span className="text-muted-foreground">{tenant.email ?? "-"}</span></p>
             <p>RNC: <span className="text-muted-foreground">{tenant.rnc ?? "-"}</span></p>
+            <p>
+              Modulo fiscal:{" "}
+              <Badge variant={tenant.fiscalModuleEnabled ? "success" : "secondary"}>
+                {tenant.fiscalModuleEnabled ? "Activo" : "Inactivo"}
+              </Badge>
+            </p>
             <p>Creado: <span className="text-muted-foreground">{dateOnly(tenant.createdAt)}</span></p>
             <p>Trial vence: <span className="text-muted-foreground">{dateOnly(tenant.trialEndsAt)}</span></p>
             <p>Usuarios: <span className="text-muted-foreground">{tenant.userCount}</span></p>
@@ -211,6 +227,29 @@ export default function SuperAdminTenantDetailPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Modulo fiscal / NCF</p>
+                  <p className="text-xs text-muted-foreground">
+                    Habilita RNC, comprobantes fiscales, secuencias NCF y factura fiscal para este tenant.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.fiscalModuleEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => fiscalModuleMutation.mutate(!tenant.fiscalModuleEnabled)}
+                  disabled={fiscalModuleMutation.isPending}
+                >
+                  {fiscalModuleMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.fiscalModuleEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
             </div>
             <ExtendTrialDialog tenantId={tenantId} />
           </CardContent>

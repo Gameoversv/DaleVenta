@@ -19,7 +19,7 @@ export default function CashShiftPage() {
     isError: branchesError,
     hasMultiple: hasMultipleBranches,
     soleBranchId,
-  } = useSoleBranch();
+  } = useSoleBranch(canOpenCashShift);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
   const {
@@ -28,7 +28,7 @@ export default function CashShiftPage() {
     isError: registersError,
     hasMultiple: hasMultipleRegisters,
     soleRegisterId,
-  } = useSoleRegister(branchId);
+  } = useSoleRegister(branchId, canOpenCashShift);
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   if (!canOpenCashShift) {

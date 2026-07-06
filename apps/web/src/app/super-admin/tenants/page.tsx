@@ -171,6 +171,7 @@ export default function SuperAdminTenantsPage() {
                     <th className="px-4 py-3">Nombre</th>
                     <th className="px-4 py-3">Plan</th>
                     <th className="px-4 py-3">Estado</th>
+                    <th className="px-4 py-3">Fiscal</th>
                     <th className="px-4 py-3">Trial vence</th>
                     <th className="px-4 py-3 text-right">Usuarios</th>
                     <th className="px-4 py-3 text-right">Clientes</th>
@@ -190,6 +191,11 @@ export default function SuperAdminTenantsPage() {
                       <td className="px-4 py-3 text-muted-foreground">{t.plan}</td>
                       <td className="px-4 py-3">
                         <Badge variant={STATUS_VARIANT[t.status]}>{STATUS_LABELS[t.status]}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={t.fiscalModuleEnabled ? "success" : "secondary"}>
+                          {t.fiscalModuleEnabled ? "Activo" : "Inactivo"}
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{dateOnly(t.trialEndsAt)}</td>
                       <td className="px-4 py-3 text-right">{t.userCount}</td>

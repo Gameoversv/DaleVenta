@@ -144,6 +144,17 @@ public class SuperAdminService {
     }
 
     @Transactional
+    public TenantDetailResponse updateFiscalModule(UUID id, UpdateTenantFiscalModuleRequest req, String actor) {
+        var tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+        var prev = tenant.isFiscalModuleEnabled();
+        tenant.setFiscalModuleEnabled(req.enabled());
+        tenantRepository.save(tenant);
+        audit(actor, "FISCAL_MODULE_CHANGE", id, (prev ? "ON" : "OFF") + " -> " + (req.enabled() ? "ON" : "OFF"));
+        return getTenantDetail(id);
+    }
+
+    @Transactional
     public TenantSummaryResponse extendTrial(UUID id, int days, String actor) {
         var tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));

@@ -29,6 +29,15 @@ public class RegisterController {
     }
 
     @GetMapping
+    @PreAuthorize("""
+            @permissionService.has('SETTINGS_MANAGE')
+            or @permissionService.has('SALE_CREATE')
+            or @permissionService.has('SALE_VIEW_HISTORY')
+            or @permissionService.has('CASHSHIFT_OPEN')
+            or @permissionService.has('CASHSHIFT_VIEW_HISTORY')
+            or @permissionService.has('INVENTORY_VIEW')
+            or @permissionService.has('REPORTS_VIEW')
+            """)
     public ApiResponse<List<RegisterResponse>> listByBranch(@RequestParam UUID branchId) {
         return ApiResponse.ok(registerService.listByBranch(branchId));
     }

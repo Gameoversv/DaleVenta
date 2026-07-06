@@ -13,8 +13,12 @@ async function fetchBranches(): Promise<BranchResponse[]> {
  * selects that branch so pages skip the "which sucursal" step, while still
  * falling back to manual selection for the rare tenant with more than one.
  */
-export function useSoleBranch() {
-  const { data: branches, isLoading, isError } = useQuery({ queryKey: ["branches"], queryFn: fetchBranches });
+export function useSoleBranch(enabled = true) {
+  const { data: branches, isLoading, isError } = useQuery({
+    queryKey: ["branches"],
+    queryFn: fetchBranches,
+    enabled,
+  });
   const hasMultiple = (branches?.length ?? 0) > 1;
   const soleBranchId = !hasMultiple ? branches?.[0]?.id ?? "" : "";
 

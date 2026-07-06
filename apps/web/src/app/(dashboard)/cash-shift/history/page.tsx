@@ -204,7 +204,7 @@ export default function CashShiftHistoryPage() {
   const [manualBranchId, setManualBranchId] = useState("");
   const [manualRegisterId, setManualRegisterId] = useState("");
   const canViewHistory = usePermission("CASHSHIFT_VIEW_HISTORY");
-  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
+  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canViewHistory);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
   const {
@@ -212,7 +212,7 @@ export default function CashShiftHistoryPage() {
     isLoading: registersLoading,
     hasMultiple: hasMultipleRegisters,
     soleRegisterId,
-  } = useSoleRegister(branchId);
+  } = useSoleRegister(branchId, canViewHistory);
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   const { data: denominations } = useQuery({

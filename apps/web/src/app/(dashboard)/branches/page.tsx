@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
+import { usePermission } from "@/hooks/usePermission";
 import { BranchCard } from "@/components/branches/BranchCard";
 import { BranchFormDialog } from "@/components/branches/BranchFormDialog";
 import type { BranchResponse } from "@/types/branch";
@@ -14,7 +15,21 @@ async function fetchBranches(): Promise<BranchResponse[]> {
 }
 
 export default function BranchesPage() {
-  const { data: branches, isLoading } = useQuery({ queryKey: ["branches"], queryFn: fetchBranches });
+  const canManageSettings = usePermission("SETTINGS_MANAGE");
+  const { data: branches, isLoading } = useQuery({
+    queryKey: ["branches"],
+    queryFn: fetchBranches,
+    enabled: canManageSettings,
+  });
+
+  if (!canManageSettings) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Sucursales</h1>
+        <p className="text-sm text-muted-foreground">No tienes permiso para administrar sucursales.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

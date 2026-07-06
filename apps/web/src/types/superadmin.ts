@@ -25,6 +25,7 @@ export interface TenantSummaryResponse {
   slug: string;
   plan: TenantPlan;
   status: TenantStatus;
+  fiscalModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;
@@ -52,6 +53,7 @@ export interface TenantDetailResponse {
   rnc: string | null;
   plan: TenantPlan;
   status: TenantStatus;
+  fiscalModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;

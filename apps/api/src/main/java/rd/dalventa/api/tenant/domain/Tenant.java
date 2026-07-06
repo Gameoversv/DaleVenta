@@ -72,6 +72,9 @@ public class Tenant extends BaseEntity {
     @Column(name = "invoice_show_tax", nullable = false)
     private boolean invoiceShowTax = true;
 
+    @Column(name = "fiscal_module_enabled", nullable = false)
+    private boolean fiscalModuleEnabled = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private TenantPlan plan = TenantPlan.STARTER;

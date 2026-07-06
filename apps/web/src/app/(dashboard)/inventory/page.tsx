@@ -2,12 +2,23 @@
 
 import { useState } from "react";
 import { InventoryTable } from "@/components/inventory/InventoryTable";
+import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
 
 export default function InventoryPage() {
   const [manualBranchId, setManualBranchId] = useState<string>("");
-  const { branches, hasMultiple, soleBranchId } = useSoleBranch();
+  const canViewInventory = usePermission("INVENTORY_VIEW");
+  const { branches, hasMultiple, soleBranchId } = useSoleBranch(canViewInventory);
   const branchId = hasMultiple ? manualBranchId : soleBranchId;
+
+  if (!canViewInventory) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Inventario</h1>
+        <p className="text-sm text-muted-foreground">No tienes permiso para ver inventario.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

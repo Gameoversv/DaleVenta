@@ -97,14 +97,14 @@ export default function DailyCloseReportPage() {
   const [date, setDate] = useState(today);
   const [manualBranchId, setManualBranchId] = useState("");
   const [manualRegisterId, setManualRegisterId] = useState("");
-  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
+  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canViewReports);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
   const {
     registers,
     isLoading: registersLoading,
     hasMultiple: hasMultipleRegisters,
     soleRegisterId,
-  } = useSoleRegister(branchId);
+  } = useSoleRegister(branchId, canViewReports);
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({

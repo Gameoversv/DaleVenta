@@ -27,6 +27,13 @@ public class DenominationController {
     }
 
     @GetMapping
+    @PreAuthorize("""
+            @permissionService.has('SETTINGS_MANAGE')
+            or @permissionService.has('SALE_CREATE')
+            or @permissionService.has('CASHSHIFT_OPEN')
+            or @permissionService.has('CASHSHIFT_CLOSE')
+            or @permissionService.has('CASHSHIFT_VIEW_HISTORY')
+            """)
     public ApiResponse<List<DenominationResponse>> list() {
         return ApiResponse.ok(denominationService.list());
     }

@@ -194,7 +194,7 @@ export default function SalesPage() {
   const [manualRegisterId, setManualRegisterId] = useState("");
   const canViewSales = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
-  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
+  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canViewSales);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
   const {
@@ -202,7 +202,7 @@ export default function SalesPage() {
     isLoading: registersLoading,
     hasMultiple: hasMultipleRegisters,
     soleRegisterId,
-  } = useSoleRegister(branchId);
+  } = useSoleRegister(branchId, canViewSales);
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   const { data: products } = useQuery({

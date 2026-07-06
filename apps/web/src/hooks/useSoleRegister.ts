@@ -12,11 +12,11 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
  * auto-select it and skip the "which caja" step. Falls back to manual
  * selection for the rare branch with more than one register.
  */
-export function useSoleRegister(branchId: string) {
+export function useSoleRegister(branchId: string, enabled = true) {
   const { data: registers, isLoading, isError } = useQuery({
     queryKey: ["registers", branchId],
     queryFn: () => fetchRegisters(branchId),
-    enabled: !!branchId,
+    enabled: enabled && !!branchId,
   });
   const hasMultiple = (registers?.length ?? 0) > 1;
   const soleRegisterId = !hasMultiple ? registers?.[0]?.id ?? "" : "";

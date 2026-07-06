@@ -2,17 +2,28 @@
 
 import { useState } from "react";
 import { PosWorkspace } from "@/components/pos/PosWorkspace";
+import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { useSoleRegister } from "@/hooks/useSoleRegister";
 
 export default function PosPage() {
   const [manualBranchId, setManualBranchId] = useState("");
   const [manualRegisterId, setManualRegisterId] = useState("");
-  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch();
+  const canCreateSale = usePermission("SALE_CREATE");
+  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canCreateSale);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
 
-  const { registers, hasMultiple: hasMultipleRegisters, soleRegisterId } = useSoleRegister(branchId);
+  const { registers, hasMultiple: hasMultipleRegisters, soleRegisterId } = useSoleRegister(branchId, canCreateSale);
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
+
+  if (!canCreateSale) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">POS</h1>
+        <p className="text-sm text-muted-foreground">No tienes permiso para crear ventas.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

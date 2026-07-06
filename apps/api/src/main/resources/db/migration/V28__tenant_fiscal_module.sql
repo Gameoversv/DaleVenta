@@ -1,0 +1,2 @@
+ALTER TABLE tenants
+    ADD COLUMN IF NOT EXISTS fiscal_module_enabled BOOLEAN NOT NULL DEFAULT FALSE;
