@@ -36,6 +36,12 @@ public class CashShiftController {
         return ApiResponse.ok(cashShiftService.open(req));
     }
 
+    @GetMapping("/current")
+    @PreAuthorize("@permissionService.has('CASHSHIFT_OPEN')")
+    public ApiResponse<CashShiftSummaryResponse> current(@RequestParam UUID registerId) {
+        return ApiResponse.ok(cashShiftService.getCurrentOpenShift(registerId));
+    }
+
     @GetMapping("/{id}/summary")
     @PreAuthorize("@permissionService.has('CASHSHIFT_OPEN')")
     public ApiResponse<CashShiftSummaryResponse> summary(@PathVariable UUID id) {

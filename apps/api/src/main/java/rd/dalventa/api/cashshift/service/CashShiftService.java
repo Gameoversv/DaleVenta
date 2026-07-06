@@ -81,6 +81,16 @@ public class CashShiftService {
         return buildSummary(shift);
     }
 
+    @Transactional(readOnly = true)
+    public CashShiftSummaryResponse getCurrentOpenShift(UUID registerId) {
+        var tenantId = TenantContext.require();
+        registerRepository.findByIdAndTenantId(registerId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        var shift = cashShiftRepository.findByRegisterIdAndStatus(registerId, CashShiftStatus.OPEN)
+                .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
+        return buildSummary(shift);
+    }
+
     @Transactional
     public CashShiftSummaryResponse close(UUID id, CloseCashShiftRequest req) {
         var shift = requireShiftInTenant(id);
@@ -102,13 +112,7 @@ public class CashShiftService {
             countedCash = countedCash.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
         }
 
-        BigDecimal expectedCash = shift.getOpeningTotal();
-        for (var movement : cashMovementRepository.findAllByTenantIdAndCashShiftId(tenantId, id)) {
-            expectedCash = switch (movement.getType()) {
-                case ENTRY -> expectedCash.add(movement.getAmount());
-                case WITHDRAWAL, EXPENSE -> expectedCash.subtract(movement.getAmount());
-            };
-        }
+        BigDecimal expectedCash = computeExpectedCash(shift, tenantId);
 
         BigDecimal difference = countedCash.subtract(expectedCash);
         if (difference.compareTo(BigDecimal.ZERO) != 0
@@ -140,10 +144,24 @@ public class CashShiftService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado"));
     }
 
+    private BigDecimal computeExpectedCash(CashShift shift, UUID tenantId) {
+        BigDecimal expected = shift.getOpeningTotal();
+        for (var movement : cashMovementRepository.findAllByTenantIdAndCashShiftId(tenantId, shift.getId())) {
+            expected = switch (movement.getType()) {
+                case ENTRY -> expected.add(movement.getAmount());
+                case WITHDRAWAL, EXPENSE -> expected.subtract(movement.getAmount());
+            };
+        }
+        return expected;
+    }
+
     private CashShiftSummaryResponse buildSummary(CashShift shift) {
         List<CashShiftDenominationEntry> denominations = cashShiftDenominationRepository
                 .findAllByCashShiftId(shift.getId())
                 .stream().map(CashShiftDenominationEntry::from).toList();
-        return CashShiftSummaryResponse.from(shift, denominations);
+        BigDecimal expectedCash = shift.getStatus() == CashShiftStatus.OPEN
+                ? computeExpectedCash(shift, TenantContext.require())
+                : shift.getExpectedCash();
+        return CashShiftSummaryResponse.from(shift, expectedCash, denominations);
     }
 }
