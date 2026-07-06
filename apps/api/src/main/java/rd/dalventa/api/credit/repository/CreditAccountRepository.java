@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import rd.dalventa.api.credit.domain.CreditAccount;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,7 @@ public interface CreditAccountRepository extends JpaRepository<CreditAccount, UU
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select ca from CreditAccount ca where ca.customerId = :customerId and ca.tenantId = :tenantId")
     Optional<CreditAccount> lockByCustomerIdAndTenantId(UUID customerId, UUID tenantId);
+
+    @Query("select coalesce(sum(ca.balance), 0) from CreditAccount ca where ca.tenantId = :tenantId and ca.balance > 0")
+    BigDecimal sumPositiveBalance(UUID tenantId);
 }

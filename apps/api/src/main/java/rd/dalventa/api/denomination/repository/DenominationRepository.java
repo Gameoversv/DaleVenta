@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface DenominationRepository extends JpaRepository<Denomination, UUID> {
     List<Denomination> findAllByTenantIdAndActiveTrue(UUID tenantId);
     Optional<Denomination> findByIdAndTenantId(UUID id, UUID tenantId);
+    boolean existsByTenantId(UUID tenantId);
 }

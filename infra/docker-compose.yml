@@ -67,7 +67,7 @@ services:
     container_name: dalventa_web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost}
     # No host port mapping: only reachable via the nginx reverse proxy.
     depends_on:
       - api

@@ -23,12 +23,19 @@ async function fetchCurrentShift(registerId: string): Promise<CashShiftSummaryRe
   }
 }
 
+function errorMessage(error: unknown): string {
+  return (
+    (error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+    "No se pudo cargar el turno de esta caja."
+  );
+}
+
 export function CashShiftWorkspace({ registerId }: { registerId: string }) {
   const queryClient = useQueryClient();
   const [closing, setClosing] = useState(false);
   const [closedShift, setClosedShift] = useState<CashShiftSummaryResponse | null>(null);
 
-  const { data: currentShift, isLoading } = useQuery({
+  const { data: currentShift, error, isError, isLoading } = useQuery({
     queryKey: ["cash-shift-current", registerId],
     queryFn: () => fetchCurrentShift(registerId),
     enabled: !closedShift,
@@ -47,6 +54,9 @@ export function CashShiftWorkspace({ registerId }: { registerId: string }) {
   }
   if (isLoading) {
     return <p className="text-muted-foreground">Cargando turno...</p>;
+  }
+  if (isError) {
+    return <p className="text-sm text-destructive">{errorMessage(error)}</p>;
   }
   if (!currentShift) {
     return <OpenShiftForm registerId={registerId} />;

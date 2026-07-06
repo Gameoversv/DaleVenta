@@ -12,4 +12,5 @@ public interface CashShiftRepository extends JpaRepository<CashShift, UUID> {
     Optional<CashShift> findByIdAndTenantId(UUID id, UUID tenantId);
     Optional<CashShift> findByRegisterIdAndStatus(UUID registerId, CashShiftStatus status);
     List<CashShift> findAllByTenantIdAndRegisterId(UUID tenantId, UUID registerId);
+    long countByTenantIdAndStatus(UUID tenantId, CashShiftStatus status);
 }

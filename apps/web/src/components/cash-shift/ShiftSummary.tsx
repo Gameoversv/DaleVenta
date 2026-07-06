@@ -77,6 +77,11 @@ export function ShiftSummary({ shift, registerId, onRequestClose }: ShiftSummary
             </Button>
           )}
         </div>
+        {!canClose && (
+          <p className="text-sm text-muted-foreground">
+            Tu usuario puede operar este turno, pero no tiene permiso para cerrarlo.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

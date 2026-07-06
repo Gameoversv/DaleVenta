@@ -12,6 +12,7 @@ import rd.dalventa.api.auth.domain.RoleName;
 import rd.dalventa.api.auth.domain.User;
 import rd.dalventa.api.auth.repository.RoleRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
+import rd.dalventa.api.denomination.service.DenominationService;
 import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.domain.TenantStatus;
 import rd.dalventa.api.tenant.repository.TenantRepository;
@@ -24,6 +25,7 @@ public class DataSeeder implements ApplicationRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TenantRepository tenantRepository;
+    private final DenominationService denominationService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.seed.admin-email:admin@dalventa.rd}")
@@ -54,6 +56,7 @@ public class DataSeeder implements ApplicationRunner {
             t.setStatus(TenantStatus.ACTIVE);
             return tenantRepository.save(t);
         });
+        denominationService.seedDefaultsIfMissing(demoTenant.getId());
 
         var existingAdmin = userRepository.findByEmail(adminEmail).orElse(null);
         if (existingAdmin == null) {

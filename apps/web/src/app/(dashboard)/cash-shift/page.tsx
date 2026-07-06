@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { usePermission } from "@/hooks/usePermission";
+import { Button } from "@/components/ui/button";
 import { CashShiftWorkspace } from "@/components/cash-shift/CashShiftWorkspace";
 import type { BranchResponse, RegisterResponse } from "@/types/branch";
 
@@ -19,18 +22,58 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 export default function CashShiftPage() {
   const [branchId, setBranchId] = useState("");
   const [registerId, setRegisterId] = useState("");
+  const canOpenCashShift = usePermission("CASHSHIFT_OPEN");
+  const canManageSettings = usePermission("SETTINGS_MANAGE");
 
-  const { data: branches } = useQuery({ queryKey: ["branches"], queryFn: fetchBranches });
-  const { data: registers } = useQuery({
+  const {
+    data: branches,
+    isLoading: branchesLoading,
+    isError: branchesError,
+  } = useQuery({
+    queryKey: ["branches"],
+    queryFn: fetchBranches,
+    enabled: canOpenCashShift,
+  });
+  const {
+    data: registers,
+    isLoading: registersLoading,
+    isError: registersError,
+  } = useQuery({
     queryKey: ["registers", branchId],
     queryFn: () => fetchRegisters(branchId),
-    enabled: !!branchId,
+    enabled: canOpenCashShift && !!branchId,
   });
+
+  if (!canOpenCashShift) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-semibold">Turno de Caja</h1>
+        <p className="text-sm text-muted-foreground">
+          Tu usuario no tiene permiso para operar turnos de caja.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Turno de Caja</h1>
-      <div className="flex gap-4">
+      {branchesError && (
+        <p className="text-sm text-destructive">No se pudieron cargar las sucursales.</p>
+      )}
+      {!branchesLoading && branches && branches.length === 0 && (
+        <div className="space-y-3 rounded-md border border-border p-4">
+          <p className="text-sm text-muted-foreground">
+            No hay sucursales activas. Crea una sucursal y una caja antes de abrir un turno.
+          </p>
+          {canManageSettings && (
+            <Button asChild size="sm">
+              <Link href="/branches">Ir a sucursales</Link>
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="max-w-xs flex-1 space-y-2">
           <label htmlFor="cash-shift-branch" className="text-sm font-medium">
             Sucursal
@@ -42,9 +85,12 @@ export default function CashShiftPage() {
               setBranchId(e.target.value);
               setRegisterId("");
             }}
+            disabled={branchesLoading || branchesError}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">Selecciona una sucursal</option>
+            <option value="">
+              {branchesLoading ? "Cargando sucursales..." : "Selecciona una sucursal"}
+            </option>
             {branches?.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -60,10 +106,12 @@ export default function CashShiftPage() {
             id="cash-shift-register"
             value={registerId}
             onChange={(e) => setRegisterId(e.target.value)}
-            disabled={!branchId}
+            disabled={!branchId || registersLoading || registersError}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">Selecciona una caja</option>
+            <option value="">
+              {registersLoading ? "Cargando cajas..." : "Selecciona una caja"}
+            </option>
             {registers?.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
@@ -72,7 +120,22 @@ export default function CashShiftPage() {
           </select>
         </div>
       </div>
-      {registerId && <CashShiftWorkspace registerId={registerId} />}
+      {registersError && (
+        <p className="text-sm text-destructive">No se pudieron cargar las cajas de esta sucursal.</p>
+      )}
+      {branchId && !registersLoading && registers && registers.length === 0 && (
+        <div className="space-y-3 rounded-md border border-border p-4">
+          <p className="text-sm text-muted-foreground">
+            Esta sucursal no tiene cajas activas. Crea una caja antes de abrir el turno.
+          </p>
+          {canManageSettings && (
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/branches">Administrar cajas</Link>
+            </Button>
+          )}
+        </div>
+      )}
+      {registerId && <CashShiftWorkspace key={registerId} registerId={registerId} />}
     </div>
   );
 }

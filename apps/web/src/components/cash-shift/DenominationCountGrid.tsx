@@ -22,7 +22,11 @@ interface DenominationCountGridProps {
 }
 
 export function DenominationCountGrid({ onChange }: DenominationCountGridProps) {
-  const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
+  const {
+    data: denominations,
+    isLoading,
+    isError,
+  } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const handleChange = (denominationId: string, rawValue: string) => {
@@ -38,6 +42,22 @@ export function DenominationCountGrid({ onChange }: DenominationCountGridProps) 
 
   const active = denominations?.filter((d) => d.active) ?? [];
   const total = active.reduce((sum, d) => sum + (quantities[d.id] ?? 0) * Number(d.value), 0);
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Cargando denominaciones...</p>;
+  }
+
+  if (isError) {
+    return <p className="text-sm text-destructive">No se pudieron cargar las denominaciones.</p>;
+  }
+
+  if (active.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No hay denominaciones activas para contar efectivo. Sin denominaciones no se puede abrir o cerrar un turno.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">

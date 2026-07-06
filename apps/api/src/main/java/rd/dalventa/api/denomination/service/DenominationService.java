@@ -43,6 +43,13 @@ public class DenominationService {
     }
 
     @Transactional
+    public void seedDefaultsIfMissing(UUID tenantId) {
+        if (!denominationRepository.existsByTenantId(tenantId)) {
+            seedDefaults(tenantId);
+        }
+    }
+
+    @Transactional
     public DenominationResponse create(CreateDenominationRequest req) {
         var d = new Denomination(req.value(), req.type());
         d.setTenantId(TenantContext.require());

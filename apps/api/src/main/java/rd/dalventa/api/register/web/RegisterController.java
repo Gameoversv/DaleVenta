@@ -23,6 +23,7 @@ public class RegisterController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@permissionService.has('SETTINGS_MANAGE')")
     public ApiResponse<RegisterResponse> create(@Valid @RequestBody CreateRegisterRequest req) {
         return ApiResponse.ok(registerService.create(req));
     }
