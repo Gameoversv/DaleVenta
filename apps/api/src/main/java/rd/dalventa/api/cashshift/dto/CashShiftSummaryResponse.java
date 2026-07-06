@@ -22,9 +22,9 @@ public record CashShiftSummaryResponse(
         @JsonProperty("cashDifference") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal cashDifference,
         List<CashShiftDenominationEntry> denominations
 ) {
-    public static CashShiftSummaryResponse from(CashShift shift, List<CashShiftDenominationEntry> denominations) {
+    public static CashShiftSummaryResponse from(CashShift shift, BigDecimal expectedCash, List<CashShiftDenominationEntry> denominations) {
         return new CashShiftSummaryResponse(shift.getId(), shift.getRegisterId(), shift.getStatus(),
-                shift.getOpenedAt(), shift.getClosedAt(), shift.getOpeningTotal(), shift.getExpectedCash(),
+                shift.getOpenedAt(), shift.getClosedAt(), shift.getOpeningTotal(), expectedCash,
                 shift.getCountedCash(), shift.getCashDifference(), denominations);
     }
 }
