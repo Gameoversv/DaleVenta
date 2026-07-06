@@ -1,0 +1,10 @@
+ALTER TABLE tenants
+    ADD COLUMN invoice_footer_message TEXT,
+    ADD COLUMN invoice_print_size VARCHAR(20) NOT NULL DEFAULT 'LETTER',
+    ADD COLUMN invoice_show_logo BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_rnc BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_phone BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_email BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_address BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_customer BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN invoice_show_tax BOOLEAN NOT NULL DEFAULT TRUE;

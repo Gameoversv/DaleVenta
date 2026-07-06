@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
+import { cn } from "@/lib/utils";
 import type { InvoiceResponse } from "@/types/sale";
 
 async function fetchInvoice(id: string): Promise<InvoiceResponse> {
@@ -40,6 +41,12 @@ function itemName(item: unknown, index: number): string {
   return String(value);
 }
 
+function invoiceWidth(printSize: InvoiceResponse["business"]["printSize"]): string {
+  if (printSize === "THERMAL_58MM") return "max-w-[58mm]";
+  if (printSize === "THERMAL_80MM") return "max-w-[80mm]";
+  return "max-w-3xl";
+}
+
 export default function InvoicePage() {
   const params = useParams<{ id: string }>();
   const canView = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
@@ -59,7 +66,7 @@ export default function InvoicePage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 print:max-w-none print:space-y-0">
+    <div className={cn("mx-auto space-y-4 print:space-y-0", data ? invoiceWidth(data.business.printSize) : "max-w-3xl")}>
       <div className="flex items-center justify-between print:hidden">
         <Button asChild variant="outline">
           <Link href="/sales">
@@ -81,14 +88,24 @@ export default function InvoicePage() {
           <div className="border-b border-border pb-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
+                {data.business.showLogo && data.business.logoUrl && (
+                  <img src={data.business.logoUrl} alt={data.business.name} className="mb-3 max-h-16 max-w-40 object-contain" />
+                )}
                 <h1 className="text-2xl font-bold">{data.business.name}</h1>
-                {data.business.rnc && <p className="text-sm">RNC: {data.business.rnc}</p>}
-                <p className="text-sm text-muted-foreground">
-                  {[data.business.address, data.business.city].filter(Boolean).join(", ")}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {[data.business.phone, data.business.email].filter(Boolean).join(" | ")}
-                </p>
+                {data.business.showRnc && data.business.rnc && <p className="text-sm">RNC: {data.business.rnc}</p>}
+                {data.business.showAddress && (
+                  <p className="text-sm text-muted-foreground">
+                    {[data.business.address, data.business.city].filter(Boolean).join(", ")}
+                  </p>
+                )}
+                {(data.business.showPhone || data.business.showEmail) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      data.business.showPhone ? data.business.phone : null,
+                      data.business.showEmail ? data.business.email : null,
+                    ].filter(Boolean).join(" | ")}
+                  </p>
+                )}
               </div>
               <div className="text-left sm:text-right">
                 <p className="text-xs uppercase text-muted-foreground">Factura</p>
@@ -99,12 +116,14 @@ export default function InvoicePage() {
           </div>
 
           <div className="grid gap-4 border-b border-border py-4 text-sm sm:grid-cols-2">
-            <div>
-              <p className="font-medium">Cliente</p>
-              <p>{data.customer?.name ?? "Cliente de contado"}</p>
-              {data.customer?.documentId && <p className="text-muted-foreground">Documento: {data.customer.documentId}</p>}
-              {data.customer?.phone && <p className="text-muted-foreground">Telefono: {data.customer.phone}</p>}
-            </div>
+            {data.business.showCustomer && (
+              <div>
+                <p className="font-medium">Cliente</p>
+                <p>{data.customer?.name ?? "Cliente de contado"}</p>
+                {data.customer?.documentId && <p className="text-muted-foreground">Documento: {data.customer.documentId}</p>}
+                {data.customer?.phone && <p className="text-muted-foreground">Telefono: {data.customer.phone}</p>}
+              </div>
+            )}
             <div className="sm:text-right">
               <p className="font-medium">Venta</p>
               <p className="text-muted-foreground">Estado: {data.status === "COMPLETED" ? "Completada" : "Anulada"}</p>
@@ -146,13 +165,18 @@ export default function InvoicePage() {
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>{money(data.subtotal)}</span></div>
-              <div className="flex justify-between"><span>Impuesto</span><span>{money(data.taxTotal)}</span></div>
+              {data.business.showTax && <div className="flex justify-between"><span>Impuesto</span><span>{money(data.taxTotal)}</span></div>}
               <div className="flex justify-between"><span>Descuento</span><span>{money(data.discountAmount)}</span></div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                 <span>Total</span><span>{money(data.total)}</span>
               </div>
             </div>
           </div>
+          {data.business.footerMessage && (
+            <p className="mt-6 border-t border-border pt-4 text-center text-sm text-muted-foreground">
+              {data.business.footerMessage}
+            </p>
+          )}
         </section>
       )}
     </div>

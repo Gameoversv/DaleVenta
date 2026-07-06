@@ -31,6 +31,16 @@ public record InvoiceResponse(
             String phone,
             String email,
             String address,
-            String city
+            String city,
+            String logoUrl,
+            String footerMessage,
+            String printSize,
+            boolean showLogo,
+            boolean showRnc,
+            boolean showPhone,
+            boolean showEmail,
+            boolean showAddress,
+            boolean showCustomer,
+            boolean showTax
     ) {}
 }

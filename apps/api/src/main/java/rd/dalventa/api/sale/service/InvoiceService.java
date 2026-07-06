@@ -65,7 +65,17 @@ public class InvoiceService {
                         tenant.getPhone(),
                         tenant.getEmail(),
                         tenant.getAddress(),
-                        tenant.getCity()
+                        tenant.getCity(),
+                        tenant.getLogoUrl(),
+                        tenant.getInvoiceFooterMessage(),
+                        tenant.getInvoicePrintSize(),
+                        tenant.isInvoiceShowLogo(),
+                        tenant.isInvoiceShowRnc(),
+                        tenant.isInvoiceShowPhone(),
+                        tenant.isInvoiceShowEmail(),
+                        tenant.isInvoiceShowAddress(),
+                        tenant.isInvoiceShowCustomer(),
+                        tenant.isInvoiceShowTax()
                 ),
                 branch != null ? branch.getName() : "-",
                 register != null ? register.getName() : "-",

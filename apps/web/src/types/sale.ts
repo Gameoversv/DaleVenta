@@ -95,6 +95,16 @@ export interface InvoiceBusinessInfo {
   email: string | null;
   address: string | null;
   city: string | null;
+  logoUrl: string | null;
+  footerMessage: string | null;
+  printSize: "LETTER" | "THERMAL_80MM" | "THERMAL_58MM";
+  showLogo: boolean;
+  showRnc: boolean;
+  showPhone: boolean;
+  showEmail: boolean;
+  showAddress: boolean;
+  showCustomer: boolean;
+  showTax: boolean;
 }
 
 export interface InvoiceResponse {

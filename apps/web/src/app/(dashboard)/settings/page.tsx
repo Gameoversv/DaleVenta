@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
 import type { DenominationResponse } from "@/types/cash-shift";
+import type { InvoicePrintSize, InvoiceSettingsResponse } from "@/types/settings";
 
 type DenominationType = DenominationResponse["type"];
 
@@ -24,6 +25,11 @@ interface CreateDenominationForm {
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
+  return res.data.data;
+}
+
+async function fetchInvoiceSettings(): Promise<InvoiceSettingsResponse> {
+  const res = await api.get<{ data: InvoiceSettingsResponse }>("/api/settings/invoice");
   return res.data.data;
 }
 
@@ -117,6 +123,142 @@ function CreateDenominationDialog() {
   );
 }
 
+function InvoiceSettingsCard() {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<InvoiceSettingsResponse | null>(null);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["invoice-settings"],
+    queryFn: fetchInvoiceSettings,
+  });
+
+  const values = form ?? data;
+  const mutation = useMutation({
+    mutationFn: (payload: InvoiceSettingsResponse) => api.put("/api/settings/invoice", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice"] });
+      setForm(null);
+      toast.success("Configuracion de factura guardada");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        "No se pudo guardar la configuracion de factura";
+      toast.error(message);
+    },
+  });
+
+  const update = <K extends keyof InvoiceSettingsResponse>(key: K, value: InvoiceSettingsResponse[K]) => {
+    setForm((current) => ({ ...(current ?? data!), [key]: value }));
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Factura e impresion</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading && <p className="text-sm text-muted-foreground">Cargando configuracion...</p>}
+        {isError && <p className="text-sm text-destructive">No se pudo cargar la configuracion de factura.</p>}
+        {values && (
+          <form
+            className="space-y-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              mutation.mutate(values);
+            }}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="invoice-business-name">Nombre del local</Label>
+                <Input
+                  id="invoice-business-name"
+                  value={values.businessName}
+                  onChange={(event) => update("businessName", event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-rnc">RNC</Label>
+                <Input id="invoice-rnc" value={values.rnc ?? ""} onChange={(event) => update("rnc", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-phone">Telefono</Label>
+                <Input id="invoice-phone" value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-email">Email</Label>
+                <Input id="invoice-email" value={values.email ?? ""} onChange={(event) => update("email", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-address">Direccion</Label>
+                <Input id="invoice-address" value={values.address ?? ""} onChange={(event) => update("address", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-city">Ciudad</Label>
+                <Input id="invoice-city" value={values.city ?? ""} onChange={(event) => update("city", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-logo">URL del logo</Label>
+                <Input id="invoice-logo" value={values.logoUrl ?? ""} onChange={(event) => update("logoUrl", event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-print-size">Tamano de impresion</Label>
+                <select
+                  id="invoice-print-size"
+                  value={values.printSize}
+                  onChange={(event) => update("printSize", event.target.value as InvoicePrintSize)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="LETTER">Carta</option>
+                  <option value="THERMAL_80MM">Ticket 80mm</option>
+                  <option value="THERMAL_58MM">Ticket 58mm</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invoice-footer">Mensaje final</Label>
+              <Input
+                id="invoice-footer"
+                value={values.footerMessage ?? ""}
+                onChange={(event) => update("footerMessage", event.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["showLogo", "Mostrar logo"],
+                ["showRnc", "Mostrar RNC"],
+                ["showPhone", "Mostrar telefono"],
+                ["showEmail", "Mostrar email"],
+                ["showAddress", "Mostrar direccion"],
+                ["showCustomer", "Mostrar cliente"],
+                ["showTax", "Mostrar impuesto"],
+              ].map(([key, label]) => (
+                <label key={key} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(values[key as keyof InvoiceSettingsResponse])}
+                    onChange={(event) =>
+                      update(key as keyof InvoiceSettingsResponse, event.target.checked as never)
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            <Button type="submit" disabled={mutation.isPending || !values.businessName.trim()}>
+              <Save className="h-4 w-4" />
+              {mutation.isPending ? "Guardando..." : "Guardar factura"}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const canManageSettings = usePermission("SETTINGS_MANAGE");
   const {
@@ -155,6 +297,8 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-semibold">Configuracion</h1>
         <CreateDenominationDialog />
       </div>
+
+      <InvoiceSettingsCard />
 
       <Card>
         <button
