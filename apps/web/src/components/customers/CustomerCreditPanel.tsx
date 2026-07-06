@@ -5,8 +5,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { usePermission } from "@/hooks/usePermission";
 import api from "@/lib/api";
 import type { CustomerResponse } from "@/types/customer";
@@ -188,12 +190,33 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
           </section>
 
           {canViewCredit && (
-            <section className="space-y-1">
+            <section className="space-y-2">
               <h3 className="text-sm font-semibold">Balance</h3>
-              <p className="text-sm">
-                Balance actual: <span className="font-medium">RD${account?.balance ?? "0.00"}</span>
-                {available !== null && ` · Disponible: RD$${available}`}
-              </p>
+              <Card>
+                <CardContent className="flex flex-wrap items-center gap-4 p-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Balance actual</p>
+                    <p
+                      className={`font-mono-money text-lg font-bold ${
+                        Number(account?.balance ?? 0) > 0 ? "text-warning" : "text-success"
+                      }`}
+                    >
+                      {money(account?.balance ?? "0.00")}
+                    </p>
+                  </div>
+                  {available !== null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Disponible</p>
+                      <p className="font-mono-money text-lg font-semibold">{money(available)}</p>
+                    </div>
+                  )}
+                  {profile && (
+                    <Badge variant={profile.creditEnabled ? "success" : "secondary"} className="ml-auto">
+                      {profile.creditEnabled ? "Credito habilitado" : "Credito no habilitado"}
+                    </Badge>
+                  )}
+                </CardContent>
+              </Card>
             </section>
           )}
 
@@ -214,9 +237,9 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                   {invoices.map((inv) => (
                     <tr key={inv.saleId} className="border-b border-border">
                       <td className="py-1">{dateOnly(inv.createdAt)}</td>
-                      <td className="py-1 text-right">{money(inv.chargeAmount)}</td>
-                      <td className="py-1 text-right">{money(inv.paidAmount)}</td>
-                      <td className="py-1 text-right font-medium">{money(inv.outstanding)}</td>
+                      <td className="py-1 text-right font-mono-money">{money(inv.chargeAmount)}</td>
+                      <td className="py-1 text-right font-mono-money">{money(inv.paidAmount)}</td>
+                      <td className="py-1 text-right font-mono-money font-semibold text-warning">{money(inv.outstanding)}</td>
                       {canReceivePayment && (
                         <td className="py-1 text-right">
                           <Button
@@ -325,10 +348,10 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                   <tbody>
                     {transactions.map((t) => (
                       <tr key={t.id} className="border-b border-border">
-                        <td className={`py-1 ${t.type === "CHARGE" ? "text-destructive" : "text-green-600"}`}>
+                        <td className={`py-1 ${t.type === "CHARGE" ? "text-destructive" : "text-success"}`}>
                           {t.type === "CHARGE" ? "Cargo" : "Abono"}
                         </td>
-                        <td className="py-1">RD${t.amount}</td>
+                        <td className="py-1 font-mono-money">{money(t.amount)}</td>
                         <td className="py-1">{t.payerName ?? "—"}</td>
                         <td className="py-1">{t.note ?? "—"}</td>
                       </tr>
