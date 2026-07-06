@@ -32,6 +32,22 @@ export interface UserResponse {
   active: boolean;
 }
 
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;
+}
+
+export interface UpdateUserRequest {
+  role: Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;
+  active: boolean;
+}
+
+export interface ResetUserPasswordResponse {
+  temporaryPassword: string;
+}
+
 export interface MeResponse {
   user: UserResponse;
   permissions: PermissionCode[];

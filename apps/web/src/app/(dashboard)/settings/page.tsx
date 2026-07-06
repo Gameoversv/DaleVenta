@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -187,6 +188,18 @@ export default function SettingsPage() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuarios y permisos</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">Administra usuarios internos, roles y accesos al sistema.</p>
+          <Button asChild variant="outline">
+            <Link href="/settings/users">Abrir usuarios</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

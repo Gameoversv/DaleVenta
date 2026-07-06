@@ -68,7 +68,21 @@ public class User extends BaseEntity implements UserDetails {
         this.customerId = customerId;
     }
 
+    public void updateProfile(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public void replaceRole(Role role) {
+        this.roles.clear();
         this.roles.add(role);
     }
 
