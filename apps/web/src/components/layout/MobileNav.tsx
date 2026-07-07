@@ -27,25 +27,36 @@ function NavMenuItem({ item }: { item: NavItem }) {
 }
 
 function GatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures } = useAuth();
+  const { tenantFeatures, user } = useAuth();
   const allowed = usePermission(item.permission!);
-  if (!allowed || (item.feature && !tenantFeatures[item.feature])) return null;
+  if (
+    !allowed ||
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavMenuItem item={item} />;
 }
 
 function AnyGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures } = useAuth();
+  const { tenantFeatures, user } = useAuth();
   const permissions = item.anyPermission!;
   /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
   const allowedFlags = permissions.map((code) => usePermission(code));
   /* eslint-enable react-hooks/rules-of-hooks */
-  if (!allowedFlags.some(Boolean) || (item.feature && !tenantFeatures[item.feature])) return null;
+  if (
+    !allowedFlags.some(Boolean) ||
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavMenuItem item={item} />;
 }
 
 function FeatureGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures } = useAuth();
-  if (item.feature && !tenantFeatures[item.feature]) return null;
+  const { tenantFeatures, user } = useAuth();
+  if (
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavMenuItem item={item} />;
 }
 
@@ -79,6 +90,9 @@ export function MobileNav() {
                 return <GatedNavMenuItem key={item.href} item={item} />;
               }
               if (item.feature) {
+                return <FeatureGatedNavMenuItem key={item.href} item={item} />;
+              }
+              if (item.roles) {
                 return <FeatureGatedNavMenuItem key={item.href} item={item} />;
               }
               return <NavMenuItem key={item.href} item={item} />;

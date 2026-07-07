@@ -2,12 +2,10 @@
 
 import { Landmark } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { usePermission } from "@/hooks/usePermission";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function FiscalPage() {
-  const { tenantFeatures } = useAuth();
-  const canManageSettings = usePermission("SETTINGS_MANAGE");
+  const { tenantFeatures, user } = useAuth();
 
   if (!tenantFeatures.fiscalModuleEnabled) {
     return (
@@ -18,11 +16,11 @@ export default function FiscalPage() {
     );
   }
 
-  if (!canManageSettings) {
+  if (user?.role !== "ADMIN") {
     return (
       <div className="space-y-2">
         <h1 className="font-display text-2xl font-bold">Fiscal</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para administrar configuracion fiscal.</p>
+        <p className="text-sm text-muted-foreground">Solo un administrador puede acceder al modulo fiscal.</p>
       </div>
     );
   }

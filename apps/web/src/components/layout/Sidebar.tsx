@@ -26,25 +26,36 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 }
 
 function GatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { tenantFeatures } = useAuth();
+  const { tenantFeatures, user } = useAuth();
   const allowed = usePermission(item.permission!);
-  if (!allowed || (item.feature && !tenantFeatures[item.feature])) return null;
+  if (
+    !allowed ||
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavLink item={item} active={active} />;
 }
 
 function AnyGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { tenantFeatures } = useAuth();
+  const { tenantFeatures, user } = useAuth();
   const permissions = item.anyPermission!;
   /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
   const allowedFlags = permissions.map((code) => usePermission(code));
   /* eslint-enable react-hooks/rules-of-hooks */
-  if (!allowedFlags.some(Boolean) || (item.feature && !tenantFeatures[item.feature])) return null;
+  if (
+    !allowedFlags.some(Boolean) ||
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavLink item={item} active={active} />;
 }
 
 function FeatureGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { tenantFeatures } = useAuth();
-  if (item.feature && !tenantFeatures[item.feature]) return null;
+  const { tenantFeatures, user } = useAuth();
+  if (
+    (item.feature && !tenantFeatures[item.feature]) ||
+    (item.roles && (!user || !item.roles.includes(user.role)))
+  ) return null;
   return <NavLink item={item} active={active} />;
 }
 
@@ -62,6 +73,9 @@ function NavSectionBlock({ section, pathname }: { section: NavSection; pathname:
           return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
         }
         if (item.feature) {
+          return <FeatureGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+        }
+        if (item.roles) {
           return <FeatureGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
         }
         return <NavLink key={item.href} item={item} active={pathname === item.href} />;
