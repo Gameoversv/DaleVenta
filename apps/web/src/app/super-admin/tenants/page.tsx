@@ -106,6 +106,16 @@ export default function SuperAdminTenantsPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const fiscalModuleMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      api.patch(`/api/super-admin/tenants/${id}/fiscal-module`, { enabled }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Modulo fiscal actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const extendTrialMutation = useMutation({
     mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/extend-trial`, null, { params: { days: 30 } }),
     onSuccess: () => {
@@ -264,6 +274,19 @@ export default function SuperAdminTenantsPage() {
                                 onClick={() => planMutation.mutate({ id: t.id, plan: "ENTERPRISE" })}
                               >
                                 Plan Enterprise
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.fiscalModuleEnabled || fiscalModuleMutation.isPending}
+                                onClick={() => fiscalModuleMutation.mutate({ id: t.id, enabled: true })}
+                              >
+                                Activar modulo fiscal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!t.fiscalModuleEnabled || fiscalModuleMutation.isPending}
+                                onClick={() => fiscalModuleMutation.mutate({ id: t.id, enabled: false })}
+                              >
+                                Desactivar modulo fiscal
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
