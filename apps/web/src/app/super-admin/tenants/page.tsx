@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronDown, CheckCircle, LogIn } from "lucide-react";
@@ -65,7 +64,6 @@ function dateOnly(value: string | null): string {
 }
 
 export default function SuperAdminTenantsPage() {
-  const router = useRouter();
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
   const queryClient = useQueryClient();
@@ -133,7 +131,7 @@ export default function SuperAdminTenantsPage() {
     onSuccess: (data) => {
       localStorage.setItem("token", data.token);
       toast.success(`Sesion iniciada como ${data.tenantName}`);
-      router.push("/dashboard");
+      window.location.assign("/dashboard");
     },
     onError: (err: unknown) => toast.error(extractError(err)),
   });

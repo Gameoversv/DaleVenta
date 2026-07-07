@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -79,7 +79,6 @@ function ExtendTrialDialog({ tenantId }: { tenantId: string }) {
 
 export default function SuperAdminTenantDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const tenantId = params.id;
   const queryClient = useQueryClient();
 
@@ -133,7 +132,7 @@ export default function SuperAdminTenantDetailPage() {
     onSuccess: (data) => {
       localStorage.setItem("token", data.token);
       toast.success(`Sesion iniciada como ${data.tenantName}`);
-      router.push("/dashboard");
+      window.location.assign("/dashboard");
     },
     onError: (err: unknown) => toast.error(extractError(err)),
   });
