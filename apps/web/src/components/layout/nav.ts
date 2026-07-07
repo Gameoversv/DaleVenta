@@ -51,7 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
       { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
       { href: "/cash-shift/history", label: "Historial de caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
-      { href: "/fiscal", label: "Fiscal", icon: Landmark, feature: "fiscalModuleEnabled", roles: ["ADMIN"] },
+      { href: "/fiscal", label: "Fiscal", icon: Landmark, roles: ["ADMIN"] },
       { href: "/audit", label: "Auditoria", icon: ScrollText, permission: "AUDIT_VIEW" },
       { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
     ],

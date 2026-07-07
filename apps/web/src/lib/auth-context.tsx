@@ -39,7 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isLoading } = useQuery({
     queryKey: ["me"],
     queryFn: fetchMe,
-    staleTime: Infinity,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     retry: false,
   });
 
