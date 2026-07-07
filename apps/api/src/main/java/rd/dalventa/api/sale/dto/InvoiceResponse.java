@@ -2,6 +2,7 @@ package rd.dalventa.api.sale.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import rd.dalventa.api.fiscal.domain.FiscalReceiptType;
 import rd.dalventa.api.sale.domain.SaleStatus;
 
 import java.math.BigDecimal;
@@ -12,6 +13,8 @@ import java.util.UUID;
 public record InvoiceResponse(
         UUID id,
         @JsonProperty("invoiceNumber") String invoiceNumber,
+        @JsonProperty("fiscalReceiptType") FiscalReceiptType fiscalReceiptType,
+        @JsonProperty("fiscalNcf") String fiscalNcf,
         SaleStatus status,
         @JsonProperty("createdAt") Instant createdAt,
         BusinessInfo business,

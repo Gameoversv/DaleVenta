@@ -8,6 +8,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rd.dalventa.api.fiscal.domain.FiscalReceiptType;
 import rd.dalventa.api.shared.domain.TenantAwareEntity;
 
 import java.math.BigDecimal;
@@ -41,6 +42,16 @@ public class Sale extends TenantAwareEntity {
 
     @Column(name = "invoice_number", nullable = false, length = 30)
     private String invoiceNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fiscal_receipt_type", length = 40)
+    private FiscalReceiptType fiscalReceiptType;
+
+    @Column(name = "fiscal_ncf", length = 20)
+    private String fiscalNcf;
+
+    @Column(name = "fiscal_sequence_id")
+    private UUID fiscalSequenceId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

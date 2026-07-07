@@ -32,7 +32,7 @@ public class FiscalController {
     private final FiscalService fiscalService;
 
     @GetMapping("/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.has('SALE_CREATE')")
     public ApiResponse<TenantFeaturesResponse> status() {
         var tenant = tenantRepository.findById(TenantContext.require())
                 .orElseThrow(() -> new IllegalStateException("Tenant no encontrado"));
@@ -52,7 +52,7 @@ public class FiscalController {
     }
 
     @GetMapping("/sequences")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or @permissionService.has('SALE_CREATE')")
     public ApiResponse<List<FiscalReceiptSequenceResponse>> sequences() {
         return ApiResponse.ok(fiscalService.listSequences());
     }

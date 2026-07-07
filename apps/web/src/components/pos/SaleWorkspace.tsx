@@ -13,10 +13,22 @@ import type { CartLine } from "./cart";
 import type { ProductResponse } from "@/types/product";
 import type { CustomerResponse } from "@/types/customer";
 import type { CreateSaleRequest, PaymentRequest, SaleResponse } from "@/types/sale";
+import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
+import type { TenantFeatures } from "@/types/auth";
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
   return res.data.data;
+}
+
+async function fetchFiscalStatus(): Promise<TenantFeatures> {
+  const res = await api.get<{ data: TenantFeatures }>("/api/fiscal/status");
+  return res.data.data;
+}
+
+async function fetchFiscalSequences(): Promise<FiscalReceiptSequence[]> {
+  const res = await api.get<{ data: FiscalReceiptSequence[] }>("/api/fiscal/sequences");
+  return res.data.data ?? [];
 }
 
 interface SaleWorkspaceProps {
@@ -31,6 +43,13 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
   const [confirmedSale, setConfirmedSale] = useState<SaleResponse | null>(null);
 
   const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  const { data: fiscalStatus } = useQuery({ queryKey: ["fiscal-status"], queryFn: fetchFiscalStatus });
+  const fiscalModuleEnabled = fiscalStatus?.fiscalModuleEnabled === true;
+  const { data: fiscalSequences = [] } = useQuery({
+    queryKey: ["fiscal-sequences"],
+    queryFn: fetchFiscalSequences,
+    enabled: fiscalModuleEnabled,
+  });
 
   const createSale = useMutation({
     mutationFn: (request: CreateSaleRequest) => api.post<{ data: SaleResponse }>("/api/sales", request),
@@ -87,11 +106,12 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
   const resolved = resolveCart(cart, products ?? []);
   const preDiscountTotal = resolved.reduce((sum, r) => sum + r.lineTotal, 0);
 
-  const handleConfirm = (payment: PaymentRequest, discountAmount: number) => {
+  const handleConfirm = (payment: PaymentRequest, discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => {
     const request: CreateSaleRequest = {
       registerId,
       cashShiftId,
       customerId: customer?.id ?? null,
+      fiscalReceiptType: fiscalReceiptType ?? null,
       discountAmount: discountAmount > 0 ? discountAmount.toFixed(2) : undefined,
       items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, useWholesalePrice: l.useWholesalePrice })),
       payments: [payment],
@@ -120,6 +140,8 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
           preDiscountTotal={preDiscountTotal}
           disabled={cart.length === 0}
           isSubmitting={createSale.isPending}
+          fiscalModuleEnabled={fiscalModuleEnabled}
+          fiscalSequences={fiscalSequences}
           onConfirm={handleConfirm}
         />
       </div>

@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.fiscal.domain.FiscalReceiptSequence;
+import rd.dalventa.api.fiscal.domain.FiscalReceiptType;
 import rd.dalventa.api.fiscal.dto.FiscalProfileRequest;
 import rd.dalventa.api.fiscal.dto.FiscalProfileResponse;
 import rd.dalventa.api.fiscal.dto.FiscalReceiptSequenceRequest;
@@ -95,6 +96,23 @@ public class FiscalService {
         return FiscalReceiptSequenceResponse.from(sequence);
     }
 
+    @Transactional
+    public IssuedFiscalReceipt issueReceipt(UUID tenantId, FiscalReceiptType receiptType) {
+        requireFiscalEnabled(tenantId);
+        var sequence = fiscalReceiptSequenceRepository.findByTenantIdAndReceiptTypeAndActiveTrue(tenantId, receiptType)
+                .orElseThrow(() -> new ResourceNotFoundException("No hay secuencia NCF activa para " + receiptType));
+        if (sequence.getExpiresAt().isBefore(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("La secuencia NCF " + receiptType + " esta vencida");
+        }
+        if (sequence.getNextNumber() > sequence.getEndNumber()) {
+            throw new IllegalArgumentException("La secuencia NCF " + receiptType + " esta agotada");
+        }
+        var ncf = sequence.getPrefix() + String.format("%08d", sequence.getNextNumber());
+        sequence.setNextNumber(sequence.getNextNumber() + 1);
+        fiscalReceiptSequenceRepository.save(sequence);
+        return new IssuedFiscalReceipt(sequence.getId(), receiptType, ncf);
+    }
+
     private FiscalProfileResponse defaultProfile(UUID tenantId) {
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
@@ -138,5 +156,8 @@ public class FiscalService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    public record IssuedFiscalReceipt(UUID sequenceId, FiscalReceiptType receiptType, String ncf) {
     }
 }

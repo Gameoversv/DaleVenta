@@ -15,6 +15,7 @@ import type { DenominationCountEntry, DenominationResponse } from "@/types/cash-
 import type { ChangeSuggestionResponse, PaymentRequest } from "@/types/sale";
 import type { CustomerResponse } from "@/types/customer";
 import type { CreditAccountResponse, CreditProfileResponse } from "@/types/credit";
+import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
@@ -52,7 +53,9 @@ interface CheckoutPanelProps {
   preDiscountTotal: number;
   disabled: boolean;
   isSubmitting: boolean;
-  onConfirm: (payment: PaymentRequest, discountAmount: number) => void;
+  fiscalModuleEnabled: boolean;
+  fiscalSequences: FiscalReceiptSequence[];
+  onConfirm: (payment: PaymentRequest, discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => void;
 }
 
 const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Banknote; activeClass: string }> = [
@@ -61,10 +64,20 @@ const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Ba
   { id: "CREDIT", label: "Credito", icon: Wallet2, activeClass: "border-credit bg-credit/10 text-credit" },
 ];
 
-export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled, isSubmitting, onConfirm }: CheckoutPanelProps) {
+export function CheckoutPanel({
+  registerId,
+  customer,
+  preDiscountTotal,
+  disabled,
+  isSubmitting,
+  fiscalModuleEnabled,
+  fiscalSequences,
+  onConfirm,
+}: CheckoutPanelProps) {
   const canDiscount = usePermission("SALE_DISCOUNT");
   const [discountInput, setDiscountInput] = useState("");
   const [method, setMethod] = useState<PaymentMethodTab>("CASH");
+  const [fiscalReceiptType, setFiscalReceiptType] = useState<FiscalReceiptType | "">("");
   const [receivedEntries, setReceivedEntries] = useState<DenominationCountEntry[]>([]);
   const [bank, setBank] = useState("");
   const [reference, setReference] = useState("");
@@ -119,7 +132,7 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
         : method === "TRANSFER"
           ? { method: "TRANSFER", amount: total.toFixed(2), bank, reference }
           : { method: "CREDIT", amount: total.toFixed(2) };
-    onConfirm(payment, discountAmount);
+    onConfirm(payment, discountAmount, fiscalReceiptType || null);
   };
 
   return (
@@ -145,6 +158,30 @@ export function CheckoutPanel({ registerId, customer, preDiscountTotal, disabled
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total a cobrar</p>
           <p className="font-mono-money font-display text-4xl font-extrabold text-primary">RD${total.toFixed(2)}</p>
         </div>
+
+        {fiscalModuleEnabled && (
+          <div className="space-y-2">
+            <Label htmlFor="fiscal-receipt-type">Comprobante fiscal</Label>
+            <select
+              id="fiscal-receipt-type"
+              value={fiscalReceiptType}
+              onChange={(event) => setFiscalReceiptType(event.target.value as FiscalReceiptType | "")}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Factura normal</option>
+              {fiscalSequences
+                .filter((sequence) => sequence.active && sequence.remaining > 0)
+                .map((sequence) => (
+                  <option key={sequence.id} value={sequence.receiptType}>
+                    {sequence.receiptType} - proximo {sequence.nextNcf}
+                  </option>
+                ))}
+            </select>
+            {fiscalSequences.filter((sequence) => sequence.active && sequence.remaining > 0).length === 0 && (
+              <p className="text-xs text-muted-foreground">No hay secuencias NCF activas disponibles.</p>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-2">
           {METHOD_TILES.map((tile) => {

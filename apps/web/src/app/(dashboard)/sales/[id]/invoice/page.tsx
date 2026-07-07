@@ -110,6 +110,13 @@ export default function InvoicePage() {
               <div className="text-left sm:text-right">
                 <p className="text-xs uppercase text-muted-foreground">Factura</p>
                 <p className="text-2xl font-bold">{data.invoiceNumber}</p>
+                {data.fiscalNcf && (
+                  <div className="mt-2">
+                    <p className="text-xs uppercase text-muted-foreground">NCF</p>
+                    <p className="text-lg font-semibold">{data.fiscalNcf}</p>
+                    {data.fiscalReceiptType && <p className="text-xs text-muted-foreground">{data.fiscalReceiptType}</p>}
+                  </div>
+                )}
                 <p className="text-sm">{dateTime(data.createdAt)}</p>
               </div>
             </div>

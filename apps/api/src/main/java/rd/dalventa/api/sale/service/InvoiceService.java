@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.customer.domain.Customer;
 import rd.dalventa.api.customer.repository.CustomerRepository;
+import rd.dalventa.api.fiscal.repository.FiscalProfileRepository;
 import rd.dalventa.api.product.domain.Product;
 import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
@@ -32,6 +33,7 @@ public class InvoiceService {
     private final RegisterRepository registerRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final FiscalProfileRepository fiscalProfileRepository;
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoice(java.util.UUID saleId) {
@@ -42,6 +44,8 @@ public class InvoiceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
         var branch = branchRepository.findById(sale.getBranchId()).orElse(null);
         var register = registerRepository.findById(sale.getRegisterId()).orElse(null);
+        var fiscalProfile = fiscalProfileRepository.findByTenantId(tenantId).orElse(null);
+        var isFiscalInvoice = sale.getFiscalNcf() != null;
 
         var items = saleItemRepository.findAllBySaleId(sale.getId()).stream()
                 .map(item -> {
@@ -57,14 +61,16 @@ public class InvoiceService {
         return new InvoiceResponse(
                 sale.getId(),
                 sale.getInvoiceNumber(),
+                sale.getFiscalReceiptType(),
+                sale.getFiscalNcf(),
                 sale.getStatus(),
                 sale.getCreatedAt(),
                 new InvoiceResponse.BusinessInfo(
-                        tenant.getName(),
-                        tenant.getRnc(),
-                        tenant.getPhone(),
-                        tenant.getEmail(),
-                        tenant.getAddress(),
+                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getBusinessName() : tenant.getName(),
+                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getRnc() : tenant.getRnc(),
+                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getPhone() : tenant.getPhone(),
+                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getEmail() : tenant.getEmail(),
+                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getFiscalAddress() : tenant.getAddress(),
                         tenant.getCity(),
                         tenant.getLogoUrl(),
                         tenant.getInvoiceFooterMessage(),

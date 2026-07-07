@@ -1,4 +1,5 @@
 import type { DenominationCountEntry } from "./cash-shift";
+import type { FiscalReceiptType } from "./fiscal";
 
 export type SaleStatus = "COMPLETED" | "VOIDED";
 export type PaymentMethod = "CASH" | "TRANSFER" | "CREDIT";
@@ -21,6 +22,7 @@ export interface CreateSaleRequest {
   registerId: string;
   cashShiftId: string;
   customerId?: string | null;
+  fiscalReceiptType?: FiscalReceiptType | null;
   discountAmount?: string;
   items: SaleItemRequest[];
   payments: PaymentRequest[];
@@ -44,6 +46,8 @@ export interface PaymentResponse {
 export interface SaleResponse {
   id: string;
   invoiceNumber: string;
+  fiscalReceiptType: FiscalReceiptType | null;
+  fiscalNcf: string | null;
   customerId: string | null;
   status: SaleStatus;
   subtotal: string;
@@ -110,6 +114,8 @@ export interface InvoiceBusinessInfo {
 export interface InvoiceResponse {
   id: string;
   invoiceNumber: string;
+  fiscalReceiptType: FiscalReceiptType | null;
+  fiscalNcf: string | null;
   status: SaleStatus;
   createdAt: string;
   business: InvoiceBusinessInfo;

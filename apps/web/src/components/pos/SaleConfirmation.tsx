@@ -70,6 +70,8 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
           </tbody>
         </table>
         <div className="space-y-1 text-sm">
+          <p>Factura: {sale.invoiceNumber}</p>
+          {sale.fiscalNcf && <p>NCF: {sale.fiscalNcf}</p>}
           <p>Metodo de pago: {sale.payments.map((p) => p.method).join(", ")}</p>
           <p className="font-semibold">Total: RD${sale.total}</p>
         </div>

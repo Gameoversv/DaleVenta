@@ -2,6 +2,7 @@ package rd.dalventa.api.sale.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import rd.dalventa.api.fiscal.domain.FiscalReceiptType;
 import rd.dalventa.api.sale.domain.Sale;
 import rd.dalventa.api.sale.domain.SaleStatus;
 
@@ -13,6 +14,8 @@ import java.util.UUID;
 public record SaleResponse(
         UUID id,
         @JsonProperty("invoiceNumber") String invoiceNumber,
+        @JsonProperty("fiscalReceiptType") FiscalReceiptType fiscalReceiptType,
+        @JsonProperty("fiscalNcf") String fiscalNcf,
         @JsonProperty("customerId") UUID customerId,
         SaleStatus status,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal subtotal,
@@ -26,7 +29,8 @@ public record SaleResponse(
         List<PaymentResponse> payments
 ) {
     public static SaleResponse from(Sale sale, List<SaleItemResponse> items, List<PaymentResponse> payments) {
-        return new SaleResponse(sale.getId(), sale.getInvoiceNumber(), sale.getCustomerId(), sale.getStatus(), sale.getSubtotal(),
+        return new SaleResponse(sale.getId(), sale.getInvoiceNumber(), sale.getFiscalReceiptType(), sale.getFiscalNcf(),
+                sale.getCustomerId(), sale.getStatus(), sale.getSubtotal(),
                 sale.getTaxTotal(), sale.getDiscountAmount(), sale.getTotal(), sale.getCreatedAt(),
                 sale.getVoidedAt(), sale.getVoidReason(), items, payments);
     }

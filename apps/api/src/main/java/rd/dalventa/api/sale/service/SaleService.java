@@ -12,6 +12,7 @@ import rd.dalventa.api.cashshift.service.CashMovementService;
 import rd.dalventa.api.cashshift.service.CashShiftChangeService;
 import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.denomination.repository.DenominationRepository;
+import rd.dalventa.api.fiscal.service.FiscalService;
 import rd.dalventa.api.inventory.domain.InventoryMovementType;
 import rd.dalventa.api.inventory.dto.CreateInventoryMovementRequest;
 import rd.dalventa.api.inventory.service.InventoryMovementService;
@@ -77,6 +78,7 @@ public class SaleService {
     private final CreditService creditService;
     private final AuditLogService auditLogService;
     private final DailyCloseReportService dailyCloseReportService;
+    private final FiscalService fiscalService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -116,6 +118,12 @@ public class SaleService {
         long invoiceSequence = saleRepository.maxInvoiceSequence(tenantId) + 1;
         sale.setInvoiceSequence(invoiceSequence);
         sale.setInvoiceNumber("FV-%06d".formatted(invoiceSequence));
+        if (req.fiscalReceiptType() != null) {
+            var fiscalReceipt = fiscalService.issueReceipt(tenantId, req.fiscalReceiptType());
+            sale.setFiscalReceiptType(fiscalReceipt.receiptType());
+            sale.setFiscalNcf(fiscalReceipt.ncf());
+            sale.setFiscalSequenceId(fiscalReceipt.sequenceId());
+        }
 
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;
