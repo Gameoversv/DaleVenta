@@ -13,6 +13,7 @@ import rd.dalventa.api.auth.dto.AuthResponse;
 import rd.dalventa.api.auth.dto.LoginRequest;
 import rd.dalventa.api.auth.dto.MeResponse;
 import rd.dalventa.api.auth.dto.RegisterRequest;
+import rd.dalventa.api.auth.dto.TenantFeaturesResponse;
 import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.service.AuthService;
 import rd.dalventa.api.permission.service.PermissionResolutionService;
@@ -22,6 +23,7 @@ import rd.dalventa.api.shared.ratelimit.RateLimitProperties;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.ApiResponse;
 import rd.dalventa.api.shared.web.RateLimitExceededException;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,6 +35,7 @@ public class AuthController {
     private final RateLimitProperties rateLimitProperties;
     private final PermissionResolutionService permissionResolutionService;
     private final CurrentUserProvider currentUserProvider;
+    private final TenantRepository tenantRepository;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
@@ -53,7 +56,12 @@ public class AuthController {
         var user = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"));
         var permissions = permissionResolutionService.resolveAll(user).stream().toList();
-        return ResponseEntity.ok(ApiResponse.ok(new MeResponse(UserResponse.from(user), permissions)));
+        var tenantFeatures = user.getTenantId() == null
+                ? TenantFeaturesResponse.disabled()
+                : tenantRepository.findById(user.getTenantId())
+                        .map(TenantFeaturesResponse::from)
+                        .orElseGet(TenantFeaturesResponse::disabled);
+        return ResponseEntity.ok(ApiResponse.ok(new MeResponse(UserResponse.from(user), permissions, tenantFeatures)));
     }
 
     private void enforceRateLimit(

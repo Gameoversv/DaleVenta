@@ -4,7 +4,7 @@ import { createContext, useContext, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import type { AuthResponse, MeResponse, PermissionCode, UserResponse } from "@/types/auth";
+import type { AuthResponse, MeResponse, PermissionCode, TenantFeatures, UserResponse } from "@/types/auth";
 
 function landingPageFor(user: UserResponse | undefined, permissions: PermissionCode[]): string {
   if (user?.role === "SUPER_ADMIN") return "/super-admin";
@@ -17,6 +17,7 @@ function landingPageFor(user: UserResponse | undefined, permissions: PermissionC
 interface AuthContextValue {
   user: UserResponse | null;
   permissions: PermissionCode[];
+  tenantFeatures: TenantFeatures;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user: data?.user ?? null,
         permissions: data?.permissions ?? [],
+        tenantFeatures: data?.tenantFeatures ?? { fiscalModuleEnabled: false },
         isLoading,
         login,
         logout,

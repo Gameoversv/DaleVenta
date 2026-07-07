@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
 import { NAV_SECTIONS, type NavItem } from "@/components/layout/nav";
 
@@ -26,17 +27,25 @@ function NavMenuItem({ item }: { item: NavItem }) {
 }
 
 function GatedNavMenuItem({ item }: { item: NavItem }) {
+  const { tenantFeatures } = useAuth();
   const allowed = usePermission(item.permission!);
-  if (!allowed) return null;
+  if (!allowed || (item.feature && !tenantFeatures[item.feature])) return null;
   return <NavMenuItem item={item} />;
 }
 
 function AnyGatedNavMenuItem({ item }: { item: NavItem }) {
+  const { tenantFeatures } = useAuth();
   const permissions = item.anyPermission!;
   /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
   const allowedFlags = permissions.map((code) => usePermission(code));
   /* eslint-enable react-hooks/rules-of-hooks */
-  if (!allowedFlags.some(Boolean)) return null;
+  if (!allowedFlags.some(Boolean) || (item.feature && !tenantFeatures[item.feature])) return null;
+  return <NavMenuItem item={item} />;
+}
+
+function FeatureGatedNavMenuItem({ item }: { item: NavItem }) {
+  const { tenantFeatures } = useAuth();
+  if (item.feature && !tenantFeatures[item.feature]) return null;
   return <NavMenuItem item={item} />;
 }
 
@@ -68,6 +77,9 @@ export function MobileNav() {
               }
               if (item.permission) {
                 return <GatedNavMenuItem key={item.href} item={item} />;
+              }
+              if (item.feature) {
+                return <FeatureGatedNavMenuItem key={item.href} item={item} />;
               }
               return <NavMenuItem key={item.href} item={item} />;
             })}

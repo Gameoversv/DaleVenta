@@ -64,9 +64,14 @@ export interface ResetUserPasswordResponse {
 export interface MeResponse {
   user: UserResponse;
   permissions: PermissionCode[];
+  tenantFeatures: TenantFeatures;
 }
 
 export interface AuthResponse {
   token: string;
   user: UserResponse;
+}
+
+export interface TenantFeatures {
+  fiscalModuleEnabled: boolean;
 }

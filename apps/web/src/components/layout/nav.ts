@@ -11,8 +11,10 @@ import {
   BarChart3,
   ClipboardCheck,
   ScrollText,
+  Landmark,
 } from "lucide-react";
 import type { PermissionCode } from "@/types/auth";
+import type { TenantFeatures } from "@/types/auth";
 
 export interface NavItem {
   href: string;
@@ -20,6 +22,7 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
   permission?: PermissionCode;
   anyPermission?: PermissionCode[];
+  feature?: keyof TenantFeatures;
 }
 
 export interface NavSection {
@@ -47,6 +50,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
       { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
       { href: "/cash-shift/history", label: "Historial de caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
+      { href: "/fiscal", label: "Fiscal", icon: Landmark, permission: "SETTINGS_MANAGE", feature: "fiscalModuleEnabled" },
       { href: "/audit", label: "Auditoria", icon: ScrollText, permission: "AUDIT_VIEW" },
       { href: "/settings", label: "Configuracion", icon: Settings, permission: "SETTINGS_MANAGE" },
     ],

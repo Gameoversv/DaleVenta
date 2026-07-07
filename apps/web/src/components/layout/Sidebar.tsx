@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
 import { NAV_SECTIONS, type NavItem, type NavSection } from "@/components/layout/nav";
 
@@ -25,17 +26,25 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 }
 
 function GatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { tenantFeatures } = useAuth();
   const allowed = usePermission(item.permission!);
-  if (!allowed) return null;
+  if (!allowed || (item.feature && !tenantFeatures[item.feature])) return null;
   return <NavLink item={item} active={active} />;
 }
 
 function AnyGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { tenantFeatures } = useAuth();
   const permissions = item.anyPermission!;
   /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
   const allowedFlags = permissions.map((code) => usePermission(code));
   /* eslint-enable react-hooks/rules-of-hooks */
-  if (!allowedFlags.some(Boolean)) return null;
+  if (!allowedFlags.some(Boolean) || (item.feature && !tenantFeatures[item.feature])) return null;
+  return <NavLink item={item} active={active} />;
+}
+
+function FeatureGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { tenantFeatures } = useAuth();
+  if (item.feature && !tenantFeatures[item.feature]) return null;
   return <NavLink item={item} active={active} />;
 }
 
@@ -51,6 +60,9 @@ function NavSectionBlock({ section, pathname }: { section: NavSection; pathname:
         }
         if (item.permission) {
           return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
+        }
+        if (item.feature) {
+          return <FeatureGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
         }
         return <NavLink key={item.href} item={item} active={pathname === item.href} />;
       })}
