@@ -166,6 +166,28 @@ public class SuperAdminService {
     }
 
     @Transactional
+    public TenantDetailResponse updateMultiBranch(UUID id, UpdateTenantMultiBranchRequest req, String actor) {
+        var tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+        var prev = tenant.isMultiBranchEnabled();
+        tenant.setMultiBranchEnabled(req.enabled());
+        tenantRepository.save(tenant);
+        audit(actor, "MULTI_BRANCH_CHANGE", id, (prev ? "ON" : "OFF") + " -> " + (req.enabled() ? "ON" : "OFF"));
+        return getTenantDetail(id);
+    }
+
+    @Transactional
+    public TenantDetailResponse updateMultiRegister(UUID id, UpdateTenantMultiRegisterRequest req, String actor) {
+        var tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+        var prev = tenant.isMultiRegisterEnabled();
+        tenant.setMultiRegisterEnabled(req.enabled());
+        tenantRepository.save(tenant);
+        audit(actor, "MULTI_REGISTER_CHANGE", id, (prev ? "ON" : "OFF") + " -> " + (req.enabled() ? "ON" : "OFF"));
+        return getTenantDetail(id);
+    }
+
+    @Transactional
     public TenantSummaryResponse extendTrial(UUID id, int days, String actor) {
         var tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));

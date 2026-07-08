@@ -134,6 +134,26 @@ export default function SuperAdminTenantDetailPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const multiBranchMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/multi-branch`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Modulo multisucursal actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const multiRegisterMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/multi-register`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Modulo multicaja actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const impersonateMutation = useMutation({
     mutationFn: async () => {
       const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${tenantId}/impersonate`);
@@ -197,6 +217,18 @@ export default function SuperAdminTenantDetailPage() {
               Denominaciones de caja:{" "}
               <Badge variant={tenant.cashDenominationsEnabled ? "success" : "secondary"}>
                 {tenant.cashDenominationsEnabled ? "Activas" : "Inactivas"}
+              </Badge>
+            </p>
+            <p>
+              Multisucursal:{" "}
+              <Badge variant={tenant.multiBranchEnabled ? "success" : "secondary"}>
+                {tenant.multiBranchEnabled ? "Activo" : "Inactivo"}
+              </Badge>
+            </p>
+            <p>
+              Multicaja:{" "}
+              <Badge variant={tenant.multiRegisterEnabled ? "success" : "secondary"}>
+                {tenant.multiRegisterEnabled ? "Activo" : "Inactivo"}
               </Badge>
             </p>
             <p>Creado: <span className="text-muted-foreground">{dateOnly(tenant.createdAt)}</span></p>
@@ -285,6 +317,52 @@ export default function SuperAdminTenantDetailPage() {
                   {cashDenominationsMutation.isPending
                     ? "Actualizando..."
                     : tenant.cashDenominationsEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Multisucursal</p>
+                  <p className="text-xs text-muted-foreground">
+                    Permite crear y operar mas de una sucursal dentro del mismo tenant.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.multiBranchEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => multiBranchMutation.mutate(!tenant.multiBranchEnabled)}
+                  disabled={multiBranchMutation.isPending}
+                >
+                  {multiBranchMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.multiBranchEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Multicaja</p>
+                  <p className="text-xs text-muted-foreground">
+                    Permite crear y operar mas de una caja por sucursal.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.multiRegisterEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => multiRegisterMutation.mutate(!tenant.multiRegisterEnabled)}
+                  disabled={multiRegisterMutation.isPending}
+                >
+                  {multiRegisterMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.multiRegisterEnabled
                       ? "Desactivar"
                       : "Activar"}
                 </Button>

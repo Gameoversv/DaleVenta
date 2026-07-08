@@ -96,6 +96,24 @@ public class SuperAdminController {
         return ApiResponse.ok(service.updateCashDenominations(id, req, principal.getUsername()));
     }
 
+    @PatchMapping("/tenants/{id}/multi-branch")
+    public ApiResponse<TenantDetailResponse> updateMultiBranch(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTenantMultiBranchRequest req,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return ApiResponse.ok(service.updateMultiBranch(id, req, principal.getUsername()));
+    }
+
+    @PatchMapping("/tenants/{id}/multi-register")
+    public ApiResponse<TenantDetailResponse> updateMultiRegister(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTenantMultiRegisterRequest req,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return ApiResponse.ok(service.updateMultiRegister(id, req, principal.getUsername()));
+    }
+
     @PostMapping("/tenants/{id}/extend-trial")
     public ApiResponse<TenantSummaryResponse> extendTrial(
             @PathVariable UUID id,

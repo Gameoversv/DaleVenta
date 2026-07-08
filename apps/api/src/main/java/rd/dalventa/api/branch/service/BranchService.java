@@ -9,6 +9,7 @@ import rd.dalventa.api.branch.dto.CreateBranchRequest;
 import rd.dalventa.api.branch.dto.UpdateBranchRequest;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.util.List;
@@ -19,11 +20,18 @@ import java.util.UUID;
 public class BranchService {
 
     private final BranchRepository branchRepository;
+    private final TenantRepository tenantRepository;
 
     @Transactional
     public BranchResponse create(CreateBranchRequest req) {
+        var tenantId = TenantContext.require();
+        var tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
+        if (!tenant.isMultiBranchEnabled() && branchRepository.countByTenantIdAndActiveTrue(tenantId) >= 1) {
+            throw new IllegalStateException("El modulo multisucursal no esta activo para este tenant");
+        }
         var branch = new Branch(req.name(), req.address());
-        branch.setTenantId(TenantContext.require());
+        branch.setTenantId(tenantId);
         return BranchResponse.from(branchRepository.save(branch));
     }
 

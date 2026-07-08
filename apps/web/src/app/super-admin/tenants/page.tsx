@@ -124,6 +124,26 @@ export default function SuperAdminTenantsPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const multiBranchMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      api.patch(`/api/super-admin/tenants/${id}/multi-branch`, { enabled }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Modulo multisucursal actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
+  const multiRegisterMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      api.patch(`/api/super-admin/tenants/${id}/multi-register`, { enabled }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Modulo multicaja actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const extendTrialMutation = useMutation({
     mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/extend-trial`, null, { params: { days: 30 } }),
     onSuccess: () => {
@@ -190,7 +210,9 @@ export default function SuperAdminTenantsPage() {
                     <th className="px-4 py-3">Plan</th>
                     <th className="px-4 py-3">Estado</th>
                     <th className="px-4 py-3">Fiscal</th>
-                    <th className="px-4 py-3">Caja</th>
+                    <th className="px-4 py-3">Sucursales</th>
+                    <th className="px-4 py-3">Cajas</th>
+                    <th className="px-4 py-3">Efectivo</th>
                     <th className="px-4 py-3">Trial vence</th>
                     <th className="px-4 py-3 text-right">Usuarios</th>
                     <th className="px-4 py-3 text-right">Clientes</th>
@@ -214,6 +236,16 @@ export default function SuperAdminTenantsPage() {
                       <td className="px-4 py-3">
                         <Badge variant={t.fiscalModuleEnabled ? "success" : "secondary"}>
                           {t.fiscalModuleEnabled ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={t.multiBranchEnabled ? "success" : "secondary"}>
+                          {t.multiBranchEnabled ? "Multi" : "Simple"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={t.multiRegisterEnabled ? "success" : "secondary"}>
+                          {t.multiRegisterEnabled ? "Multi" : "Simple"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
@@ -314,6 +346,32 @@ export default function SuperAdminTenantsPage() {
                                 onClick={() => cashDenominationsMutation.mutate({ id: t.id, enabled: false })}
                               >
                                 Desactivar denominaciones
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.multiBranchEnabled || multiBranchMutation.isPending}
+                                onClick={() => multiBranchMutation.mutate({ id: t.id, enabled: true })}
+                              >
+                                Activar multisucursal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!t.multiBranchEnabled || multiBranchMutation.isPending}
+                                onClick={() => multiBranchMutation.mutate({ id: t.id, enabled: false })}
+                              >
+                                Desactivar multisucursal
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.multiRegisterEnabled || multiRegisterMutation.isPending}
+                                onClick={() => multiRegisterMutation.mutate({ id: t.id, enabled: true })}
+                              >
+                                Activar multicaja
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!t.multiRegisterEnabled || multiRegisterMutation.isPending}
+                                onClick={() => multiRegisterMutation.mutate({ id: t.id, enabled: false })}
+                              >
+                                Desactivar multicaja
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

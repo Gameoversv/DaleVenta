@@ -75,4 +75,6 @@ export interface AuthResponse {
 export interface TenantFeatures {
   fiscalModuleEnabled: boolean;
   cashDenominationsEnabled: boolean;
+  multiBranchEnabled: boolean;
+  multiRegisterEnabled: boolean;
 }

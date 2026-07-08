@@ -78,7 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user: data?.user ?? null,
         permissions: data?.permissions ?? [],
-        tenantFeatures: data?.tenantFeatures ?? { fiscalModuleEnabled: false, cashDenominationsEnabled: true },
+        tenantFeatures: data?.tenantFeatures ?? {
+          fiscalModuleEnabled: false,
+          cashDenominationsEnabled: true,
+          multiBranchEnabled: false,
+          multiRegisterEnabled: false,
+        },
         isLoading,
         login,
         logout,

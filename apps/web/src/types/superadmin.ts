@@ -27,6 +27,8 @@ export interface TenantSummaryResponse {
   status: TenantStatus;
   fiscalModuleEnabled: boolean;
   cashDenominationsEnabled: boolean;
+  multiBranchEnabled: boolean;
+  multiRegisterEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;
@@ -56,6 +58,8 @@ export interface TenantDetailResponse {
   status: TenantStatus;
   fiscalModuleEnabled: boolean;
   cashDenominationsEnabled: boolean;
+  multiBranchEnabled: boolean;
+  multiRegisterEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;

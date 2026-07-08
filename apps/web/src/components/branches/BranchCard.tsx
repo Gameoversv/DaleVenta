@@ -16,7 +16,13 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
   return res.data.data;
 }
 
-export function BranchCard({ branch }: { branch: BranchResponse }) {
+export function BranchCard({
+  branch,
+  multiRegisterEnabled,
+}: {
+  branch: BranchResponse;
+  multiRegisterEnabled: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: registers, isLoading } = useQuery({
@@ -82,15 +88,21 @@ export function BranchCard({ branch }: { branch: BranchResponse }) {
               ))}
             </ul>
           )}
-          <RegisterFormDialog
-            branchId={branch.id}
-            trigger={
-              <Button variant="secondary" size="sm" className="mt-3">
-                <Plus className="h-4 w-4" />
-                Nueva caja
-              </Button>
-            }
-          />
+          {(multiRegisterEnabled || (registers?.length ?? 0) === 0) ? (
+            <RegisterFormDialog
+              branchId={branch.id}
+              trigger={
+                <Button variant="secondary" size="sm" className="mt-3">
+                  <Plus className="h-4 w-4" />
+                  Nueva caja
+                </Button>
+              }
+            />
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Multicaja no esta activo para este tenant. Solo se permite una caja por sucursal.
+            </p>
+          )}
         </CardContent>
       )}
     </Card>

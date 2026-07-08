@@ -78,6 +78,12 @@ public class Tenant extends BaseEntity {
     @Column(name = "cash_denominations_enabled", nullable = false)
     private boolean cashDenominationsEnabled = true;
 
+    @Column(name = "multi_branch_enabled", nullable = false)
+    private boolean multiBranchEnabled = false;
+
+    @Column(name = "multi_register_enabled", nullable = false)
+    private boolean multiRegisterEnabled = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private TenantPlan plan = TenantPlan.STARTER;

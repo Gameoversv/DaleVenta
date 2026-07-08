@@ -10,5 +10,6 @@ import java.util.UUID;
 public interface RegisterRepository extends JpaRepository<Register, UUID> {
     List<Register> findAllByBranchIdAndActiveTrue(UUID branchId);
     List<Register> findAllByTenantIdAndActiveTrue(UUID tenantId);
+    long countByTenantIdAndBranchIdAndActiveTrue(UUID tenantId, UUID branchId);
     Optional<Register> findByIdAndTenantId(UUID id, UUID tenantId);
 }

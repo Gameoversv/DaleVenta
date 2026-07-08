@@ -11,6 +11,7 @@ import rd.dalventa.api.register.dto.UpdateRegisterRequest;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +22,7 @@ public class RegisterService {
 
     private final RegisterRepository registerRepository;
     private final BranchRepository branchRepository;
+    private final TenantRepository tenantRepository;
 
     @Transactional
     public RegisterResponse create(CreateRegisterRequest req) {
@@ -28,6 +30,12 @@ public class RegisterService {
         var branch = branchRepository.findById(req.branchId())
                 .filter(b -> b.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
+        var tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
+        if (!tenant.isMultiRegisterEnabled()
+                && registerRepository.countByTenantIdAndBranchIdAndActiveTrue(tenantId, branch.getId()) >= 1) {
+            throw new IllegalStateException("El modulo multicaja no esta activo para este tenant");
+        }
 
         var register = new Register(req.name(), branch.getId());
         register.setTenantId(tenantId);
