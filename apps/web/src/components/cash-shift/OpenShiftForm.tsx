@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
@@ -17,8 +20,11 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
 }
 
 export function OpenShiftForm({ registerId, branchId }: { registerId: string; branchId: string }) {
+  const { tenantFeatures } = useAuth();
+  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
+  const [openingAmount, setOpeningAmount] = useState("");
   const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
   const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
 
@@ -26,12 +32,14 @@ export function OpenShiftForm({ registerId, branchId }: { registerId: string; br
     const denom = denominations?.find((d) => d.id === e.denominationId);
     return sum + (denom ? Number(denom.value) * e.quantity : 0);
   }, 0);
+  const directOpeningTotal = Math.max(0, Number(openingAmount) || 0);
 
   const mutation = useMutation({
     mutationFn: () =>
       api.post("/api/cash-shifts/open", {
         registerId,
-        openingCounts: entries,
+        openingAmount: denominationsEnabled ? undefined : directOpeningTotal.toFixed(2),
+        openingCounts: denominationsEnabled ? entries : [],
         inventoryCounts: inventoryEntries,
       }),
     onSuccess: () => {
@@ -56,11 +64,31 @@ export function OpenShiftForm({ registerId, branchId }: { registerId: string; br
       <CardContent className="space-y-4">
         <div className="rounded-xl bg-primary/5 p-4 text-center">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fondo inicial</p>
-          <p className="font-mono-money font-display text-3xl font-extrabold text-primary">RD${openingTotal.toFixed(2)}</p>
+          <p className="font-mono-money font-display text-3xl font-extrabold text-primary">
+            RD${(denominationsEnabled ? openingTotal : directOpeningTotal).toFixed(2)}
+          </p>
         </div>
         <Tabs
           items={[
-            { value: "cash", label: "Efectivo", content: <DenominationCountGrid onChange={setEntries} /> },
+            {
+              value: "cash",
+              label: "Efectivo",
+              content: denominationsEnabled ? (
+                <DenominationCountGrid onChange={setEntries} />
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="opening-amount">Fondo inicial</Label>
+                  <Input
+                    id="opening-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={openingAmount}
+                    onChange={(event) => setOpeningAmount(event.target.value)}
+                  />
+                </div>
+              ),
+            },
             {
               value: "inventory",
               label: "Inventario",
@@ -68,7 +96,11 @@ export function OpenShiftForm({ registerId, branchId }: { registerId: string; br
             },
           ]}
         />
-        <Button size="lg" disabled={entries.length === 0 || mutation.isPending} onClick={() => mutation.mutate()}>
+        <Button
+          size="lg"
+          disabled={(denominationsEnabled ? entries.length === 0 : openingAmount.trim() === "") || mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
           {mutation.isPending ? "Abriendo..." : "Abrir turno"}
         </Button>
       </CardContent>

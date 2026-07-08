@@ -10,10 +10,13 @@ import rd.dalventa.api.product.repository.CategoryRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
+
+    public static final String GENERAL_CATEGORY_NAME = "General";
 
     private final CategoryRepository categoryRepository;
 
@@ -24,9 +27,26 @@ public class CategoryService {
         return CategoryResponse.from(categoryRepository.save(category));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CategoryResponse> list() {
-        return categoryRepository.findAllByTenantIdAndActiveTrue(TenantContext.require())
+        var tenantId = TenantContext.require();
+        ensureGeneralCategory(tenantId);
+        return categoryRepository.findAllByTenantIdAndActiveTrue(tenantId)
                 .stream().map(CategoryResponse::from).toList();
+    }
+
+    @Transactional
+    public Category ensureGeneralCategory(UUID tenantId) {
+        var existing = categoryRepository.findByTenantIdAndNameIgnoreCase(tenantId, GENERAL_CATEGORY_NAME).orElse(null);
+        if (existing != null) {
+            if (!existing.isActive()) {
+                existing.setActive(true);
+                return categoryRepository.save(existing);
+            }
+            return existing;
+        }
+        var category = new Category(GENERAL_CATEGORY_NAME);
+        category.setTenantId(tenantId);
+        return categoryRepository.save(category);
     }
 }

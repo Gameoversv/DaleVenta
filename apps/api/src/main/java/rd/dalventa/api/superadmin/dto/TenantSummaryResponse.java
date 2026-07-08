@@ -15,6 +15,7 @@ public record TenantSummaryResponse(
         TenantPlan plan,
         TenantStatus status,
         @JsonProperty("fiscalModuleEnabled") boolean fiscalModuleEnabled,
+        @JsonProperty("cashDenominationsEnabled") boolean cashDenominationsEnabled,
         @JsonProperty("trialEndsAt") Instant trialEndsAt,
         @JsonProperty("createdAt") Instant createdAt,
         @JsonProperty("userCount") long userCount,
@@ -23,7 +24,8 @@ public record TenantSummaryResponse(
     public static TenantSummaryResponse of(Tenant t, long users, long customers) {
         return new TenantSummaryResponse(
                 t.getId(), t.getName(), t.getSlug(),
-                t.getPlan(), t.getStatus(), t.isFiscalModuleEnabled(), t.getTrialEndsAt(), t.getCreatedAt(),
+                t.getPlan(), t.getStatus(), t.isFiscalModuleEnabled(), t.isCashDenominationsEnabled(),
+                t.getTrialEndsAt(), t.getCreatedAt(),
                 users, customers
         );
     }

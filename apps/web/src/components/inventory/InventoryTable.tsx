@@ -41,7 +41,9 @@ export function InventoryTable({ branchId }: { branchId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inventory, products, query]);
 
-  const lowOrOutCount = (inventory ?? []).filter((i) => i.currentStock < i.minStock).length;
+  const lowOrOutCount = (inventory ?? []).filter(
+    (i) => i.currentStock <= 0 || (i.minStock != null && i.currentStock < i.minStock)
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -99,7 +101,7 @@ export function InventoryTable({ branchId }: { branchId: string }) {
                     <tr key={item.productId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3 font-medium">{productName(item.productId)}</td>
                       <td className="px-4 py-3 text-right font-mono-money">{item.currentStock}</td>
-                      <td className="px-4 py-3 text-right text-muted-foreground">{item.minStock}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{item.minStock ?? "-"}</td>
                       <td className="px-4 py-3 text-right text-muted-foreground">{item.maxStock ?? "-"}</td>
                       <td className="px-4 py-3">
                         <InventoryStatusBadge currentStock={item.currentStock} minStock={item.minStock} />

@@ -155,6 +155,17 @@ public class SuperAdminService {
     }
 
     @Transactional
+    public TenantDetailResponse updateCashDenominations(UUID id, UpdateTenantCashDenominationsRequest req, String actor) {
+        var tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+        var prev = tenant.isCashDenominationsEnabled();
+        tenant.setCashDenominationsEnabled(req.enabled());
+        tenantRepository.save(tenant);
+        audit(actor, "CASH_DENOMINATIONS_CHANGE", id, (prev ? "ON" : "OFF") + " -> " + (req.enabled() ? "ON" : "OFF"));
+        return getTenantDetail(id);
+    }
+
+    @Transactional
     public TenantSummaryResponse extendTrial(UUID id, int days, String actor) {
         var tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));

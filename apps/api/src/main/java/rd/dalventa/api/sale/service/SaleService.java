@@ -48,6 +48,7 @@ import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class SaleService {
     private final AuditLogService auditLogService;
     private final DailyCloseReportService dailyCloseReportService;
     private final FiscalService fiscalService;
+    private final TenantRepository tenantRepository;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -201,33 +203,40 @@ public class SaleService {
                 payment.setTenantId(tenantId);
                 payment = paymentRepository.save(payment);
 
-                BigDecimal receivedTotal = BigDecimal.ZERO;
-                for (var entry : paymentReq.receivedDenominations()) {
-                    var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
-                            .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
-                    receivedTotal = receivedTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
-                }
-                BigDecimal changeAmount = receivedTotal.subtract(paymentReq.amount());
-                if (changeAmount.signum() < 0) {
-                    throw new IllegalArgumentException("El monto recibido es menor al monto de este pago");
-                }
+                if (cashDenominationsEnabled(tenantId)) {
+                    BigDecimal receivedTotal = BigDecimal.ZERO;
+                    for (var entry : paymentReq.receivedDenominations()) {
+                        var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+                        receivedTotal = receivedTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+                    }
+                    BigDecimal changeAmount = receivedTotal.subtract(paymentReq.amount());
+                    if (changeAmount.signum() < 0) {
+                        throw new IllegalArgumentException("El monto recibido es menor al monto de este pago");
+                    }
 
-                var suggestion = cashShiftChangeService.suggest(new ChangeSuggestionRequest(
-                        req.registerId(), changeAmount.multiply(BigDecimal.valueOf(100)).longValueExact(),
-                        paymentReq.receivedDenominations()));
-                if (!suggestion.exact()) {
-                    throw new IllegalArgumentException("No hay combinacion exacta de denominaciones para el cambio");
-                }
+                    var suggestion = cashShiftChangeService.suggest(new ChangeSuggestionRequest(
+                            req.registerId(), changeAmount.multiply(BigDecimal.valueOf(100)).longValueExact(),
+                            paymentReq.receivedDenominations()));
+                    if (!suggestion.exact()) {
+                        throw new IllegalArgumentException("No hay combinacion exacta de denominaciones para el cambio");
+                    }
 
-                cashMovementService.recordMovement(req.cashShiftId(),
-                        new CreateCashMovementRequest(CashMovementType.ENTRY,
-                                "Venta - efectivo recibido", paymentReq.receivedDenominations()),
-                        sale.getId());
-
-                if (changeAmount.signum() > 0) {
                     cashMovementService.recordMovement(req.cashShiftId(),
-                            new CreateCashMovementRequest(CashMovementType.WITHDRAWAL,
-                                    "Venta - cambio entregado", suggestion.combination()),
+                            new CreateCashMovementRequest(CashMovementType.ENTRY,
+                                    "Venta - efectivo recibido", paymentReq.receivedDenominations()),
+                            sale.getId());
+
+                    if (changeAmount.signum() > 0) {
+                        cashMovementService.recordMovement(req.cashShiftId(),
+                                new CreateCashMovementRequest(CashMovementType.WITHDRAWAL,
+                                        "Venta - cambio entregado", suggestion.combination()),
+                                sale.getId());
+                    }
+                } else {
+                    cashMovementService.recordMovement(req.cashShiftId(),
+                            new CreateCashMovementRequest(CashMovementType.ENTRY,
+                                    "Venta - efectivo", paymentReq.amount(), List.of()),
                             sale.getId());
                 }
             } else if (paymentReq.method() == PaymentMethod.CREDIT) {
@@ -268,6 +277,12 @@ public class SaleService {
         return currentUserProvider.current()
                 .map(user -> permissionResolutionService.has(user, PermissionCode.SALE_VIEW_HISTORY))
                 .orElse(false);
+    }
+
+    private boolean cashDenominationsEnabled(java.util.UUID tenantId) {
+        return tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
+                .isCashDenominationsEnabled();
     }
 
     private java.util.UUID currentUserId() {

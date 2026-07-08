@@ -25,6 +25,23 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
                           @Param("q") String q,
                           Pageable pageable);
 
+    @Query("""
+            SELECT c FROM Customer c
+            WHERE c.tenantId = :tenantId
+            AND c.active = true
+            AND (:q IS NULL OR :q = ''
+                OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.whatsapp) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR c.documentId LIKE CONCAT('%', :q, '%'))
+            ORDER BY c.lastName, c.firstName
+            """)
+    java.util.List<Customer> searchTop(@Param("tenantId") UUID tenantId,
+                                        @Param("q") String q,
+                                        Pageable pageable);
+
     Optional<Customer> findByIdAndTenantIdAndActiveTrue(UUID id, UUID tenantId);
 
     boolean existsByDocumentIdAndTenantIdAndActiveTrue(String documentId, UUID tenantId);

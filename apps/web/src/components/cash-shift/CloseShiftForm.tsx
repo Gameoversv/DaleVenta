@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
+import { Input } from "@/components/ui/input";
 import type {
   CashShiftSummaryResponse,
   DenominationCountEntry,
@@ -36,7 +38,10 @@ function money(value: number): string {
 }
 
 export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShiftFormProps) {
+  const { tenantFeatures } = useAuth();
+  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
+  const [countedCashInput, setCountedCashInput] = useState("");
   const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
   const [notes, setNotes] = useState("");
   const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
@@ -45,15 +50,18 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
     const denom = denominations?.find((d) => d.id === e.denominationId);
     return sum + (denom ? Number(denom.value) * e.quantity : 0);
   }, 0);
+  const directCountedCash = Math.max(0, Number(countedCashInput) || 0);
+  const effectiveCountedCash = denominationsEnabled ? countedCash : directCountedCash;
   const expectedCash = Number(shift.expectedCash ?? "0");
-  const difference = countedCash - expectedCash;
-  const hasCounted = entries.length > 0;
+  const difference = effectiveCountedCash - expectedCash;
+  const hasCounted = denominationsEnabled ? entries.length > 0 : countedCashInput.trim() !== "";
   const isSquare = difference === 0;
 
   const mutation = useMutation({
     mutationFn: () =>
       api.post<{ data: CashShiftSummaryResponse }>(`/api/cash-shifts/${shift.id}/close`, {
-        closingCounts: entries,
+        countedCash: denominationsEnabled ? undefined : directCountedCash.toFixed(2),
+        closingCounts: denominationsEnabled ? entries : [],
         closingNotes: notes || undefined,
         inventoryCounts: inventoryEntries,
       }),
@@ -80,7 +88,7 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
           </div>
           <div className="rounded-lg border border-border p-3">
             <p className="text-xs text-muted-foreground">Efectivo contado</p>
-            <p className="font-mono-money text-lg font-bold">{hasCounted ? money(countedCash) : "-"}</p>
+            <p className="font-mono-money text-lg font-bold">{hasCounted ? money(effectiveCountedCash) : "-"}</p>
           </div>
           <div
             className={cn(
@@ -114,7 +122,25 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
 
         <Tabs
           items={[
-            { value: "cash", label: "Efectivo", content: <DenominationCountGrid onChange={setEntries} /> },
+            {
+              value: "cash",
+              label: "Efectivo",
+              content: denominationsEnabled ? (
+                <DenominationCountGrid onChange={setEntries} />
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="counted-cash">Efectivo contado</Label>
+                  <Input
+                    id="counted-cash"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={countedCashInput}
+                    onChange={(event) => setCountedCashInput(event.target.value)}
+                  />
+                </div>
+              ),
+            },
             {
               value: "inventory",
               label: "Inventario",
@@ -134,7 +160,10 @@ export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShi
           />
         </div>
         <div className="flex gap-2">
-          <Button disabled={entries.length === 0 || mutation.isPending} onClick={() => mutation.mutate()}>
+          <Button
+            disabled={(denominationsEnabled ? entries.length === 0 : countedCashInput.trim() === "") || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
             {mutation.isPending ? "Cerrando..." : "Confirmar cierre"}
           </Button>
           <Button variant="outline" onClick={onCancel}>

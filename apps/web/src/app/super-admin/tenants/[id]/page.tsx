@@ -124,6 +124,16 @@ export default function SuperAdminTenantDetailPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const cashDenominationsMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/cash-denominations`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Denominaciones de caja actualizadas");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const impersonateMutation = useMutation({
     mutationFn: async () => {
       const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${tenantId}/impersonate`);
@@ -181,6 +191,12 @@ export default function SuperAdminTenantDetailPage() {
               Modulo fiscal:{" "}
               <Badge variant={tenant.fiscalModuleEnabled ? "success" : "secondary"}>
                 {tenant.fiscalModuleEnabled ? "Activo" : "Inactivo"}
+              </Badge>
+            </p>
+            <p>
+              Denominaciones de caja:{" "}
+              <Badge variant={tenant.cashDenominationsEnabled ? "success" : "secondary"}>
+                {tenant.cashDenominationsEnabled ? "Activas" : "Inactivas"}
               </Badge>
             </p>
             <p>Creado: <span className="text-muted-foreground">{dateOnly(tenant.createdAt)}</span></p>
@@ -245,6 +261,30 @@ export default function SuperAdminTenantDetailPage() {
                   {fiscalModuleMutation.isPending
                     ? "Actualizando..."
                     : tenant.fiscalModuleEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Denominaciones de caja</p>
+                  <p className="text-xs text-muted-foreground">
+                    Si esta activo, apertura, movimientos, ventas y cierre usan conteo por billetes/monedas.
+                    Si esta inactivo, caja trabaja con montos directos.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.cashDenominationsEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => cashDenominationsMutation.mutate(!tenant.cashDenominationsEnabled)}
+                  disabled={cashDenominationsMutation.isPending}
+                >
+                  {cashDenominationsMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.cashDenominationsEnabled
                       ? "Desactivar"
                       : "Activar"}
                 </Button>

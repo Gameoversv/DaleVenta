@@ -18,9 +18,9 @@ public interface BranchInventoryRepository extends JpaRepository<BranchInventory
     @Query("select bi from BranchInventory bi where bi.tenantId = :tenantId and bi.branchId = :branchId and bi.productId = :productId")
     Optional<BranchInventory> lockByTenantIdAndBranchIdAndProductId(UUID tenantId, UUID branchId, UUID productId);
 
-    @Query("select bi from BranchInventory bi where bi.tenantId = :tenantId and bi.branchId = :branchId and bi.currentStock < bi.minStock")
+    @Query("select bi from BranchInventory bi where bi.tenantId = :tenantId and bi.branchId = :branchId and bi.minStock is not null and bi.currentStock < bi.minStock")
     List<BranchInventory> findLowStock(UUID tenantId, UUID branchId);
 
-    @Query("select count(bi) from BranchInventory bi where bi.tenantId = :tenantId and bi.currentStock < bi.minStock")
+    @Query("select count(bi) from BranchInventory bi where bi.tenantId = :tenantId and bi.minStock is not null and bi.currentStock < bi.minStock")
     long countLowStock(UUID tenantId);
 }

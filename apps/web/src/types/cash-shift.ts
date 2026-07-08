@@ -47,7 +47,8 @@ export interface CashShiftSummaryResponse {
 
 export interface OpenCashShiftRequest {
   registerId: string;
-  openingCounts: DenominationCountEntry[];
+  openingAmount?: string;
+  openingCounts?: DenominationCountEntry[];
   inventoryCounts: InventoryCountEntry[];
 }
 
@@ -56,7 +57,8 @@ export type CashMovementType = "ENTRY" | "WITHDRAWAL" | "EXPENSE";
 export interface CreateCashMovementRequest {
   type: CashMovementType;
   reason: string;
-  denominations: DenominationCountEntry[];
+  amount?: string;
+  denominations?: DenominationCountEntry[];
 }
 
 export interface CashMovementResponse {
@@ -71,7 +73,8 @@ export interface CashMovementResponse {
 }
 
 export interface CloseCashShiftRequest {
-  closingCounts: DenominationCountEntry[];
+  countedCash?: string;
+  closingCounts?: DenominationCountEntry[];
   closingNotes?: string;
   inventoryCounts: InventoryCountEntry[];
 }

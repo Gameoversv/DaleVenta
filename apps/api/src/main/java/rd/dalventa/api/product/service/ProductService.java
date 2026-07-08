@@ -11,6 +11,7 @@ import rd.dalventa.api.product.domain.Product;
 import rd.dalventa.api.product.dto.CreateProductRequest;
 import rd.dalventa.api.product.dto.ProductResponse;
 import rd.dalventa.api.product.dto.UpdateProductRequest;
+import rd.dalventa.api.product.repository.CategoryRepository;
 import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
@@ -25,6 +26,8 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
     private final PermissionResolutionService permissionResolutionService;
     private final CurrentUserProvider currentUserProvider;
     private final AuditLogService auditLogService;
@@ -39,7 +42,13 @@ public class ProductService {
             throw new DuplicateResourceException("Ya existe un producto con ese codigo de barras");
         }
 
-        var product = new Product(req.categoryId(), req.internalCode(), req.barcode(), req.description(),
+        var categoryId = req.categoryId() != null
+                ? categoryRepository.findByIdAndTenantIdAndActiveTrue(req.categoryId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"))
+                    .getId()
+                : categoryService.ensureGeneralCategory(tenantId).getId();
+
+        var product = new Product(categoryId, req.internalCode(), req.barcode(), req.description(),
                 req.unit(), req.cost(), req.salePrice(), req.wholesalePrice(), req.taxRate(), req.tracksInventory());
         product.setTenantId(tenantId);
         return toResponse(productRepository.save(product));
@@ -67,6 +76,8 @@ public class ProductService {
         var previousSalePrice = product.getSalePrice();
         var previousWholesalePrice = product.getWholesalePrice();
 
+        categoryRepository.findByIdAndTenantIdAndActiveTrue(req.categoryId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"));
         product.setCategoryId(req.categoryId());
         product.setDescription(req.description());
         product.setUnit(req.unit());

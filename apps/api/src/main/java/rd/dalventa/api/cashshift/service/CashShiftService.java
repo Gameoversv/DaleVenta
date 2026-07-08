@@ -28,6 +28,7 @@ import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -46,6 +47,7 @@ public class CashShiftService {
     private final ShiftInventoryCountRepository shiftInventoryCountRepository;
     private final BranchInventoryRepository branchInventoryRepository;
     private final AuditLogService auditLogService;
+    private final TenantRepository tenantRepository;
 
     @Transactional
     public CashShiftSummaryResponse open(OpenCashShiftRequest req) {
@@ -61,12 +63,10 @@ public class CashShiftService {
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
 
-        BigDecimal openingTotal = BigDecimal.ZERO;
-        for (DenominationCountEntry entry : req.openingCounts()) {
-            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
-            openingTotal = openingTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
-        }
+        boolean denominationsEnabled = cashDenominationsEnabled(tenantId);
+        BigDecimal openingTotal = denominationsEnabled
+                ? totalFromDenominations(req.openingCounts(), tenantId)
+                : requireNonNegativeAmount(req.openingAmount(), "Debe indicar el fondo inicial");
 
         var shift = new CashShift(req.registerId(), userId, openingTotal);
         shift.setTenantId(tenantId);
@@ -76,10 +76,15 @@ public class CashShiftService {
             throw new DuplicateResourceException("Esta caja ya tiene un turno abierto");
         }
 
-        for (DenominationCountEntry entry : req.openingCounts()) {
-            var csd = new CashShiftDenomination(shift.getId(), entry.denominationId(), entry.quantity());
-            csd.setTenantId(tenantId);
-            cashShiftDenominationRepository.save(csd);
+        if (denominationsEnabled) {
+            if (req.openingCounts().isEmpty()) {
+                throw new IllegalArgumentException("Debe indicar el conteo inicial por denominacion");
+            }
+            for (DenominationCountEntry entry : req.openingCounts()) {
+                var csd = new CashShiftDenomination(shift.getId(), entry.denominationId(), entry.quantity());
+                csd.setTenantId(tenantId);
+                cashShiftDenominationRepository.save(csd);
+            }
         }
 
         for (InventoryCountEntry entry : req.inventoryCounts()) {
@@ -115,17 +120,26 @@ public class CashShiftService {
             throw new DuplicateResourceException("Este turno ya esta cerrado");
         }
 
-        BigDecimal countedCash = BigDecimal.ZERO;
-        for (DenominationCountEntry entry : req.closingCounts()) {
-            var csd = cashShiftDenominationRepository
-                    .findByCashShiftIdAndDenominationId(id, entry.denominationId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no registrada en este turno"));
-            csd.setClosingQuantity(entry.quantity());
-            cashShiftDenominationRepository.save(csd);
+        boolean denominationsEnabled = cashDenominationsEnabled(tenantId);
+        BigDecimal countedCash;
+        if (denominationsEnabled) {
+            if (req.closingCounts().isEmpty()) {
+                throw new IllegalArgumentException("Debe indicar el conteo final por denominacion");
+            }
+            countedCash = BigDecimal.ZERO;
+            for (DenominationCountEntry entry : req.closingCounts()) {
+                var csd = cashShiftDenominationRepository
+                        .findByCashShiftIdAndDenominationId(id, entry.denominationId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Denominacion no registrada en este turno"));
+                csd.setClosingQuantity(entry.quantity());
+                cashShiftDenominationRepository.save(csd);
 
-            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
-            countedCash = countedCash.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+                var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+                countedCash = countedCash.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+            }
+        } else {
+            countedCash = requireNonNegativeAmount(req.countedCash(), "Debe indicar el efectivo contado");
         }
 
         BigDecimal expectedCash = computeExpectedCash(shift, tenantId);
@@ -192,6 +206,29 @@ public class CashShiftService {
             };
         }
         return expected;
+    }
+
+    private boolean cashDenominationsEnabled(UUID tenantId) {
+        return tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
+                .isCashDenominationsEnabled();
+    }
+
+    private BigDecimal totalFromDenominations(List<DenominationCountEntry> entries, UUID tenantId) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (DenominationCountEntry entry : entries) {
+            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+            total = total.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+        }
+        return total;
+    }
+
+    private BigDecimal requireNonNegativeAmount(BigDecimal amount, String message) {
+        if (amount == null || amount.signum() < 0) {
+            throw new IllegalArgumentException(message);
+        }
+        return amount.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private CashShiftSummaryResponse buildSummary(CashShift shift) {

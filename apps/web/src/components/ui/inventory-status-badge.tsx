@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface InventoryStatusBadgeProps {
   currentStock: number;
-  minStock: number;
+  minStock: number | null;
 }
 
 export function InventoryStatusBadge({ currentStock, minStock }: InventoryStatusBadgeProps) {
@@ -13,7 +13,7 @@ export function InventoryStatusBadge({ currentStock, minStock }: InventoryStatus
       </span>
     );
   }
-  if (currentStock < minStock) {
+  if (minStock != null && currentStock < minStock) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
         Stock bajo

@@ -31,7 +31,7 @@ public class DataSeeder implements ApplicationRunner {
     @Value("${app.seed.admin-email:admin@dalventa.rd}")
     private String adminEmail;
 
-    @Value("${app.seed.admin-password:admin123}")
+    @Value("${app.seed.admin-password:Vargas1220}")
     private String adminPassword;
 
     @Value("${app.seed.admin-name:Administrador}")
@@ -40,7 +40,7 @@ public class DataSeeder implements ApplicationRunner {
     @Value("${app.seed.super-admin-email:superadmin@dalventa.rd}")
     private String superAdminEmail;
 
-    @Value("${app.seed.super-admin-password:superadmin123}")
+    @Value("${app.seed.super-admin-password:Vargas1220}")
     private String superAdminPassword;
 
     @Override
@@ -70,15 +70,29 @@ public class DataSeeder implements ApplicationRunner {
             existingAdmin.setTenantId(demoTenant.getId());
             userRepository.save(existingAdmin);
             log.info("Admin {} vinculado al tenant {}", adminEmail, demoTenant.getSlug());
+            syncSeedPassword(existingAdmin, adminPassword, "Admin");
+        } else {
+            syncSeedPassword(existingAdmin, adminPassword, "Admin");
         }
 
-        if (!userRepository.existsByEmail(superAdminEmail)) {
+        var existingSuperAdmin = userRepository.findByEmail(superAdminEmail).orElse(null);
+        if (existingSuperAdmin == null) {
             var superAdminRole = roleRepository.findByName(RoleName.SUPER_ADMIN)
                     .orElseThrow(() -> new IllegalStateException("Rol SUPER_ADMIN no encontrado"));
             var superAdmin = new User("Super Admin", superAdminEmail, passwordEncoder.encode(superAdminPassword));
             superAdmin.addRole(superAdminRole);
             userRepository.save(superAdmin);
             log.info("Super Admin creado: {} / {}", superAdminEmail, superAdminPassword);
+        } else {
+            syncSeedPassword(existingSuperAdmin, superAdminPassword, "Super Admin");
+        }
+    }
+
+    private void syncSeedPassword(User user, String seedPassword, String label) {
+        if (!passwordEncoder.matches(seedPassword, user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(seedPassword));
+            userRepository.save(user);
+            log.info("{} seed actualizado: {} / {}", label, user.getEmail(), seedPassword);
         }
     }
 }

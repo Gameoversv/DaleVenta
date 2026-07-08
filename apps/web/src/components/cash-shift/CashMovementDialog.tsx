@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import type { CashMovementType, DenominationCountEntry } from "@/types/cash-shift";
 
@@ -18,19 +19,28 @@ interface CashMovementDialogProps {
 }
 
 export function CashMovementDialog({ cashShiftId, registerId, trigger }: CashMovementDialogProps) {
+  const { tenantFeatures } = useAuth();
+  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<CashMovementType>("ENTRY");
   const [reason, setReason] = useState("");
+  const [amount, setAmount] = useState("");
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.post(`/api/cash-shifts/${cashShiftId}/movements`, { type, reason, denominations: entries }),
+      api.post(`/api/cash-shifts/${cashShiftId}/movements`, {
+        type,
+        reason,
+        amount: denominationsEnabled ? undefined : amount,
+        denominations: denominationsEnabled ? entries : [],
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cash-shift-current", registerId] });
       setOpen(false);
       setReason("");
+      setAmount("");
       setEntries([]);
     },
     onError: (err: unknown) => {
@@ -65,10 +75,24 @@ export function CashMovementDialog({ cashShiftId, registerId, trigger }: CashMov
             <Label htmlFor="movement-reason">Motivo</Label>
             <Input id="movement-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
-          <DenominationCountGrid onChange={setEntries} />
+          {denominationsEnabled ? (
+            <DenominationCountGrid onChange={setEntries} />
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="movement-amount">Monto</Label>
+              <Input
+                id="movement-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+            </div>
+          )}
           <DialogFooter>
             <Button
-              disabled={entries.length === 0 || reason.trim() === "" || mutation.isPending}
+              disabled={(denominationsEnabled ? entries.length === 0 : Number(amount) <= 0) || reason.trim() === "" || mutation.isPending}
               onClick={() => mutation.mutate()}
             >
               {mutation.isPending ? "Guardando..." : "Guardar"}

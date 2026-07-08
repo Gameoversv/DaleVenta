@@ -1,6 +1,7 @@
 package rd.dalventa.api.sale.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import rd.dalventa.api.sale.domain.Sale;
 import rd.dalventa.api.sale.domain.SaleStatus;
@@ -36,4 +37,23 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
 
     @Query("select coalesce(max(s.invoiceSequence), 0) from Sale s where s.tenantId = :tenantId")
     long maxInvoiceSequence(UUID tenantId);
+
+    @Query("""
+            SELECT s FROM Sale s
+            WHERE s.tenantId = :tenantId
+            AND (LOWER(s.invoiceNumber) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(s.fiscalNcf) LIKE LOWER(CONCAT('%', :q, '%')))
+            ORDER BY s.createdAt DESC
+            """)
+    List<Sale> searchInvoices(UUID tenantId, String q, Pageable pageable);
+
+    @Query("""
+            SELECT s FROM Sale s
+            WHERE s.tenantId = :tenantId
+            AND s.userId = :userId
+            AND (LOWER(s.invoiceNumber) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(s.fiscalNcf) LIKE LOWER(CONCAT('%', :q, '%')))
+            ORDER BY s.createdAt DESC
+            """)
+    List<Sale> searchOwnInvoices(UUID tenantId, UUID userId, String q, Pageable pageable);
 }

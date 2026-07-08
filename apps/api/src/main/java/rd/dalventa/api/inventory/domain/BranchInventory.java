@@ -26,8 +26,8 @@ public class BranchInventory extends TenantAwareEntity {
     @Column(name = "current_stock", nullable = false)
     private int currentStock = 0;
 
-    @Column(name = "min_stock", nullable = false)
-    private int minStock = 0;
+    @Column(name = "min_stock")
+    private Integer minStock;
 
     @Column(name = "max_stock")
     private Integer maxStock;

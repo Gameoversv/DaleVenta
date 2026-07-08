@@ -51,7 +51,7 @@ export interface UpdateProductRequest {
 export interface BranchInventoryResponse {
   productId: string;
   currentStock: number;
-  minStock: number;
+  minStock: number | null;
   maxStock: number | null;
 }
 

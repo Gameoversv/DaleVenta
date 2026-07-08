@@ -8,7 +8,7 @@ import java.util.UUID;
 public record BranchInventoryResponse(
         @JsonProperty("productId") UUID productId,
         @JsonProperty("currentStock") int currentStock,
-        @JsonProperty("minStock") int minStock,
+        @JsonProperty("minStock") Integer minStock,
         @JsonProperty("maxStock") Integer maxStock
 ) {
     public static BranchInventoryResponse from(BranchInventory bi) {

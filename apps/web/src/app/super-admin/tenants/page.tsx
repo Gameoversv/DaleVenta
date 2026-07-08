@@ -114,6 +114,16 @@ export default function SuperAdminTenantsPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const cashDenominationsMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      api.patch(`/api/super-admin/tenants/${id}/cash-denominations`, { enabled }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Denominaciones de caja actualizadas");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const extendTrialMutation = useMutation({
     mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/extend-trial`, null, { params: { days: 30 } }),
     onSuccess: () => {
@@ -180,6 +190,7 @@ export default function SuperAdminTenantsPage() {
                     <th className="px-4 py-3">Plan</th>
                     <th className="px-4 py-3">Estado</th>
                     <th className="px-4 py-3">Fiscal</th>
+                    <th className="px-4 py-3">Caja</th>
                     <th className="px-4 py-3">Trial vence</th>
                     <th className="px-4 py-3 text-right">Usuarios</th>
                     <th className="px-4 py-3 text-right">Clientes</th>
@@ -203,6 +214,11 @@ export default function SuperAdminTenantsPage() {
                       <td className="px-4 py-3">
                         <Badge variant={t.fiscalModuleEnabled ? "success" : "secondary"}>
                           {t.fiscalModuleEnabled ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={t.cashDenominationsEnabled ? "success" : "secondary"}>
+                          {t.cashDenominationsEnabled ? "Denom." : "Monto"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{dateOnly(t.trialEndsAt)}</td>
@@ -285,6 +301,19 @@ export default function SuperAdminTenantsPage() {
                                 onClick={() => fiscalModuleMutation.mutate({ id: t.id, enabled: false })}
                               >
                                 Desactivar modulo fiscal
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.cashDenominationsEnabled || cashDenominationsMutation.isPending}
+                                onClick={() => cashDenominationsMutation.mutate({ id: t.id, enabled: true })}
+                              >
+                                Activar denominaciones
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!t.cashDenominationsEnabled || cashDenominationsMutation.isPending}
+                                onClick={() => cashDenominationsMutation.mutate({ id: t.id, enabled: false })}
+                              >
+                                Desactivar denominaciones
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

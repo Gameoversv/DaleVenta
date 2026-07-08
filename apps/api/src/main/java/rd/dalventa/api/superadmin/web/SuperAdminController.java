@@ -87,6 +87,15 @@ public class SuperAdminController {
         return ApiResponse.ok(service.updateFiscalModule(id, req, principal.getUsername()));
     }
 
+    @PatchMapping("/tenants/{id}/cash-denominations")
+    public ApiResponse<TenantDetailResponse> updateCashDenominations(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTenantCashDenominationsRequest req,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return ApiResponse.ok(service.updateCashDenominations(id, req, principal.getUsername()));
+    }
+
     @PostMapping("/tenants/{id}/extend-trial")
     public ApiResponse<TenantSummaryResponse> extendTrial(
             @PathVariable UUID id,

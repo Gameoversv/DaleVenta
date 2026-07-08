@@ -21,6 +21,7 @@ public record TenantDetailResponse(
         TenantPlan plan,
         TenantStatus status,
         @JsonProperty("fiscalModuleEnabled") boolean fiscalModuleEnabled,
+        @JsonProperty("cashDenominationsEnabled") boolean cashDenominationsEnabled,
         @JsonProperty("trialEndsAt") Instant trialEndsAt,
         @JsonProperty("createdAt") Instant createdAt,
         @JsonProperty("userCount") long userCount,
@@ -36,7 +37,8 @@ public record TenantDetailResponse(
                 t.getId(), t.getName(), t.getSlug(),
                 t.getCity(), t.getCountry(), t.getPhone(),
                 t.getEmail(), t.getRnc(),
-                t.getPlan(), t.getStatus(), t.isFiscalModuleEnabled(), t.getTrialEndsAt(), t.getCreatedAt(),
+                t.getPlan(), t.getStatus(), t.isFiscalModuleEnabled(), t.isCashDenominationsEnabled(),
+                t.getTrialEndsAt(), t.getCreatedAt(),
                 users, customers, owners
         );
     }

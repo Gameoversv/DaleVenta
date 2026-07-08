@@ -14,4 +14,8 @@ public record PaymentRequest(
         @JsonProperty("receivedDenominations") List<DenominationCountEntry> receivedDenominations,
         String bank,
         String reference
-) {}
+) {
+    public List<DenominationCountEntry> receivedDenominations() {
+        return receivedDenominations == null ? List.of() : receivedDenominations;
+    }
+}

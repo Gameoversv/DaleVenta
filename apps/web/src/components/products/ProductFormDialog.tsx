@@ -14,7 +14,7 @@ import api from "@/lib/api";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
 const createSchema = z.object({
-  categoryId: z.string().min(1, "Categoria requerida"),
+  categoryId: z.string().optional(),
   internalCode: z.string().min(1, "Codigo requerido"),
   barcode: z.string().optional(),
   description: z.string().min(1, "Descripcion requerida"),
@@ -63,7 +63,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
     mutationFn: (values: ProductForm) =>
       isEdit
         ? api.put(`/api/products/${product!.id}`, {
-            categoryId: values.categoryId,
+            categoryId: values.categoryId || product!.categoryId,
             description: values.description,
             unit: values.unit,
             cost: values.cost,
@@ -73,7 +73,11 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
             tracksInventory: values.tracksInventory,
             active: product!.active,
           })
-        : api.post("/api/products", { ...values, barcode: values.barcode || undefined }),
+        : api.post("/api/products", {
+            ...values,
+            categoryId: values.categoryId || undefined,
+            barcode: values.barcode || undefined,
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setOpen(false);
@@ -101,14 +105,13 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
               {...register("categoryId")}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Selecciona una categoria</option>
+              <option value="">{isEdit ? "Selecciona una categoria" : "General (automatico)"}</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
               ))}
             </select>
-            {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId.message}</p>}
           </div>
           {!isEdit && (
             <>

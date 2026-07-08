@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { ProductSearchPanel } from "./ProductSearchPanel";
 import { SaleCart, resolveCart } from "./SaleCart";
 import { CustomerPicker } from "./CustomerPicker";
@@ -37,6 +38,7 @@ interface SaleWorkspaceProps {
 }
 
 export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
+  const { tenantFeatures } = useAuth();
   const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartLine[]>([]);
   const [customer, setCustomer] = useState<CustomerResponse | null>(null);
@@ -106,7 +108,7 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
   const resolved = resolveCart(cart, products ?? []);
   const preDiscountTotal = resolved.reduce((sum, r) => sum + r.lineTotal, 0);
 
-  const handleConfirm = (payment: PaymentRequest, discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => {
+  const handleConfirm = (payments: PaymentRequest[], discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => {
     const request: CreateSaleRequest = {
       registerId,
       cashShiftId,
@@ -114,7 +116,7 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
       fiscalReceiptType: fiscalReceiptType ?? null,
       discountAmount: discountAmount > 0 ? discountAmount.toFixed(2) : undefined,
       items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, useWholesalePrice: l.useWholesalePrice })),
-      payments: [payment],
+      payments,
     };
     createSale.mutate(request);
   };
@@ -142,6 +144,7 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
           isSubmitting={createSale.isPending}
           fiscalModuleEnabled={fiscalModuleEnabled}
           fiscalSequences={fiscalSequences}
+          cashDenominationsEnabled={tenantFeatures.cashDenominationsEnabled}
           onConfirm={handleConfirm}
         />
       </div>

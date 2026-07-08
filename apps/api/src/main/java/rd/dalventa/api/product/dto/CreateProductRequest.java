@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreateProductRequest(
-        @JsonProperty("categoryId") @NotNull UUID categoryId,
+        @JsonProperty("categoryId") UUID categoryId,
         @JsonProperty("internalCode") @NotBlank String internalCode,
         String barcode,
         @NotBlank String description,

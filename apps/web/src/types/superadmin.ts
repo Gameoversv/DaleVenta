@@ -26,6 +26,7 @@ export interface TenantSummaryResponse {
   plan: TenantPlan;
   status: TenantStatus;
   fiscalModuleEnabled: boolean;
+  cashDenominationsEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;
@@ -54,6 +55,7 @@ export interface TenantDetailResponse {
   plan: TenantPlan;
   status: TenantStatus;
   fiscalModuleEnabled: boolean;
+  cashDenominationsEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;

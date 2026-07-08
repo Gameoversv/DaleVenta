@@ -1,0 +1,2 @@
+ALTER TABLE tenants
+    ADD COLUMN IF NOT EXISTS cash_denominations_enabled BOOLEAN NOT NULL DEFAULT TRUE;
