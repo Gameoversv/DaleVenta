@@ -9,6 +9,9 @@ import rd.dalventa.api.auth.domain.User;
 import rd.dalventa.api.shared.config.AppProperties;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -89,8 +92,15 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(
-                properties.getJwt().getSecret().getBytes(StandardCharsets.UTF_8)
-        );
+        byte[] secretBytes = properties.getJwt().getSecret().getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length >= 32) {
+            return Keys.hmacShaKeyFor(secretBytes);
+        }
+        try {
+            byte[] derivedKey = MessageDigest.getInstance("SHA-256").digest(secretBytes);
+            return new SecretKeySpec(derivedKey, "HmacSHA256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 no esta disponible para firmar JWT", e);
+        }
     }
 }
