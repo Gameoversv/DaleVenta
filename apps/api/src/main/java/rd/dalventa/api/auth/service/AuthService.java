@@ -1,8 +1,7 @@
 package rd.dalventa.api.auth.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +26,6 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
     private final TenantRepository tenantRepository;
 
     @Transactional
@@ -49,11 +47,11 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
         var user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new BadCredentialsException("Credenciales invalidas"));
+        if (!user.isEnabled() || !passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new BadCredentialsException("Credenciales invalidas");
+        }
 
         // Deny access to users whose tenant (taller) is suspended or cancelled.
         // SUPER_ADMIN has no tenant and is never blocked.
