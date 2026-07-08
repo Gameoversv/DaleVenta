@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import type { AuthResponse, MeResponse, PermissionCode, TenantFeatures, UserResponse } from "@/types/auth";
 
@@ -28,17 +28,29 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function fetchMe(): Promise<MeResponse | null> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (!token) return null;
-  const res = await api.get<{ data: MeResponse }>("/api/auth/me");
-  return res.data.data;
+  try {
+    const res = await api.get<{ data: MeResponse }>("/api/auth/me");
+    return res.data.data;
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      return null;
+    }
+    throw err;
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const pathname = usePathname();
+  const isPublicAuthPage = pathname === "/login" || pathname === "/register";
 
   const { data, isLoading } = useQuery({
     queryKey: ["me"],
     queryFn: fetchMe,
+    enabled: !isPublicAuthPage,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     retry: false,
