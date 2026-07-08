@@ -14,6 +14,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
 import { Input } from "@/components/ui/input";
+import type { TenantFeatures } from "@/types/auth";
 import type {
   CashShiftSummaryResponse,
   DenominationCountEntry,
@@ -33,18 +34,28 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
   return res.data.data;
 }
 
+async function fetchTenantFeatures(): Promise<TenantFeatures> {
+  const res = await api.get<{ data: TenantFeatures }>("/api/fiscal/status");
+  return res.data.data;
+}
+
 function money(value: number): string {
   return `RD$${value.toFixed(2)}`;
 }
 
 export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShiftFormProps) {
   const { tenantFeatures } = useAuth();
-  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
+  const { data: liveTenantFeatures } = useQuery({ queryKey: ["tenant-features"], queryFn: fetchTenantFeatures });
+  const denominationsEnabled = liveTenantFeatures?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled;
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
   const [countedCashInput, setCountedCashInput] = useState("");
   const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
   const [notes, setNotes] = useState("");
-  const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
+  const { data: denominations } = useQuery({
+    queryKey: ["denominations"],
+    queryFn: fetchDenominations,
+    enabled: denominationsEnabled,
+  });
 
   const countedCash = entries.reduce((sum, e) => {
     const denom = denominations?.find((d) => d.id === e.denominationId);

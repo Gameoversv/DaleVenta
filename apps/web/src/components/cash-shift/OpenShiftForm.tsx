@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs } from "@/components/ui/tabs";
 import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
+import type { TenantFeatures } from "@/types/auth";
 import type { DenominationCountEntry, DenominationResponse, InventoryCountEntry } from "@/types/cash-shift";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
@@ -19,14 +20,24 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
   return res.data.data;
 }
 
+async function fetchTenantFeatures(): Promise<TenantFeatures> {
+  const res = await api.get<{ data: TenantFeatures }>("/api/fiscal/status");
+  return res.data.data;
+}
+
 export function OpenShiftForm({ registerId, branchId }: { registerId: string; branchId: string }) {
   const { tenantFeatures } = useAuth();
-  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
+  const { data: liveTenantFeatures } = useQuery({ queryKey: ["tenant-features"], queryFn: fetchTenantFeatures });
+  const denominationsEnabled = liveTenantFeatures?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled;
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState<DenominationCountEntry[]>([]);
   const [openingAmount, setOpeningAmount] = useState("");
   const [inventoryEntries, setInventoryEntries] = useState<InventoryCountEntry[]>([]);
-  const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
+  const { data: denominations } = useQuery({
+    queryKey: ["denominations"],
+    queryFn: fetchDenominations,
+    enabled: denominationsEnabled,
+  });
 
   const openingTotal = entries.reduce((sum, e) => {
     const denom = denominations?.find((d) => d.id === e.denominationId);

@@ -144,7 +144,7 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
           isSubmitting={createSale.isPending}
           fiscalModuleEnabled={fiscalModuleEnabled}
           fiscalSequences={fiscalSequences}
-          cashDenominationsEnabled={tenantFeatures.cashDenominationsEnabled}
+          cashDenominationsEnabled={fiscalStatus?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled}
           onConfirm={handleConfirm}
         />
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { DenominationCountGrid } from "./DenominationCountGrid";
+import type { TenantFeatures } from "@/types/auth";
 import type { CashMovementType, DenominationCountEntry } from "@/types/cash-shift";
 
 interface CashMovementDialogProps {
@@ -18,9 +19,15 @@ interface CashMovementDialogProps {
   trigger: React.ReactNode;
 }
 
+async function fetchTenantFeatures(): Promise<TenantFeatures> {
+  const res = await api.get<{ data: TenantFeatures }>("/api/fiscal/status");
+  return res.data.data;
+}
+
 export function CashMovementDialog({ cashShiftId, registerId, trigger }: CashMovementDialogProps) {
   const { tenantFeatures } = useAuth();
-  const denominationsEnabled = tenantFeatures.cashDenominationsEnabled;
+  const { data: liveTenantFeatures } = useQuery({ queryKey: ["tenant-features"], queryFn: fetchTenantFeatures });
+  const denominationsEnabled = liveTenantFeatures?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled;
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<CashMovementType>("ENTRY");
   const [reason, setReason] = useState("");
