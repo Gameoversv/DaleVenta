@@ -13,6 +13,8 @@ import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
 import type { SalesReportResponse } from "@/types/report";
 
+type ReportTab = "weekly" | "custom";
+
 const METRIC_TONES = {
   primary: "bg-primary/10 text-primary",
   success: "bg-success/10 text-success",
@@ -88,12 +90,15 @@ export default function SalesReportPage() {
     from.setDate(to.getDate() - 6);
     return { from: isoDate(from), to: isoDate(to) };
   }, []);
-  const [from, setFrom] = useState(defaultDates.from);
-  const [to, setTo] = useState(defaultDates.to);
+  const [activeTab, setActiveTab] = useState<ReportTab>("weekly");
+  const [customFrom, setCustomFrom] = useState(defaultDates.from);
+  const [customTo, setCustomTo] = useState(defaultDates.to);
+  const [customRange, setCustomRange] = useState(defaultDates);
+  const activeRange = activeTab === "weekly" ? defaultDates : customRange;
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["sales-report", from, to],
-    queryFn: () => fetchSalesReport(from, to),
+    queryKey: ["sales-report", activeTab, activeRange.from, activeRange.to],
+    queryFn: () => fetchSalesReport(activeRange.from, activeRange.to),
     enabled: canViewReports,
   });
   const dailySales = data?.dailySales ?? [];
@@ -124,20 +129,64 @@ export default function SalesReportPage() {
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="report-from">Desde</Label>
-            <Input id="report-from" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="report-to">Hasta</Label>
-            <Input id="report-to" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-          </div>
-          <Button onClick={() => refetch()} disabled={isFetching || !from || !to}>
-            <BarChart3 className="h-4 w-4" />
-            Actualizar
-          </Button>
+      </div>
+
+      <div className="space-y-4">
+        <div role="tablist" className="flex gap-1 border-b border-border">
+          {[
+            { value: "weekly" as const, label: "Reporte semanal" },
+            { value: "custom" as const, label: "Rango personalizado" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                "-mb-px border-b-2 px-3 py-2 text-sm font-medium",
+                activeTab === tab.value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {activeTab === "weekly" ? (
+          <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">Semana actual automatica</p>
+              <p className="text-sm text-muted-foreground">
+                {dateLabel(defaultDates.from)} - {dateLabel(defaultDates.to)}
+              </p>
+            </div>
+            <Button onClick={() => refetch()} disabled={isFetching}>
+              <BarChart3 className="h-4 w-4" />
+              Actualizar
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="report-from">Desde</Label>
+              <Input id="report-from" type="date" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="report-to">Hasta</Label>
+              <Input id="report-to" type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} />
+            </div>
+            <Button
+              onClick={() => setCustomRange({ from: customFrom, to: customTo })}
+              disabled={isFetching || !customFrom || !customTo}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Generar reporte
+            </Button>
+          </div>
+        )}
       </div>
 
       {isLoading && <p className="text-muted-foreground">Cargando reporte...</p>}

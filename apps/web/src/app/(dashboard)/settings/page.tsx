@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
+import type { TenantFeatures } from "@/types/auth";
 import type { DenominationResponse } from "@/types/cash-shift";
 import type { InvoicePrintSize, InvoiceSettingsResponse } from "@/types/settings";
 
@@ -31,6 +32,11 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
 async function fetchInvoiceSettings(): Promise<InvoiceSettingsResponse> {
   const res = await api.get<{ data: InvoiceSettingsResponse }>("/api/settings/invoice");
   return normalizeInvoiceSettings(res.data.data);
+}
+
+async function fetchTenantFeatures(): Promise<TenantFeatures> {
+  const res = await api.get<{ data: TenantFeatures }>("/api/fiscal/status");
+  return res.data.data;
 }
 
 function denominationTypeLabel(type: DenominationType) {
@@ -288,6 +294,12 @@ function InvoiceSettingsCard() {
 
 export default function SettingsPage() {
   const canManageSettings = usePermission("SETTINGS_MANAGE");
+  const { data: tenantFeatures } = useQuery({
+    queryKey: ["tenant-features"],
+    queryFn: fetchTenantFeatures,
+    enabled: canManageSettings,
+  });
+  const cashDenominationsEnabled = tenantFeatures?.cashDenominationsEnabled === true;
   const {
     data: denominations,
     isLoading,
@@ -295,7 +307,7 @@ export default function SettingsPage() {
   } = useQuery({
     queryKey: ["denominations"],
     queryFn: fetchDenominations,
-    enabled: canManageSettings,
+    enabled: canManageSettings && cashDenominationsEnabled,
   });
 
   const [denominationsOpen, setDenominationsOpen] = useState(false);
@@ -322,58 +334,60 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Configuracion</h1>
-        <CreateDenominationDialog />
+        {cashDenominationsEnabled && <CreateDenominationDialog />}
       </div>
 
       <InvoiceSettingsCard />
 
-      <Card>
-        <button
-          type="button"
-          onClick={() => setDenominationsOpen((v) => !v)}
-          className="flex w-full items-center justify-between p-6 text-left"
-        >
-          <CardTitle>Denominaciones de caja</CardTitle>
-          {denominationsOpen ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      {cashDenominationsEnabled && (
+        <Card>
+          <button
+            type="button"
+            onClick={() => setDenominationsOpen((v) => !v)}
+            className="flex w-full items-center justify-between p-6 text-left"
+          >
+            <CardTitle>Denominaciones de caja</CardTitle>
+            {denominationsOpen ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          {denominationsOpen && (
+            <CardContent className="pt-0">
+              {isLoading && <p className="text-sm text-muted-foreground">Cargando denominaciones...</p>}
+              {isError && <p className="text-sm text-destructive">No se pudieron cargar las denominaciones.</p>}
+              {!isLoading && !isError && orderedDenominations.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No hay denominaciones activas. Crea al menos una para poder contar efectivo en caja.
+                </p>
+              )}
+              {orderedDenominations.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="py-2 pr-4 font-medium">Valor</th>
+                        <th className="py-2 pr-4 font-medium">Tipo</th>
+                        <th className="py-2 font-medium">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orderedDenominations.map((denomination) => (
+                        <tr key={denomination.id} className="border-b last:border-b-0">
+                          <td className="py-3 pr-4 font-medium">{formatDenominationValue(denomination.value)}</td>
+                          <td className="py-3 pr-4">{denominationTypeLabel(denomination.type)}</td>
+                          <td className="py-3">{denomination.active ? "Activa" : "Inactiva"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
           )}
-        </button>
-        {denominationsOpen && (
-        <CardContent className="pt-0">
-          {isLoading && <p className="text-sm text-muted-foreground">Cargando denominaciones...</p>}
-          {isError && <p className="text-sm text-destructive">No se pudieron cargar las denominaciones.</p>}
-          {!isLoading && !isError && orderedDenominations.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No hay denominaciones activas. Crea al menos una para poder contar efectivo en caja.
-            </p>
-          )}
-          {orderedDenominations.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="py-2 pr-4 font-medium">Valor</th>
-                    <th className="py-2 pr-4 font-medium">Tipo</th>
-                    <th className="py-2 font-medium">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderedDenominations.map((denomination) => (
-                    <tr key={denomination.id} className="border-b last:border-b-0">
-                      <td className="py-3 pr-4 font-medium">{formatDenominationValue(denomination.value)}</td>
-                      <td className="py-3 pr-4">{denominationTypeLabel(denomination.type)}</td>
-                      <td className="py-3">{denomination.active ? "Activa" : "Inactiva"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-        )}
-      </Card>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
