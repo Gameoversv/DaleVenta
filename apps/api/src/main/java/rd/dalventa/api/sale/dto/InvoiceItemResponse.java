@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 public record InvoiceItemResponse(
         String productName,
+        String productUnit,
         int quantity,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal unitPrice,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal taxRate,

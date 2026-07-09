@@ -86,6 +86,7 @@ export interface InvoiceCustomerInfo {
 
 export interface InvoiceItemResponse {
   productName: string;
+  productUnit: string;
   quantity: number;
   unitPrice: string;
   taxRate: string;

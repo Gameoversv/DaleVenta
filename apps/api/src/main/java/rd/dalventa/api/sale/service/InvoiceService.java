@@ -49,11 +49,13 @@ public class InvoiceService {
 
         var items = saleItemRepository.findAllBySaleId(sale.getId()).stream()
                 .map(item -> {
-                    var productName = productRepository.findById(item.getProductId())
+                    var itemProduct = productRepository.findById(item.getProductId())
                             .filter(product -> tenantId.equals(product.getTenantId()))
-                            .map(Product::getDescription)
-                            .orElse("Producto eliminado");
-                    return new InvoiceItemResponse(productName, item.getQuantity(), item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
+                            .orElse(null);
+                    var productName = itemProduct != null ? itemProduct.getDescription() : "Producto eliminado";
+                    var productUnit = itemProduct != null ? itemProduct.getUnit() : "unit";
+                    return new InvoiceItemResponse(productName, productUnit, item.getQuantity(),
+                            item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
                 })
                 .toList();
         var payments = paymentRepository.findAllBySaleId(sale.getId()).stream().map(PaymentResponse::from).toList();

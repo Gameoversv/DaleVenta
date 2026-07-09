@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { productUnitLabel } from "@/lib/product-units";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
 interface ProductSearchPanelProps {
@@ -99,7 +100,9 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
                 className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-card)] active:scale-[0.98]"
               >
                 <span className="line-clamp-2 text-sm font-medium leading-snug">{p.description}</span>
-                <span className="font-mono-money text-sm font-bold text-primary">{money(p.salePrice)}</span>
+                <span className="font-mono-money text-sm font-bold text-primary">
+                  {money(p.salePrice)} / {productUnitLabel(p.unit)}
+                </span>
                 <span className="text-xs text-muted-foreground">{p.internalCode}</span>
               </button>
             ))}

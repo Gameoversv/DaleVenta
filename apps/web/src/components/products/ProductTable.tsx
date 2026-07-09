@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePermission } from "@/hooks/usePermission";
 import api from "@/lib/api";
+import { productUnitLabel } from "@/lib/product-units";
 import { ProductFormDialog } from "./ProductFormDialog";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
@@ -109,6 +110,7 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-3">Codigo</th>
                     <th className="px-4 py-3">Descripcion</th>
+                    <th className="px-4 py-3">Unidad</th>
                     <th className="px-4 py-3 text-right">Costo</th>
                     <th className="px-4 py-3 text-right">Precio</th>
                     <th className="px-4 py-3">Estado</th>
@@ -120,8 +122,11 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
                     <tr key={product.id} className="border-b border-border last:border-0">
                       <td className="px-4 py-3 text-muted-foreground">{product.internalCode}</td>
                       <td className="px-4 py-3 font-medium">{product.description}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{productUnitLabel(product.unit)}</td>
                       <td className="px-4 py-3 text-right font-mono-money text-muted-foreground">{money(product.cost)}</td>
-                      <td className="px-4 py-3 text-right font-mono-money font-semibold">{money(product.salePrice)}</td>
+                      <td className="px-4 py-3 text-right font-mono-money font-semibold">
+                        {money(product.salePrice)} / {productUnitLabel(product.unit)}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant={product.active ? "success" : "secondary"}>
                           {product.active ? "Activo" : "Inactivo"}

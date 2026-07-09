@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { productUnitLabel } from "@/lib/product-units";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
 
@@ -42,6 +43,7 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
   });
 
   const productName = (productId: string) => products.find((p) => p.id === productId)?.description ?? productId;
+  const productUnit = (productId: string) => productUnitLabel(products.find((p) => p.id === productId)?.unit);
 
   return (
     <Card>
@@ -62,8 +64,8 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
             {sale.items.map((item) => (
               <tr key={item.id} className="border-b border-border">
                 <td className="py-2">{productName(item.productId)}</td>
-                <td className="py-2">{item.quantity}</td>
-                <td className="py-2">RD${item.unitPrice}</td>
+                <td className="py-2">{item.quantity} {productUnit(item.productId)}</td>
+                <td className="py-2">RD${item.unitPrice} / {productUnit(item.productId)}</td>
                 <td className="py-2">RD${item.lineTotal}</td>
               </tr>
             ))}

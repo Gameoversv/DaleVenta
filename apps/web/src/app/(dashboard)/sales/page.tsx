@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { productUnitLabel } from "@/lib/product-units";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
@@ -60,11 +61,13 @@ function StatusBadge({ status }: { status: SaleResponse["status"] }) {
 
 function SaleDetailDialog({
   productName,
+  productUnit,
   customerName,
   sale,
   trigger,
 }: {
   productName: (id: string) => string;
+  productUnit: (id: string) => string;
   customerName: (id: string | null) => string;
   sale: SaleResponse;
   trigger: React.ReactNode;
@@ -117,8 +120,8 @@ function SaleDetailDialog({
               {sale.items.map((item) => (
                 <tr key={item.id} className="border-b border-border">
                   <td className="py-2">{productName(item.productId)}</td>
-                  <td className="py-2">{item.quantity}</td>
-                  <td className="py-2">{money(item.unitPrice)}</td>
+                  <td className="py-2">{item.quantity} {productUnit(item.productId)}</td>
+                  <td className="py-2">{money(item.unitPrice)} / {productUnit(item.productId)}</td>
                   <td className="py-2 text-right">{money(item.lineTotal)}</td>
                 </tr>
               ))}
@@ -222,10 +225,11 @@ export default function SalesPage() {
   });
 
   const productById = useMemo(
-    () => new Map((products ?? []).map((product) => [product.id, product.description])),
+    () => new Map((products ?? []).map((product) => [product.id, product])),
     [products]
   );
-  const productName = (id: string) => productById.get(id) ?? id;
+  const productName = (id: string) => productById.get(id)?.description ?? id;
+  const productUnit = (id: string) => productUnitLabel(productById.get(id)?.unit);
 
   const customerById = useMemo(
     () => new Map((customers ?? []).map((customer) => [customer.id, customer.fullName])),
@@ -338,6 +342,7 @@ export default function SalesPage() {
                             <SaleDetailDialog
                               sale={sale}
                               productName={productName}
+                              productUnit={productUnit}
                               customerName={customerName}
                               trigger={
                                 <Button variant="ghost" size="icon" aria-label="Ver detalle">

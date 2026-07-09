@@ -9,6 +9,7 @@ import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
+import { productUnitLabel } from "@/lib/product-units";
 import type { InvoiceResponse } from "@/types/sale";
 
 async function fetchInvoice(id: string): Promise<InvoiceResponse> {
@@ -151,8 +152,12 @@ export default function InvoicePage() {
                 {data.items.map((item, index) => (
                   <tr key={`${itemName(item, index)}-${index}`} className="border-b border-border">
                     <td className="py-2">{itemName(item, index)}</td>
-                    <td className="py-2 text-right">{fieldValue(item, ["quantity", "qty"], 0)}</td>
-                    <td className="py-2 text-right">{money(fieldValue(item, ["unitPrice", "price"]))}</td>
+                    <td className="py-2 text-right">
+                      {fieldValue(item, ["quantity", "qty"], 0)} {productUnitLabel(item.productUnit)}
+                    </td>
+                    <td className="py-2 text-right">
+                      {money(fieldValue(item, ["unitPrice", "price"]))} / {productUnitLabel(item.productUnit)}
+                    </td>
                     <td className="py-2 text-right">{money(fieldValue(item, ["lineTotal", "total", "amount"]))}</td>
                   </tr>
                 ))}

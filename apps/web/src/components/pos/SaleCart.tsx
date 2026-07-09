@@ -3,6 +3,7 @@
 import { Minus, Plus, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { productUnitLabel } from "@/lib/product-units";
 import type { ProductResponse } from "@/types/product";
 import type { CartLine } from "./cart";
 
@@ -64,6 +65,9 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{r.product.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      RD${r.unitPrice.toFixed(2)} / {productUnitLabel(r.product.unit)}
+                    </p>
                     <label className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <input
                         type="checkbox"
@@ -97,7 +101,9 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-10 text-center text-sm font-medium">{r.line.quantity}</span>
+                  <span className="min-w-16 text-center text-sm font-medium">
+                    {r.line.quantity} {productUnitLabel(r.product.unit)}
+                  </span>
                   <Button
                     variant="outline"
                     size="icon"

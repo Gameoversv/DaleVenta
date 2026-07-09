@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { PRODUCT_UNITS } from "@/lib/product-units";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
 const createSchema = z.object({
@@ -37,6 +38,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!product;
+  const hasCustomUnit = !!product?.unit && !PRODUCT_UNITS.some((unit) => unit.value === product.unit);
 
   const {
     register,
@@ -50,7 +52,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
       internalCode: product?.internalCode ?? "",
       barcode: product?.barcode ?? "",
       description: product?.description ?? "",
-      unit: product?.unit ?? "",
+      unit: product?.unit ?? "unit",
       cost: product?.cost ?? "",
       salePrice: product?.salePrice ?? "",
       wholesalePrice: product?.wholesalePrice ?? "",
@@ -133,7 +135,18 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
           </div>
           <div className="space-y-2">
             <Label htmlFor="product-unit">Unidad</Label>
-            <Input id="product-unit" {...register("unit")} />
+            <select
+              id="product-unit"
+              {...register("unit")}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {hasCustomUnit && <option value={product.unit}>{product.unit}</option>}
+              {PRODUCT_UNITS.map((unit) => (
+                <option key={unit.value} value={unit.value}>
+                  {unit.label}
+                </option>
+              ))}
+            </select>
             {errors.unit && <p className="text-sm text-destructive">{errors.unit.message}</p>}
           </div>
           <div className="grid grid-cols-3 gap-2">
