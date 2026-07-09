@@ -3,6 +3,7 @@ package rd.dalventa.api.permission.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import rd.dalventa.api.auth.domain.User;
+import rd.dalventa.api.auth.domain.RoleName;
 import rd.dalventa.api.permission.domain.PermissionCode;
 import rd.dalventa.api.permission.domain.PermissionEffect;
 import rd.dalventa.api.permission.domain.UserPermission;
@@ -32,10 +33,17 @@ public class PermissionResolutionService {
                 effective.remove(override.getCode());
             }
         }
+        if (isAdmin(user)) {
+            effective.addAll(EnumSet.allOf(PermissionCode.class));
+        }
         return effective;
     }
 
     public boolean has(User user, PermissionCode code) {
         return resolveAll(user).contains(code);
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ADMIN);
     }
 }
