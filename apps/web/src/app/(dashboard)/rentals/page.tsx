@@ -1,8 +1,8 @@
 "use client";
 
 import { CalendarClock, ClipboardCheck, PackageCheck, RotateCcw } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const WORKFLOW = [
@@ -29,7 +29,7 @@ const WORKFLOW = [
 ];
 
 export default function RentalsPage() {
-  const { tenantFeatures } = useAuth();
+  const tenantFeatures = useTenantFeatures();
   const canView = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
 
   if (!tenantFeatures.rentalModuleEnabled) {

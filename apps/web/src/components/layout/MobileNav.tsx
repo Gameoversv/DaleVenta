@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { NAV_SECTIONS, type NavItem } from "@/components/layout/nav";
 
 function NavMenuItem({ item }: { item: NavItem }) {
@@ -27,7 +28,8 @@ function NavMenuItem({ item }: { item: NavItem }) {
 }
 
 function GatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures, user } = useAuth();
+  const { user } = useAuth();
+  const tenantFeatures = useTenantFeatures();
   const allowed = usePermission(item.permission!);
   if (
     !allowed ||
@@ -38,7 +40,8 @@ function GatedNavMenuItem({ item }: { item: NavItem }) {
 }
 
 function AnyGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures, user } = useAuth();
+  const { user } = useAuth();
+  const tenantFeatures = useTenantFeatures();
   const permissions = item.anyPermission!;
   /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
   const allowedFlags = permissions.map((code) => usePermission(code));
@@ -52,7 +55,8 @@ function AnyGatedNavMenuItem({ item }: { item: NavItem }) {
 }
 
 function FeatureGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { tenantFeatures, user } = useAuth();
+  const { user } = useAuth();
+  const tenantFeatures = useTenantFeatures();
   if (
     (item.feature && !tenantFeatures[item.feature]) ||
     (item.roles && (!user || !item.roles.includes(user.role)))
