@@ -123,6 +123,15 @@ public class SuperAdminController {
         return ApiResponse.ok(service.updateRentalModule(id, req, principal.getUsername()));
     }
 
+    @PatchMapping("/tenants/{id}/purchase-module")
+    public ApiResponse<TenantDetailResponse> updatePurchaseModule(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTenantPurchaseModuleRequest req,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return ApiResponse.ok(service.updatePurchaseModule(id, req, principal.getUsername()));
+    }
+
     @PostMapping("/tenants/{id}/extend-trial")
     public ApiResponse<TenantSummaryResponse> extendTrial(
             @PathVariable UUID id,

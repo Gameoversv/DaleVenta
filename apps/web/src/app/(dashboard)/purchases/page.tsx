@@ -1,0 +1,477 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Plus, Truck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { productUnitLabel } from "@/lib/product-units";
+import { usePermission } from "@/hooks/usePermission";
+import { useSoleBranch } from "@/hooks/useSoleBranch";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { BranchResponse } from "@/types/branch";
+import type { ProductResponse } from "@/types/product";
+import type { CreatePurchaseRequest, PurchaseItemRequest, PurchaseResponse, SupplierRequest, SupplierResponse } from "@/types/purchase";
+
+type Tab = "purchases" | "suppliers";
+
+async function fetchSuppliers(includeInactive = false): Promise<SupplierResponse[]> {
+  const res = await api.get<{ data: SupplierResponse[] }>("/api/suppliers", { params: { includeInactive } });
+  return res.data.data;
+}
+
+async function fetchPurchases(): Promise<PurchaseResponse[]> {
+  const res = await api.get<{ data: PurchaseResponse[] }>("/api/purchases");
+  return res.data.data;
+}
+
+async function fetchProducts(): Promise<ProductResponse[]> {
+  const res = await api.get<{ data: ProductResponse[] }>("/api/products");
+  return res.data.data;
+}
+
+function money(value: string | number): string {
+  return `RD$${Number(value).toFixed(2)}`;
+}
+
+function statusLabel(status: PurchaseResponse["status"]): string {
+  if (status === "RECEIVED") return "Recibida";
+  if (status === "VOID") return "Anulada";
+  return "Borrador";
+}
+
+function emptyToNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<SupplierRequest>({
+    name: supplier?.name ?? "",
+    contactName: supplier?.contactName ?? "",
+    phone: supplier?.phone ?? "",
+    email: supplier?.email ?? "",
+    address: supplier?.address ?? "",
+    taxId: supplier?.taxId ?? "",
+    notes: supplier?.notes ?? "",
+    active: supplier?.active ?? true,
+  });
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (values: SupplierRequest) =>
+      supplier ? api.put(`/api/suppliers/${supplier.id}`, values) : api.post("/api/suppliers", values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      setOpen(false);
+      toast.success(supplier ? "Proveedor actualizado" : "Proveedor creado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo guardar el proveedor";
+      toast.error(message);
+    },
+  });
+
+  const update = (key: keyof SupplierRequest, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {supplier ? (
+          <Button variant="ghost" size="sm">Editar</Button>
+        ) : (
+          <Button>
+            <Plus className="h-4 w-4" />
+            Nuevo proveedor
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{supplier ? "Editar proveedor" : "Nuevo proveedor"}</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              ...form,
+              name: form.name.trim(),
+              contactName: emptyToNull(form.contactName ?? ""),
+              phone: emptyToNull(form.phone ?? ""),
+              email: emptyToNull(form.email ?? ""),
+              address: emptyToNull(form.address ?? ""),
+              taxId: emptyToNull(form.taxId ?? ""),
+              notes: emptyToNull(form.notes ?? ""),
+            });
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="supplier-name">Nombre</Label>
+              <Input id="supplier-name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier-contact">Contacto</Label>
+              <Input id="supplier-contact" value={form.contactName ?? ""} onChange={(e) => update("contactName", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier-phone">Telefono</Label>
+              <Input id="supplier-phone" value={form.phone ?? ""} onChange={(e) => update("phone", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier-email">Email</Label>
+              <Input id="supplier-email" value={form.email ?? ""} onChange={(e) => update("email", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier-tax-id">Documento fiscal</Label>
+              <Input id="supplier-tax-id" value={form.taxId ?? ""} onChange={(e) => update("taxId", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier-address">Direccion</Label>
+              <Input id="supplier-address" value={form.address ?? ""} onChange={(e) => update("address", e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="supplier-notes">Notas</Label>
+            <Input id="supplier-notes" value={form.notes ?? ""} onChange={(e) => update("notes", e.target.value)} />
+          </div>
+          {supplier && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={Boolean(form.active)} onChange={(e) => update("active", e.target.checked)} />
+              Activo
+            </label>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || !form.name.trim()}>
+              {mutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PurchaseDialog({ suppliers, products, branches, defaultBranchId }: {
+  suppliers: SupplierResponse[];
+  products: ProductResponse[];
+  branches: BranchResponse[];
+  defaultBranchId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [supplierId, setSupplierId] = useState("");
+  const [branchId, setBranchId] = useState(defaultBranchId);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [notes, setNotes] = useState("");
+  const [items, setItems] = useState<PurchaseItemRequest[]>([
+    { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" },
+  ]);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (payload: CreatePurchaseRequest) => api.post("/api/purchases", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchases"] });
+      setOpen(false);
+      toast.success("Compra creada");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo crear la compra";
+      toast.error(message);
+    },
+  });
+
+  useEffect(() => {
+    if (!branchId && defaultBranchId) {
+      setBranchId(defaultBranchId);
+    }
+  }, [branchId, defaultBranchId]);
+
+  const total = items.reduce((sum, item) => {
+    const subtotal = Number(item.unitCost || 0) * Number(item.quantity || 0);
+    const discount = Number(item.discountAmount || 0);
+    const tax = Math.max(0, subtotal - discount) * (Number(item.taxRate || 0) / 100);
+    return sum + Math.max(0, subtotal - discount) + tax;
+  }, 0);
+
+  const updateItem = (index: number, patch: Partial<PurchaseItemRequest>) => {
+    setItems((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4" />
+          Nueva compra
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Nueva compra</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              supplierId,
+              branchId,
+              invoiceNumber: emptyToNull(invoiceNumber),
+              purchasedAt: null,
+              notes: emptyToNull(notes),
+              items: items.filter((item) => item.productId),
+            });
+          }}
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="purchase-supplier">Proveedor</Label>
+              <select id="purchase-supplier" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Selecciona</option>
+                {suppliers.filter((s) => s.active).map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="purchase-branch">Sucursal</Label>
+              <select id="purchase-branch" value={branchId} onChange={(e) => setBranchId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Selecciona</option>
+                {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="purchase-invoice">Factura proveedor</Label>
+              <Input id="purchase-invoice" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-3">
+            {items.map((item, index) => (
+              <div key={index} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
+                <div className="space-y-2">
+                  <Label>Producto</Label>
+                  <select value={item.productId} onChange={(e) => updateItem(index, { productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">Selecciona</option>
+                    {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cant.</Label>
+                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Costo</Label>
+                  <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={(e) => updateItem(index, { unitCost: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Itbis %</Label>
+                  <Input type="number" min="0" step="0.01" value={item.taxRate} onChange={(e) => updateItem(index, { taxRate: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Desc.</Label>
+                  <Input type="number" min="0" step="0.01" value={item.discountAmount} onChange={(e) => updateItem(index, { discountAmount: e.target.value })} />
+                </div>
+                <Button type="button" variant="ghost" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>
+                  Quitar
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" }])}>
+              <Plus className="h-4 w-4" />
+              Agregar producto
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_220px] sm:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="purchase-notes">Notas</Label>
+              <Input id="purchase-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            <div className="rounded-lg border border-border p-3 text-right">
+              <p className="text-xs text-muted-foreground">Total estimado</p>
+              <p className="font-mono-money text-xl font-bold">{money(total)}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || !supplierId || !branchId || items.every((item) => !item.productId)}>
+              {mutation.isPending ? "Guardando..." : "Guardar compra"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function PurchasesPage() {
+  const [tab, setTab] = useState<Tab>("purchases");
+  const canViewPurchases = usePermission("PURCHASE_VIEW");
+  const canCreatePurchase = usePermission("PURCHASE_CREATE");
+  const canReceivePurchase = usePermission("PURCHASE_RECEIVE");
+  const canViewSuppliers = usePermission("SUPPLIER_VIEW") || canViewPurchases;
+  const canManageSuppliers = usePermission("SUPPLIER_MANAGE");
+  const tenantFeatures = useTenantFeatures();
+  const purchaseModuleEnabled = tenantFeatures.purchaseModuleEnabled;
+  const queryClient = useQueryClient();
+  const { branches, soleBranchId } = useSoleBranch(purchaseModuleEnabled && (canViewPurchases || canCreatePurchase));
+
+  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => fetchSuppliers(true), enabled: purchaseModuleEnabled && canViewSuppliers });
+  const { data: purchases = [], isLoading: loadingPurchases } = useQuery({ queryKey: ["purchases"], queryFn: fetchPurchases, enabled: purchaseModuleEnabled && canViewPurchases });
+  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: fetchProducts, enabled: purchaseModuleEnabled && canCreatePurchase });
+
+  const receiveMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/api/purchases/${id}/receive`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Compra recibida e inventario actualizado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo recibir la compra";
+      toast.error(message);
+    },
+  });
+
+  const metrics = useMemo(() => ({
+    draft: purchases.filter((purchase) => purchase.status === "DRAFT").length,
+    received: purchases.filter((purchase) => purchase.status === "RECEIVED").length,
+    total: purchases.reduce((sum, purchase) => sum + Number(purchase.total), 0),
+  }), [purchases]);
+
+  if (!canViewPurchases && !canViewSuppliers) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Compras</h1>
+        <p className="text-sm text-muted-foreground">No tienes permiso para consultar compras o proveedores.</p>
+      </div>
+    );
+  }
+
+  if (!purchaseModuleEnabled) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Compras</h1>
+        <p className="text-sm text-muted-foreground">Este modulo no esta activo para este tenant.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Proveedores y compras</h1>
+          <p className="text-sm text-muted-foreground">Registra proveedores, compras y recepciones de inventario.</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {canManageSuppliers && <SupplierDialog />}
+          {canCreatePurchase && (
+            <PurchaseDialog suppliers={suppliers} products={products} branches={branches} defaultBranchId={soleBranchId ?? ""} />
+          )}
+        </div>
+      </div>
+
+      {canViewPurchases && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card><CardContent className="p-4"><p className="text-xs uppercase text-muted-foreground">Borradores</p><p className="text-2xl font-bold">{metrics.draft}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs uppercase text-muted-foreground">Recibidas</p><p className="text-2xl font-bold">{metrics.received}</p></CardContent></Card>
+          <Card><CardContent className="p-4"><p className="text-xs uppercase text-muted-foreground">Total comprado</p><p className="font-mono-money text-2xl font-bold">{money(metrics.total)}</p></CardContent></Card>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 border-b border-border">
+        {canViewPurchases && <button type="button" onClick={() => setTab("purchases")} className={cn("border-b-2 px-3 py-2 text-sm font-medium", tab === "purchases" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Compras</button>}
+        {canViewSuppliers && <button type="button" onClick={() => setTab("suppliers")} className={cn("border-b-2 px-3 py-2 text-sm font-medium", tab === "suppliers" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Proveedores</button>}
+      </div>
+
+      {tab === "purchases" && canViewPurchases ? (
+        <Card>
+          <CardHeader><CardTitle>Historial de compras</CardTitle></CardHeader>
+          <CardContent>
+            {loadingPurchases && <p className="text-sm text-muted-foreground">Cargando compras...</p>}
+            {!loadingPurchases && purchases.length === 0 && <p className="text-sm text-muted-foreground">No hay compras registradas.</p>}
+            {purchases.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[920px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="px-4 py-3">Compra</th>
+                      <th className="px-4 py-3">Proveedor</th>
+                      <th className="px-4 py-3">Sucursal</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3 text-right">Total</th>
+                      <th className="px-4 py-3">Items</th>
+                      <th className="px-4 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchases.map((purchase) => (
+                      <tr key={purchase.id} className="border-b last:border-0">
+                        <td className="px-4 py-3 font-medium">{purchase.purchaseNumber}</td>
+                        <td className="px-4 py-3">{purchase.supplierName}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{purchase.branchName}</td>
+                        <td className="px-4 py-3"><Badge variant={purchase.status === "RECEIVED" ? "success" : "secondary"}>{statusLabel(purchase.status)}</Badge></td>
+                        <td className="px-4 py-3 text-right font-mono-money font-semibold">{money(purchase.total)}</td>
+                        <td className="max-w-sm px-4 py-3 text-muted-foreground">{purchase.items.map((item) => `${item.productName} x ${item.quantity}`).join(", ")}</td>
+                        <td className="px-4 py-3 text-right">
+                          {purchase.status === "DRAFT" && canReceivePurchase && (
+                            <Button size="sm" variant="outline" disabled={receiveMutation.isPending} onClick={() => receiveMutation.mutate(purchase.id)}>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Recibir
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader><CardTitle>Proveedores</CardTitle></CardHeader>
+          <CardContent>
+            {suppliers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay proveedores registrados.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="px-4 py-3">Proveedor</th>
+                      <th className="px-4 py-3">Contacto</th>
+                      <th className="px-4 py-3">Telefono</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppliers.map((supplier) => (
+                      <tr key={supplier.id} className="border-b last:border-0">
+                        <td className="px-4 py-3 font-medium">{supplier.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{supplier.contactName ?? "-"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{supplier.phone ?? "-"}</td>
+                        <td className="px-4 py-3"><Badge variant={supplier.active ? "success" : "secondary"}>{supplier.active ? "Activo" : "Inactivo"}</Badge></td>
+                        <td className="px-4 py-3 text-right">{canManageSuppliers && <SupplierDialog supplier={supplier} />}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

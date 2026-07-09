@@ -164,6 +164,16 @@ export default function SuperAdminTenantDetailPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const purchaseModuleMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/purchase-module`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Modulo de compras actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const impersonateMutation = useMutation({
     mutationFn: async () => {
       const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${tenantId}/impersonate`);
@@ -245,6 +255,12 @@ export default function SuperAdminTenantDetailPage() {
               Alquileres:{" "}
               <Badge variant={tenant.rentalModuleEnabled ? "success" : "secondary"}>
                 {tenant.rentalModuleEnabled ? "Activo" : "Inactivo"}
+              </Badge>
+            </p>
+            <p>
+              Compras y proveedores:{" "}
+              <Badge variant={tenant.purchaseModuleEnabled ? "success" : "secondary"}>
+                {tenant.purchaseModuleEnabled ? "Activo" : "Inactivo"}
               </Badge>
             </p>
             <p>Creado: <span className="text-muted-foreground">{dateOnly(tenant.createdAt)}</span></p>
@@ -402,6 +418,29 @@ export default function SuperAdminTenantDetailPage() {
                   {rentalModuleMutation.isPending
                     ? "Actualizando..."
                     : tenant.rentalModuleEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Compras y proveedores</p>
+                  <p className="text-xs text-muted-foreground">
+                    Habilita proveedores, ordenes de compra y recepcion de inventario para este tenant.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.purchaseModuleEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => purchaseModuleMutation.mutate(!tenant.purchaseModuleEnabled)}
+                  disabled={purchaseModuleMutation.isPending}
+                >
+                  {purchaseModuleMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.purchaseModuleEnabled
                       ? "Desactivar"
                       : "Activar"}
                 </Button>

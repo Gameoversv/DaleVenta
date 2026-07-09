@@ -47,6 +47,11 @@ const PERMISSION_LABELS: Record<string, string> = {
   DASHBOARD_VIEW: "Ver dashboard",
   SALE_VIEW_HISTORY: "Ver historial de ventas",
   CUSTOMER_VIEW: "Ver clientes",
+  SUPPLIER_VIEW: "Ver proveedores",
+  SUPPLIER_MANAGE: "Administrar proveedores",
+  PURCHASE_VIEW: "Ver compras",
+  PURCHASE_CREATE: "Crear compras",
+  PURCHASE_RECEIVE: "Recibir compras",
 };
 
 type StaffRole = Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;

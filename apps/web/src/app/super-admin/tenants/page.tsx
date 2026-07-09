@@ -154,6 +154,16 @@ export default function SuperAdminTenantsPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const purchaseModuleMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      api.patch(`/api/super-admin/tenants/${id}/purchase-module`, { enabled }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Modulo de compras actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const extendTrialMutation = useMutation({
     mutationFn: (id: string) => api.post(`/api/super-admin/tenants/${id}/extend-trial`, null, { params: { days: 30 } }),
     onSuccess: () => {
@@ -223,6 +233,7 @@ export default function SuperAdminTenantsPage() {
                     <th className="px-4 py-3">Sucursales</th>
                     <th className="px-4 py-3">Cajas</th>
                     <th className="px-4 py-3">Alquileres</th>
+                    <th className="px-4 py-3">Compras</th>
                     <th className="px-4 py-3">Efectivo</th>
                     <th className="px-4 py-3">Trial vence</th>
                     <th className="px-4 py-3 text-right">Usuarios</th>
@@ -262,6 +273,11 @@ export default function SuperAdminTenantsPage() {
                       <td className="px-4 py-3">
                         <Badge variant={t.rentalModuleEnabled ? "success" : "secondary"}>
                           {t.rentalModuleEnabled ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={t.purchaseModuleEnabled ? "success" : "secondary"}>
+                          {t.purchaseModuleEnabled ? "Activo" : "Inactivo"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
@@ -401,6 +417,19 @@ export default function SuperAdminTenantsPage() {
                                 onClick={() => rentalModuleMutation.mutate({ id: t.id, enabled: false })}
                               >
                                 Desactivar alquileres
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={t.purchaseModuleEnabled || purchaseModuleMutation.isPending}
+                                onClick={() => purchaseModuleMutation.mutate({ id: t.id, enabled: true })}
+                              >
+                                Activar compras
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!t.purchaseModuleEnabled || purchaseModuleMutation.isPending}
+                                onClick={() => purchaseModuleMutation.mutate({ id: t.id, enabled: false })}
+                              >
+                                Desactivar compras
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

@@ -28,6 +28,9 @@ import rd.dalventa.api.sale.repository.PaymentRepository;
 import rd.dalventa.api.sale.repository.TransferPaymentDetailRepository;
 import rd.dalventa.api.quotation.repository.QuotationRepository;
 import rd.dalventa.api.quotation.repository.QuotationItemRepository;
+import rd.dalventa.api.purchase.repository.PurchaseItemRepository;
+import rd.dalventa.api.purchase.repository.PurchaseRepository;
+import rd.dalventa.api.purchase.repository.SupplierRepository;
 import rd.dalventa.api.rental.repository.RentalContractRepository;
 import rd.dalventa.api.rental.repository.RentalContractItemRepository;
 import rd.dalventa.api.credit.repository.CustomerCreditProfileRepository;
@@ -67,6 +70,9 @@ public abstract class IntegrationTestBase {
     @Autowired protected TransferPaymentDetailRepository transferPaymentDetailRepository;
     @Autowired protected QuotationRepository quotationRepository;
     @Autowired protected QuotationItemRepository quotationItemRepository;
+    @Autowired protected PurchaseItemRepository purchaseItemRepository;
+    @Autowired protected PurchaseRepository purchaseRepository;
+    @Autowired protected SupplierRepository supplierRepository;
     @Autowired protected RentalContractRepository rentalContractRepository;
     @Autowired protected RentalContractItemRepository rentalContractItemRepository;
     @Autowired protected CustomerCreditProfileRepository customerCreditProfileRepository;
@@ -89,6 +95,8 @@ public abstract class IntegrationTestBase {
         saleRepository.deleteAll();
         quotationItemRepository.deleteAll();
         quotationRepository.deleteAll();
+        purchaseItemRepository.deleteAll();
+        purchaseRepository.deleteAll();
         cashShiftDenominationRepository.deleteAll();
         cashShiftRepository.deleteAll();
         registerRepository.deleteAll();
@@ -98,6 +106,7 @@ public abstract class IntegrationTestBase {
         branchInventoryRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
+        supplierRepository.deleteAll();
         denominationRepository.deleteAll();
         branchRepository.deleteAll();
         tenantRepository.deleteAll();

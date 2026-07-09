@@ -30,6 +30,7 @@ export interface TenantSummaryResponse {
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
   rentalModuleEnabled: boolean;
+  purchaseModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;
@@ -62,6 +63,7 @@ export interface TenantDetailResponse {
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
   rentalModuleEnabled: boolean;
+  purchaseModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;

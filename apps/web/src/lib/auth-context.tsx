@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           multiBranchEnabled: false,
           multiRegisterEnabled: false,
           rentalModuleEnabled: false,
+          purchaseModuleEnabled: false,
         },
         isLoading,
         login,

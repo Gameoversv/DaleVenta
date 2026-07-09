@@ -26,7 +26,12 @@ export type PermissionCode =
   | "AUDIT_VIEW"
   | "DASHBOARD_VIEW"
   | "SALE_VIEW_HISTORY"
-  | "CUSTOMER_VIEW";
+  | "CUSTOMER_VIEW"
+  | "SUPPLIER_VIEW"
+  | "SUPPLIER_MANAGE"
+  | "PURCHASE_VIEW"
+  | "PURCHASE_CREATE"
+  | "PURCHASE_RECEIVE";
 
 export type PermissionEffect = "GRANT" | "REVOKE";
 
@@ -78,4 +83,5 @@ export interface TenantFeatures {
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
   rentalModuleEnabled: boolean;
+  purchaseModuleEnabled: boolean;
 }

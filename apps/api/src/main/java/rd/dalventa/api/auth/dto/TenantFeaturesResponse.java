@@ -8,10 +8,11 @@ public record TenantFeaturesResponse(
         @JsonProperty("cashDenominationsEnabled") boolean cashDenominationsEnabled,
         @JsonProperty("multiBranchEnabled") boolean multiBranchEnabled,
         @JsonProperty("multiRegisterEnabled") boolean multiRegisterEnabled,
-        @JsonProperty("rentalModuleEnabled") boolean rentalModuleEnabled
+        @JsonProperty("rentalModuleEnabled") boolean rentalModuleEnabled,
+        @JsonProperty("purchaseModuleEnabled") boolean purchaseModuleEnabled
 ) {
     public static TenantFeaturesResponse disabled() {
-        return new TenantFeaturesResponse(false, true, false, false, false);
+        return new TenantFeaturesResponse(false, true, false, false, false, false);
     }
 
     public static TenantFeaturesResponse from(Tenant tenant) {
@@ -20,7 +21,8 @@ public record TenantFeaturesResponse(
                 tenant.isCashDenominationsEnabled(),
                 tenant.isMultiBranchEnabled(),
                 tenant.isMultiRegisterEnabled(),
-                tenant.isRentalModuleEnabled()
+                tenant.isRentalModuleEnabled(),
+                tenant.isPurchaseModuleEnabled()
         );
     }
 }

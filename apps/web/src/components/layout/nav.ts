@@ -14,6 +14,7 @@ import {
   ScrollText,
   Landmark,
   CalendarClock,
+  Truck,
 } from "lucide-react";
 import type { PermissionCode, RoleName } from "@/types/auth";
 import type { TenantFeatures } from "@/types/auth";
@@ -54,6 +55,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
       { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
       { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
+      { href: "/purchases", label: "Compras", icon: Truck, anyPermission: ["PURCHASE_VIEW", "SUPPLIER_VIEW"], feature: "purchaseModuleEnabled" },
       { href: "/cash-shift/history", label: "Historial de caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
       { href: "/fiscal", label: "Fiscal", icon: Landmark, roles: ["ADMIN"] },
       { href: "/audit", label: "Auditoria", icon: ScrollText, permission: "AUDIT_VIEW" },

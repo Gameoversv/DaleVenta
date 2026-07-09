@@ -25,6 +25,7 @@ public record TenantDetailResponse(
         @JsonProperty("multiBranchEnabled") boolean multiBranchEnabled,
         @JsonProperty("multiRegisterEnabled") boolean multiRegisterEnabled,
         @JsonProperty("rentalModuleEnabled") boolean rentalModuleEnabled,
+        @JsonProperty("purchaseModuleEnabled") boolean purchaseModuleEnabled,
         @JsonProperty("trialEndsAt") Instant trialEndsAt,
         @JsonProperty("createdAt") Instant createdAt,
         @JsonProperty("userCount") long userCount,
@@ -42,6 +43,7 @@ public record TenantDetailResponse(
                 t.getEmail(), t.getRnc(),
                 t.getPlan(), t.getStatus(), t.isFiscalModuleEnabled(), t.isCashDenominationsEnabled(),
                 t.isMultiBranchEnabled(), t.isMultiRegisterEnabled(), t.isRentalModuleEnabled(),
+                t.isPurchaseModuleEnabled(),
                 t.getTrialEndsAt(), t.getCreatedAt(),
                 users, customers, owners
         );
