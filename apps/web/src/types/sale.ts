@@ -119,6 +119,15 @@ export interface InvoiceBusinessInfo {
   showTax: boolean;
 }
 
+export interface InvoiceRentalInfo {
+  contractNumber: string;
+  status: "RESERVED" | "ACTIVE" | "RETURNED" | "CANCELLED";
+  expectedReturnAt: string;
+  returnedAt: string | null;
+  depositAmount: string;
+  notes: string | null;
+}
+
 export interface InvoiceResponse {
   id: string;
   invoiceNumber: string;
@@ -134,6 +143,8 @@ export interface InvoiceResponse {
   taxTotal: string;
   discountAmount: string;
   total: string;
+  amountPaid: string;
+  rental: InvoiceRentalInfo | null;
   items: InvoiceItemResponse[];
   payments: PaymentResponse[];
 }

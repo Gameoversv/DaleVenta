@@ -18,13 +18,17 @@ public record InvoiceResponse(
         SaleStatus status,
         @JsonProperty("createdAt") Instant createdAt,
         BusinessInfo business,
+        @JsonProperty("branchName")
         String branchName,
+        @JsonProperty("registerName")
         String registerName,
         InvoiceCustomerInfo customer,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal subtotal,
         @JsonProperty("taxTotal") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal taxTotal,
         @JsonProperty("discountAmount") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal discountAmount,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal total,
+        @JsonProperty("amountPaid") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal amountPaid,
+        InvoiceRentalInfo rental,
         List<InvoiceItemResponse> items,
         List<PaymentResponse> payments
 ) {
@@ -35,15 +39,25 @@ public record InvoiceResponse(
             String email,
             String address,
             String city,
+            @JsonProperty("logoUrl")
             String logoUrl,
+            @JsonProperty("footerMessage")
             String footerMessage,
+            @JsonProperty("printSize")
             String printSize,
+            @JsonProperty("showLogo")
             boolean showLogo,
+            @JsonProperty("showRnc")
             boolean showRnc,
+            @JsonProperty("showPhone")
             boolean showPhone,
+            @JsonProperty("showEmail")
             boolean showEmail,
+            @JsonProperty("showAddress")
             boolean showAddress,
+            @JsonProperty("showCustomer")
             boolean showCustomer,
+            @JsonProperty("showTax")
             boolean showTax
     ) {}
 }

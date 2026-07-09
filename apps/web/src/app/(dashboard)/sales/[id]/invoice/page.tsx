@@ -38,8 +38,19 @@ function fieldValue(record: unknown, names: string[], fallback: string | number 
 }
 
 function itemName(item: unknown, index: number): string {
-  const value = fieldValue(item, ["productName", "description", "name", "productId"], `Producto ${index + 1}`);
+  const value = fieldValue(item, ["productName", "product_name", "description", "name", "productId", "product_id"], `Producto ${index + 1}`);
   return String(value);
+}
+
+function rentalStatusLabel(status: string): string {
+  if (status === "RESERVED") return "Reservado";
+  if (status === "ACTIVE") return "Alquilado";
+  if (status === "RETURNED") return "Recibido";
+  return "Anulado";
+}
+
+function paymentTotal(data: InvoiceResponse): number {
+  return data.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 }
 
 function invoiceWidth(printSize: InvoiceResponse["business"]["printSize"]): string {
@@ -85,7 +96,7 @@ export default function InvoicePage() {
       {isError && <p className="text-sm text-destructive print:hidden">No se pudo cargar la factura.</p>}
 
       {data && (
-        <section className="bg-background p-6 text-foreground shadow-sm ring-1 ring-border print:p-0 print:shadow-none print:ring-0">
+        <section className="bg-white p-6 text-slate-950 shadow-sm ring-1 ring-slate-200 print:p-0 print:text-black print:shadow-none print:ring-0 [&_.border-border]:border-slate-200 [&_.text-muted-foreground]:text-slate-500">
           <div className="border-b border-border pb-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -153,17 +164,42 @@ export default function InvoicePage() {
                   <tr key={`${itemName(item, index)}-${index}`} className="border-b border-border">
                     <td className="py-2">{itemName(item, index)}</td>
                     <td className="py-2 text-right">
-                      {fieldValue(item, ["quantity", "qty"], 0)} {productUnitLabel(item.productUnit)}
+                      {fieldValue(item, ["quantity", "qty"], 0)}{" "}
+                      {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
                     </td>
                     <td className="py-2 text-right">
-                      {money(fieldValue(item, ["unitPrice", "price"]))} / {productUnitLabel(item.productUnit)}
+                      {money(fieldValue(item, ["unitPrice", "unit_price", "price"]))} /{" "}
+                      {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
                     </td>
-                    <td className="py-2 text-right">{money(fieldValue(item, ["lineTotal", "total", "amount"]))}</td>
+                    <td className="py-2 text-right">{money(fieldValue(item, ["lineTotal", "line_total", "total", "amount"]))}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {data.rental && (
+            <div className="border-t border-border py-4 text-sm">
+              <p className="font-medium">Contrato de alquiler</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <p className="text-muted-foreground">
+                  Contrato: <span className="font-medium text-foreground">{data.rental.contractNumber}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Estado: <span className="font-medium text-foreground">{rentalStatusLabel(data.rental.status)}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Devolucion esperada: <span className="font-medium text-foreground">{dateTime(data.rental.expectedReturnAt)}</span>
+                </p>
+                {data.rental.returnedAt && (
+                  <p className="text-muted-foreground">
+                    Recibido: <span className="font-medium text-foreground">{dateTime(data.rental.returnedAt)}</span>
+                  </p>
+                )}
+              </div>
+              {data.rental.notes && <p className="mt-2 text-muted-foreground">Notas: {data.rental.notes}</p>}
+            </div>
+          )}
 
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-[1fr_240px]">
             <div className="space-y-2 text-sm">
@@ -179,9 +215,19 @@ export default function InvoicePage() {
               <div className="flex justify-between"><span>Subtotal</span><span>{money(data.subtotal)}</span></div>
               {data.business.showTax && <div className="flex justify-between"><span>Impuesto</span><span>{money(data.taxTotal)}</span></div>}
               <div className="flex justify-between"><span>Descuento</span><span>{money(data.discountAmount)}</span></div>
+              {data.rental && Number(data.rental.depositAmount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Deposito alquiler</span><span>{money(data.rental.depositAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>Total</span><span>{money(data.total)}</span>
+                <span>{data.rental ? "Total renta" : "Total"}</span><span>{money(data.total)}</span>
               </div>
+              {data.rental && (
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total cobrado</span><span>{money(data.amountPaid ?? paymentTotal(data))}</span>
+                </div>
+              )}
             </div>
           </div>
           {data.business.footerMessage && (

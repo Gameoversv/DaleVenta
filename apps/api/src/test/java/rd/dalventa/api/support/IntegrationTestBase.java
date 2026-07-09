@@ -114,6 +114,13 @@ public abstract class IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(res).path("data").path("token").asText();
+        var token = objectMapper.readTree(res).path("data").path("token").asText();
+        userRepository.findByEmail(email).ifPresent(user -> {
+            var tenant = tenantRepository.findById(user.getTenantId()).orElseThrow();
+            tenant.setMultiBranchEnabled(true);
+            tenant.setMultiRegisterEnabled(true);
+            tenantRepository.save(tenant);
+        });
+        return token;
     }
 }

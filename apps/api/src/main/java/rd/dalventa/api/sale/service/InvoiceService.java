@@ -9,9 +9,11 @@ import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.fiscal.repository.FiscalProfileRepository;
 import rd.dalventa.api.product.domain.Product;
 import rd.dalventa.api.product.repository.ProductRepository;
+import rd.dalventa.api.rental.repository.RentalContractRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.sale.dto.InvoiceCustomerInfo;
 import rd.dalventa.api.sale.dto.InvoiceItemResponse;
+import rd.dalventa.api.sale.dto.InvoiceRentalInfo;
 import rd.dalventa.api.sale.dto.InvoiceResponse;
 import rd.dalventa.api.sale.dto.PaymentResponse;
 import rd.dalventa.api.sale.repository.PaymentRepository;
@@ -34,6 +36,7 @@ public class InvoiceService {
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final FiscalProfileRepository fiscalProfileRepository;
+    private final RentalContractRepository rentalContractRepository;
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoice(java.util.UUID saleId) {
@@ -59,6 +62,12 @@ public class InvoiceService {
                 })
                 .toList();
         var payments = paymentRepository.findAllBySaleId(sale.getId()).stream().map(PaymentResponse::from).toList();
+        var amountPaid = payments.stream()
+                .map(PaymentResponse::amount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        var rental = rentalContractRepository.findByTenantIdAndSaleId(tenantId, sale.getId())
+                .map(InvoiceRentalInfo::from)
+                .orElse(null);
 
         return new InvoiceResponse(
                 sale.getId(),
@@ -92,6 +101,8 @@ public class InvoiceService {
                 sale.getTaxTotal(),
                 sale.getDiscountAmount(),
                 sale.getTotal(),
+                amountPaid,
+                rental,
                 items,
                 payments
         );
