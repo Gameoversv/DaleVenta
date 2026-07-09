@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   ScrollText,
   Landmark,
+  CalendarClock,
 } from "lucide-react";
 import type { PermissionCode, RoleName } from "@/types/auth";
 import type { TenantFeatures } from "@/types/auth";
@@ -41,6 +42,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/quotations", label: "Cotizaciones", icon: FileText, anyPermission: ["SALE_VIEW_HISTORY", "SALE_CREATE"] },
       { href: "/cash-shift", label: "Turno de caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
       { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_VIEW" },
+      { href: "/rentals", label: "Alquileres", icon: CalendarClock, anyPermission: ["SALE_CREATE", "SALE_VIEW_HISTORY"], feature: "rentalModuleEnabled" },
     ],
   },
   {

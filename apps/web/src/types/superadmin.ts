@@ -29,6 +29,7 @@ export interface TenantSummaryResponse {
   cashDenominationsEnabled: boolean;
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
+  rentalModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;
@@ -60,6 +61,7 @@ export interface TenantDetailResponse {
   cashDenominationsEnabled: boolean;
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
+  rentalModuleEnabled: boolean;
   trialEndsAt: string | null;
   createdAt: string;
   userCount: number;

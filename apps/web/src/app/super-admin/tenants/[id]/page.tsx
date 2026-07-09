@@ -154,6 +154,16 @@ export default function SuperAdminTenantDetailPage() {
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
+  const rentalModuleMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.patch(`/api/super-admin/tenants/${tenantId}/rental-module`, { enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenant", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Modulo de alquileres actualizado");
+    },
+    onError: (err: unknown) => toast.error(extractError(err)),
+  });
+
   const impersonateMutation = useMutation({
     mutationFn: async () => {
       const res = await api.post<{ data: ImpersonateResponse }>(`/api/super-admin/tenants/${tenantId}/impersonate`);
@@ -229,6 +239,12 @@ export default function SuperAdminTenantDetailPage() {
               Multicaja:{" "}
               <Badge variant={tenant.multiRegisterEnabled ? "success" : "secondary"}>
                 {tenant.multiRegisterEnabled ? "Activo" : "Inactivo"}
+              </Badge>
+            </p>
+            <p>
+              Alquileres:{" "}
+              <Badge variant={tenant.rentalModuleEnabled ? "success" : "secondary"}>
+                {tenant.rentalModuleEnabled ? "Activo" : "Inactivo"}
               </Badge>
             </p>
             <p>Creado: <span className="text-muted-foreground">{dateOnly(tenant.createdAt)}</span></p>
@@ -363,6 +379,29 @@ export default function SuperAdminTenantDetailPage() {
                   {multiRegisterMutation.isPending
                     ? "Actualizando..."
                     : tenant.multiRegisterEnabled
+                      ? "Desactivar"
+                      : "Activar"}
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Alquileres</p>
+                  <p className="text-xs text-muted-foreground">
+                    Habilita reservas, entregas, devoluciones, depositos y reportes de renta para este tenant.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={tenant.rentalModuleEnabled ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() => rentalModuleMutation.mutate(!tenant.rentalModuleEnabled)}
+                  disabled={rentalModuleMutation.isPending}
+                >
+                  {rentalModuleMutation.isPending
+                    ? "Actualizando..."
+                    : tenant.rentalModuleEnabled
                       ? "Desactivar"
                       : "Activar"}
                 </Button>

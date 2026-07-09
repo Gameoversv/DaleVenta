@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           cashDenominationsEnabled: true,
           multiBranchEnabled: false,
           multiRegisterEnabled: false,
+          rentalModuleEnabled: false,
         },
         isLoading,
         login,

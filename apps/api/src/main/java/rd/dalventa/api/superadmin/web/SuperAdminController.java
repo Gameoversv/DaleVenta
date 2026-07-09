@@ -114,6 +114,15 @@ public class SuperAdminController {
         return ApiResponse.ok(service.updateMultiRegister(id, req, principal.getUsername()));
     }
 
+    @PatchMapping("/tenants/{id}/rental-module")
+    public ApiResponse<TenantDetailResponse> updateRentalModule(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateTenantRentalModuleRequest req,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return ApiResponse.ok(service.updateRentalModule(id, req, principal.getUsername()));
+    }
+
     @PostMapping("/tenants/{id}/extend-trial")
     public ApiResponse<TenantSummaryResponse> extendTrial(
             @PathVariable UUID id,

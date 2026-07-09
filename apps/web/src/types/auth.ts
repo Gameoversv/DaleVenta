@@ -77,4 +77,5 @@ export interface TenantFeatures {
   cashDenominationsEnabled: boolean;
   multiBranchEnabled: boolean;
   multiRegisterEnabled: boolean;
+  rentalModuleEnabled: boolean;
 }

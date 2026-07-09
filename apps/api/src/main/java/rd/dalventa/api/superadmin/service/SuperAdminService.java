@@ -188,6 +188,17 @@ public class SuperAdminService {
     }
 
     @Transactional
+    public TenantDetailResponse updateRentalModule(UUID id, UpdateTenantRentalModuleRequest req, String actor) {
+        var tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+        var prev = tenant.isRentalModuleEnabled();
+        tenant.setRentalModuleEnabled(req.enabled());
+        tenantRepository.save(tenant);
+        audit(actor, "RENTAL_MODULE_CHANGE", id, (prev ? "ON" : "OFF") + " -> " + (req.enabled() ? "ON" : "OFF"));
+        return getTenantDetail(id);
+    }
+
+    @Transactional
     public TenantSummaryResponse extendTrial(UUID id, int days, String actor) {
         var tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
