@@ -50,6 +50,7 @@ public class ProductService {
 
         var product = new Product(categoryId, req.internalCode(), req.barcode(), req.description(),
                 req.unit(), req.cost(), req.salePrice(), req.wholesalePrice(), req.taxRate(), req.tracksInventory());
+        product.setRentable(req.rentable());
         product.setTenantId(tenantId);
         return toResponse(productRepository.save(product));
     }
@@ -86,6 +87,7 @@ public class ProductService {
         product.setWholesalePrice(req.wholesalePrice());
         product.setTaxRate(req.taxRate());
         product.setTracksInventory(req.tracksInventory());
+        product.setRentable(req.rentable());
         product.setActive(req.active());
         product = productRepository.save(product);
         var actorId = currentUserProvider.current()

@@ -48,6 +48,7 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
         wholesalePrice: product.wholesalePrice ?? "0",
         taxRate: product.taxRate,
         tracksInventory: product.tracksInventory,
+        rentable: product.rentable,
         active: !product.active,
       }),
     onSuccess: () => {
@@ -128,9 +129,12 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
                         {money(product.salePrice)} / {productUnitLabel(product.unit)}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={product.active ? "success" : "secondary"}>
-                          {product.active ? "Activo" : "Inactivo"}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant={product.active ? "success" : "secondary"}>
+                            {product.active ? "Activo" : "Inactivo"}
+                          </Badge>
+                          {product.rentable && <Badge variant="info">Alquiler</Badge>}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {canEdit && categories && (

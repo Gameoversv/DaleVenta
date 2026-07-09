@@ -49,6 +49,9 @@ public class Product extends TenantAwareEntity {
     private boolean tracksInventory = true;
 
     @Column(nullable = false)
+    private boolean rentable = false;
+
+    @Column(nullable = false)
     private boolean active = true;
 
     public Product(UUID categoryId, String internalCode, String barcode, String description, String unit,

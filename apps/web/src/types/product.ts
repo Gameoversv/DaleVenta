@@ -20,6 +20,7 @@ export interface ProductResponse {
   wholesalePrice: string | null;
   taxRate: string;
   tracksInventory: boolean;
+  rentable: boolean;
   active: boolean;
 }
 
@@ -34,6 +35,7 @@ export interface CreateProductRequest {
   wholesalePrice: string;
   taxRate: string;
   tracksInventory: boolean;
+  rentable: boolean;
 }
 
 export interface UpdateProductRequest {
@@ -45,6 +47,7 @@ export interface UpdateProductRequest {
   wholesalePrice: string;
   taxRate: string;
   tracksInventory: boolean;
+  rentable: boolean;
   active: boolean;
 }
 

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { productUnitLabel } from "@/lib/product-units";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
 interface ProductSearchPanelProps {
@@ -27,13 +28,19 @@ function money(value: string | null): string {
 export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelProps) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
+  const tenantFeatures = useTenantFeatures();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   const normalized = query.trim().toLowerCase();
+  const hasRentableProducts = tenantFeatures.rentalModuleEnabled && products.some((p) => p.active && p.rentable);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      if (categoryId && p.categoryId !== categoryId) return false;
+      if (categoryId === "rentals") {
+        if (!p.rentable) return false;
+      } else if (categoryId && p.categoryId !== categoryId) {
+        return false;
+      }
       if (!normalized) return true;
       return (
         p.description.toLowerCase().includes(normalized) ||
@@ -83,6 +90,20 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
                 {c.name}
               </button>
             ))}
+            {hasRentableProducts && (
+              <button
+                type="button"
+                onClick={() => setCategoryId("rentals")}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  categoryId === "rentals"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+                )}
+              >
+                Alquileres
+              </button>
+            )}
           </div>
         )}
 
@@ -104,6 +125,7 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
                   {money(p.salePrice)} / {productUnitLabel(p.unit)}
                 </span>
                 <span className="text-xs text-muted-foreground">{p.internalCode}</span>
+                {p.rentable && <span className="text-xs font-medium text-info">Alquiler</span>}
               </button>
             ))}
           </div>

@@ -16,5 +16,6 @@ public record UpdateProductRequest(
         @JsonProperty("wholesalePrice") @NotNull BigDecimal wholesalePrice,
         @JsonProperty("taxRate") @NotNull BigDecimal taxRate,
         @JsonProperty("tracksInventory") boolean tracksInventory,
+        boolean rentable,
         boolean active
 ) {}

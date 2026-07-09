@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { PRODUCT_UNITS } from "@/lib/product-units";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
 
 const createSchema = z.object({
@@ -25,6 +26,7 @@ const createSchema = z.object({
   wholesalePrice: z.string().min(1, "Precio mayorista requerido"),
   taxRate: z.string().min(1, "Tasa de impuesto requerida"),
   tracksInventory: z.boolean(),
+  rentable: z.boolean(),
 });
 type ProductForm = z.infer<typeof createSchema>;
 
@@ -37,6 +39,7 @@ interface ProductFormDialogProps {
 export function ProductFormDialog({ product, categories, trigger }: ProductFormDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const tenantFeatures = useTenantFeatures();
   const isEdit = !!product;
   const hasCustomUnit = !!product?.unit && !PRODUCT_UNITS.some((unit) => unit.value === product.unit);
 
@@ -58,6 +61,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
       wholesalePrice: product?.wholesalePrice ?? "",
       taxRate: product?.taxRate ?? "",
       tracksInventory: product?.tracksInventory ?? true,
+      rentable: product?.rentable ?? false,
     },
   });
 
@@ -73,6 +77,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
             wholesalePrice: values.wholesalePrice,
             taxRate: values.taxRate,
             tracksInventory: values.tracksInventory,
+            rentable: values.rentable,
             active: product!.active,
           })
         : api.post("/api/products", {
@@ -171,6 +176,12 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
             <input id="product-tracks-inventory" type="checkbox" {...register("tracksInventory")} />
             <Label htmlFor="product-tracks-inventory">Rastrea inventario</Label>
           </div>
+          {tenantFeatures.rentalModuleEnabled && (
+            <div className="flex items-center gap-2">
+              <input id="product-rentable" type="checkbox" {...register("rentable")} />
+              <Label htmlFor="product-rentable">Disponible para alquiler</Label>
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Guardando..." : "Guardar"}

@@ -25,6 +25,7 @@ public record ProductResponse(
         @JsonProperty("wholesalePrice") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal wholesalePrice,
         @JsonProperty("taxRate") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal taxRate,
         @JsonProperty("tracksInventory") boolean tracksInventory,
+        boolean rentable,
         boolean active
 ) {
     public static ProductResponse from(Product p, boolean showCost, boolean showPrice) {
@@ -34,7 +35,7 @@ public record ProductResponse(
                 showCost ? p.getCost() : null,
                 showPrice ? p.getSalePrice() : null,
                 showPrice ? p.getWholesalePrice() : null,
-                p.getTaxRate(), p.isTracksInventory(), p.isActive()
+                p.getTaxRate(), p.isTracksInventory(), p.isRentable(), p.isActive()
         );
     }
 }

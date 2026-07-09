@@ -17,5 +17,6 @@ public record CreateProductRequest(
         @JsonProperty("salePrice") @NotNull BigDecimal salePrice,
         @JsonProperty("wholesalePrice") @NotNull BigDecimal wholesalePrice,
         @JsonProperty("taxRate") @NotNull BigDecimal taxRate,
-        @JsonProperty("tracksInventory") boolean tracksInventory
+        @JsonProperty("tracksInventory") boolean tracksInventory,
+        boolean rentable
 ) {}
