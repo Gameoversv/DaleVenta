@@ -82,6 +82,7 @@ export function CheckoutPanel({
   onConfirm,
 }: CheckoutPanelProps) {
   const canDiscount = usePermission("SALE_DISCOUNT");
+  const canAuthorizeCredit = usePermission("CREDIT_AUTHORIZE");
   const [discountInput, setDiscountInput] = useState("");
   const [method, setMethod] = useState<PaymentMethodTab>("CASH");
   const [fiscalReceiptType, setFiscalReceiptType] = useState<FiscalReceiptType | "">("");
@@ -90,6 +91,7 @@ export function CheckoutPanel({
   const [mixedCashInput, setMixedCashInput] = useState("");
   const [mixedReceivedEntries, setMixedReceivedEntries] = useState<DenominationCountEntry[]>([]);
   const [mixedReceivedAmountInput, setMixedReceivedAmountInput] = useState("");
+  const [mixedSecondMethod, setMixedSecondMethod] = useState<"TRANSFER" | "CREDIT">("TRANSFER");
   const [bank, setBank] = useState("");
   const [reference, setReference] = useState("");
   const [mixedBank, setMixedBank] = useState("");
@@ -104,7 +106,9 @@ export function CheckoutPanel({
   const discountAmount = canDiscount ? Math.max(0, parseFloat(discountInput) || 0) : 0;
   const total = Math.max(0, preDiscountTotal - discountAmount);
   const mixedCashAmount = Math.max(0, Number(mixedCashInput) || 0);
-  const mixedTransferAmount = Math.max(0, total - mixedCashAmount);
+  const mixedRemainingAmount = Math.max(0, total - mixedCashAmount);
+  const mixedTransferAmount = mixedSecondMethod === "TRANSFER" ? mixedRemainingAmount : 0;
+  const mixedCreditAmount = mixedSecondMethod === "CREDIT" ? mixedRemainingAmount : 0;
 
   const sumDenominations = (entries: DenominationCountEntry[]) =>
     entries.reduce((sum, e) => {
@@ -141,13 +145,13 @@ export function CheckoutPanel({
   const { data: creditProfile } = useQuery({
     queryKey: ["credit-profile", customer?.id],
     queryFn: () => fetchCreditProfile(customer!.id),
-    enabled: method === "CREDIT" && !!customer,
+    enabled: (method === "CREDIT" || (method === "MIXED" && mixedSecondMethod === "CREDIT")) && !!customer,
   });
 
   const { data: creditAccount } = useQuery({
     queryKey: ["credit-account", customer?.id],
     queryFn: () => fetchCreditAccount(customer!.id),
-    enabled: method === "CREDIT" && !!customer,
+    enabled: (method === "CREDIT" || (method === "MIXED" && mixedSecondMethod === "CREDIT")) && !!customer,
   });
 
   const creditAvailable =
@@ -156,8 +160,9 @@ export function CheckoutPanel({
         ? Infinity
         : Number(creditProfile.creditLimit) - Number(creditAccount.balance)
       : null;
-  const creditEligible = !!customer && creditProfile?.creditEnabled === true;
+  const creditEligible = canAuthorizeCredit && !!customer && creditProfile?.creditEnabled === true;
   const creditWithinLimit = creditAvailable !== null && total <= creditAvailable;
+  const mixedCreditWithinLimit = creditAvailable !== null && mixedCreditAmount <= creditAvailable;
 
   const cashReady = cashDenominationsEnabled
     ? method === "CASH" && changeAmountCents >= 0 && receivedEntries.length > 0 && suggestion?.exact === true
@@ -170,10 +175,11 @@ export function CheckoutPanel({
     method === "MIXED" &&
     mixedCashAmount > 0 &&
     mixedCashAmount < total &&
-    mixedTransferAmount > 0 &&
+    mixedRemainingAmount > 0 &&
     mixedCashReady &&
-    mixedBank.trim() !== "" &&
-    mixedReference.trim() !== "";
+    (mixedSecondMethod === "TRANSFER"
+      ? mixedBank.trim() !== "" && mixedReference.trim() !== ""
+      : creditEligible && mixedCreditWithinLimit);
   const creditReady = method === "CREDIT" && creditEligible && creditWithinLimit;
   const canConfirm = !disabled && total > 0 && (cashReady || transferReady || mixedReady || creditReady) && !isSubmitting;
 
@@ -190,19 +196,28 @@ export function CheckoutPanel({
         : method === "TRANSFER"
           ? [{ method: "TRANSFER", amount: total.toFixed(2), bank, reference }]
           : method === "MIXED"
-            ? [
-                {
-                  method: "CASH",
-                  amount: mixedCashAmount.toFixed(2),
-                  receivedDenominations: cashDenominationsEnabled ? mixedReceivedEntries : [],
-                },
-                {
-                  method: "TRANSFER",
-                  amount: mixedTransferAmount.toFixed(2),
-                  bank: mixedBank,
-                  reference: mixedReference,
-                },
-              ]
+            ? mixedSecondMethod === "TRANSFER"
+              ? [
+                  {
+                    method: "CASH",
+                    amount: mixedCashAmount.toFixed(2),
+                    receivedDenominations: cashDenominationsEnabled ? mixedReceivedEntries : [],
+                  },
+                  {
+                    method: "TRANSFER",
+                    amount: mixedTransferAmount.toFixed(2),
+                    bank: mixedBank,
+                    reference: mixedReference,
+                  },
+                ]
+              : [
+                  {
+                    method: "CASH",
+                    amount: mixedCashAmount.toFixed(2),
+                    receivedDenominations: cashDenominationsEnabled ? mixedReceivedEntries : [],
+                  },
+                  { method: "CREDIT", amount: mixedCreditAmount.toFixed(2) },
+                ]
             : [{ method: "CREDIT", amount: total.toFixed(2) }];
     onConfirm(payments, discountAmount, fiscalReceiptType || null);
   };
@@ -259,13 +274,19 @@ export function CheckoutPanel({
           {METHOD_TILES.map((tile) => {
             const Icon = tile.icon;
             const active = method === tile.id;
-            const isCreditDisabled = tile.id === "CREDIT" && !customer;
+            const isCreditDisabled = tile.id === "CREDIT" && (!customer || !canAuthorizeCredit);
             return (
               <button
                 key={tile.id}
                 type="button"
                 disabled={isCreditDisabled}
-                title={isCreditDisabled ? "Selecciona un cliente para vender a credito" : undefined}
+                title={
+                  isCreditDisabled
+                    ? !canAuthorizeCredit
+                      ? "Tu usuario no tiene permiso para vender a credito"
+                      : "Selecciona un cliente para vender a credito"
+                    : undefined
+                }
                 onClick={() => setMethod(tile.id)}
                 className={cn(
                   "flex min-h-20 flex-col items-center gap-1.5 rounded-xl border p-2 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40",
@@ -355,10 +376,26 @@ export function CheckoutPanel({
                   onChange={(event) => setMixedCashInput(event.target.value)}
                 />
               </div>
-              <div className="rounded-lg border border-border p-3">
-                <p className="text-xs text-muted-foreground">Monto por transferencia</p>
-                <p className="font-mono-money text-lg font-bold">{money(mixedTransferAmount)}</p>
+              <div className="space-y-2">
+                <Label htmlFor="mixed-second-method">Restante en</Label>
+                <select
+                  id="mixed-second-method"
+                  value={mixedSecondMethod}
+                  onChange={(event) => setMixedSecondMethod(event.target.value as "TRANSFER" | "CREDIT")}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="TRANSFER">Transferencia</option>
+                  <option value="CREDIT" disabled={!canAuthorizeCredit}>
+                    Credito
+                  </option>
+                </select>
               </div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">
+                {mixedSecondMethod === "TRANSFER" ? "Monto por transferencia" : "Monto a credito"}
+              </p>
+              <p className="font-mono-money text-lg font-bold">{money(mixedRemainingAmount)}</p>
             </div>
 
             {mixedCashAmount <= 0 && <p className="text-sm text-muted-foreground">Indica cuanto pagara en efectivo.</p>}
@@ -405,22 +442,55 @@ export function CheckoutPanel({
                   </div>
                 )}
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="mixed-transfer-bank">Banco</Label>
-                    <Input id="mixed-transfer-bank" value={mixedBank} onChange={(e) => setMixedBank(e.target.value)} />
+                {mixedSecondMethod === "TRANSFER" ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="mixed-transfer-bank">Banco</Label>
+                      <Input id="mixed-transfer-bank" value={mixedBank} onChange={(e) => setMixedBank(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mixed-transfer-reference">Referencia</Label>
+                      <Input id="mixed-transfer-reference" value={mixedReference} onChange={(e) => setMixedReference(e.target.value)} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mixed-transfer-reference">Referencia</Label>
-                    <Input id="mixed-transfer-reference" value={mixedReference} onChange={(e) => setMixedReference(e.target.value)} />
+                ) : (
+                  <div className="space-y-2 rounded-md border border-border p-3">
+                    {!canAuthorizeCredit && (
+                      <p className="text-sm text-destructive">Tu usuario no tiene permiso para vender a credito.</p>
+                    )}
+                    {canAuthorizeCredit && !customer && (
+                      <p className="text-sm text-destructive">Selecciona un cliente para vender a credito.</p>
+                    )}
+                    {customer && creditProfile && !creditProfile.creditEnabled && (
+                      <p className="text-sm text-destructive">Este cliente no tiene credito habilitado.</p>
+                    )}
+                    {customer && creditEligible && creditAccount && creditProfile && (
+                      <>
+                        <p className="text-sm">
+                          Balance actual: RD${creditAccount.balance} - Limite:{" "}
+                          {creditProfile.creditLimit == null ? "Sin limite" : `RD$${creditProfile.creditLimit}`}
+                        </p>
+                        <p className="text-sm font-medium">
+                          Disponible: {creditAvailable === Infinity ? "Sin limite" : `RD$${creditAvailable?.toFixed(2)}`}
+                        </p>
+                        {!mixedCreditWithinLimit && (
+                          <p className="text-sm text-destructive">La parte a credito excede el disponible.</p>
+                        )}
+                      </>
+                    )}
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>
         ) : (
           <div className="space-y-2">
-            {!customer && <p className="text-sm text-destructive">Selecciona un cliente para vender a credito.</p>}
+            {!canAuthorizeCredit && (
+              <p className="text-sm text-destructive">Tu usuario no tiene permiso para vender a credito.</p>
+            )}
+            {canAuthorizeCredit && !customer && (
+              <p className="text-sm text-destructive">Selecciona un cliente para vender a credito.</p>
+            )}
             {customer && creditProfile && !creditProfile.creditEnabled && (
               <p className="text-sm text-destructive">Este cliente no tiene credito habilitado.</p>
             )}
