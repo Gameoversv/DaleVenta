@@ -26,6 +26,8 @@ import rd.dalventa.api.sale.repository.SaleRepository;
 import rd.dalventa.api.sale.repository.SaleItemRepository;
 import rd.dalventa.api.sale.repository.PaymentRepository;
 import rd.dalventa.api.sale.repository.TransferPaymentDetailRepository;
+import rd.dalventa.api.quotation.repository.QuotationRepository;
+import rd.dalventa.api.quotation.repository.QuotationItemRepository;
 import rd.dalventa.api.credit.repository.CustomerCreditProfileRepository;
 import rd.dalventa.api.credit.repository.CreditAccountRepository;
 import rd.dalventa.api.credit.repository.CreditTransactionRepository;
@@ -61,6 +63,8 @@ public abstract class IntegrationTestBase {
     @Autowired protected SaleItemRepository saleItemRepository;
     @Autowired protected PaymentRepository paymentRepository;
     @Autowired protected TransferPaymentDetailRepository transferPaymentDetailRepository;
+    @Autowired protected QuotationRepository quotationRepository;
+    @Autowired protected QuotationItemRepository quotationItemRepository;
     @Autowired protected CustomerCreditProfileRepository customerCreditProfileRepository;
     @Autowired protected CreditAccountRepository creditAccountRepository;
     @Autowired protected CreditTransactionRepository creditTransactionRepository;
@@ -77,6 +81,8 @@ public abstract class IntegrationTestBase {
         paymentRepository.deleteAll();
         saleItemRepository.deleteAll();
         saleRepository.deleteAll();
+        quotationItemRepository.deleteAll();
+        quotationRepository.deleteAll();
         cashShiftDenominationRepository.deleteAll();
         cashShiftRepository.deleteAll();
         registerRepository.deleteAll();

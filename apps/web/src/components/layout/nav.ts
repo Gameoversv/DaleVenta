@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Users,
   ReceiptText,
+  FileText,
   History,
   Settings,
   BarChart3,
@@ -37,6 +38,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/pos", label: "Punto de venta", icon: ShoppingCart, permission: "SALE_CREATE" },
       { href: "/sales", label: "Ventas", icon: ReceiptText, anyPermission: ["SALE_VIEW_HISTORY", "SALE_CREATE"] },
+      { href: "/quotations", label: "Cotizaciones", icon: FileText, anyPermission: ["SALE_VIEW_HISTORY", "SALE_CREATE"] },
       { href: "/cash-shift", label: "Turno de caja", icon: Wallet, permission: "CASHSHIFT_OPEN" },
       { href: "/customers", label: "Clientes", icon: Users, permission: "CUSTOMER_VIEW" },
     ],
