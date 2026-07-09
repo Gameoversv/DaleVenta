@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { productUnitLabel } from "@/lib/product-units";
+import { PRODUCT_UNITS, productUnitLabel } from "@/lib/product-units";
 import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BranchResponse } from "@/types/branch";
-import type { ProductResponse } from "@/types/product";
+import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
 import type { CreatePurchaseRequest, PurchaseItemRequest, PurchaseResponse, SupplierRequest, SupplierResponse } from "@/types/purchase";
 
 type Tab = "purchases" | "suppliers";
@@ -34,6 +34,11 @@ async function fetchPurchases(): Promise<PurchaseResponse[]> {
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
+  return res.data.data;
+}
+
+async function fetchCategories(): Promise<CategoryResponse[]> {
+  const res = await api.get<{ data: CategoryResponse[] }>("/api/categories");
   return res.data.data;
 }
 
@@ -161,11 +166,174 @@ function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
   );
 }
 
-function PurchaseDialog({ suppliers, products, branches, defaultBranchId }: {
+function QuickProductDialog({
+  categories,
+  trigger,
+  onCreated,
+}: {
+  categories: CategoryResponse[];
+  trigger: React.ReactNode;
+  onCreated: (product: ProductResponse) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<CreateProductRequest>({
+    categoryId: "",
+    internalCode: "",
+    barcode: null,
+    description: "",
+    unit: "unit",
+    cost: "0",
+    salePrice: "0",
+    wholesalePrice: "0",
+    taxRate: "0",
+    tracksInventory: true,
+    rentable: false,
+  });
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (values: CreateProductRequest) => {
+      const res = await api.post<{ data: ProductResponse }>("/api/products", {
+        ...values,
+        categoryId: values.categoryId || undefined,
+        barcode: values.barcode || undefined,
+      });
+      return res.data.data;
+    },
+    onSuccess: (product) => {
+      queryClient.setQueryData<ProductResponse[]>(["products"], (current) => {
+        if (!current || current.some((item) => item.id === product.id)) return current;
+        return [...current, product].sort((a, b) => a.description.localeCompare(b.description));
+      });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onCreated(product);
+      setForm({
+        categoryId: "",
+        internalCode: "",
+        barcode: null,
+        description: "",
+        unit: "unit",
+        cost: "0",
+        salePrice: "0",
+        wholesalePrice: "0",
+        taxRate: "0",
+        tracksInventory: true,
+        rentable: false,
+      });
+      setOpen(false);
+      toast.success("Producto creado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo crear el producto";
+      toast.error(message);
+    },
+  });
+
+  const update = (key: keyof CreateProductRequest, value: string | boolean | null) =>
+    setForm((current) => ({ ...current, [key]: value }));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Nuevo producto</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              ...form,
+              internalCode: form.internalCode.trim(),
+              barcode: emptyToNull(form.barcode ?? ""),
+              description: form.description.trim(),
+            });
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-code">Codigo interno</Label>
+              <Input id="quick-product-code" value={form.internalCode} onChange={(e) => update("internalCode", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-barcode">Codigo de barras</Label>
+              <Input id="quick-product-barcode" value={form.barcode ?? ""} onChange={(e) => update("barcode", e.target.value)} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="quick-product-description">Descripcion</Label>
+              <Input id="quick-product-description" value={form.description} onChange={(e) => update("description", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-category">Categoria</Label>
+              <select
+                id="quick-product-category"
+                value={form.categoryId}
+                onChange={(e) => update("categoryId", e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">General (automatico)</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-unit">Unidad</Label>
+              <select
+                id="quick-product-unit"
+                value={form.unit}
+                onChange={(e) => update("unit", e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {PRODUCT_UNITS.map((unit) => (
+                  <option key={unit.value} value={unit.value}>
+                    {unit.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-cost">Costo</Label>
+              <Input id="quick-product-cost" type="number" min="0" step="0.01" value={form.cost} onChange={(e) => update("cost", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-sale-price">Precio venta</Label>
+              <Input id="quick-product-sale-price" type="number" min="0" step="0.01" value={form.salePrice} onChange={(e) => update("salePrice", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-wholesale-price">Precio mayorista</Label>
+              <Input id="quick-product-wholesale-price" type="number" min="0" step="0.01" value={form.wholesalePrice} onChange={(e) => update("wholesalePrice", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quick-product-tax-rate">Itbis %</Label>
+              <Input id="quick-product-tax-rate" type="number" min="0" step="0.01" value={form.taxRate} onChange={(e) => update("taxRate", e.target.value)} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.tracksInventory} onChange={(e) => update("tracksInventory", e.target.checked)} />
+            Rastrea inventario
+          </label>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || !form.internalCode.trim() || !form.description.trim()}>
+              {mutation.isPending ? "Guardando..." : "Crear producto"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: {
   suppliers: SupplierResponse[];
   products: ProductResponse[];
+  categories: CategoryResponse[];
   branches: BranchResponse[];
   defaultBranchId: string;
+  canCreateProduct: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [supplierId, setSupplierId] = useState("");
@@ -258,10 +426,19 @@ function PurchaseDialog({ suppliers, products, branches, defaultBranchId }: {
               <div key={index} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
                 <div className="space-y-2">
                   <Label>Producto</Label>
-                  <select value={item.productId} onChange={(e) => updateItem(index, { productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Selecciona</option>
-                    {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
-                  </select>
+                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <select value={item.productId} onChange={(e) => updateItem(index, { productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <option value="">Selecciona</option>
+                      {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
+                    </select>
+                    {canCreateProduct && (
+                      <QuickProductDialog
+                        categories={categories}
+                        trigger={<Button type="button" variant="outline" className="w-full sm:w-auto"><Plus className="h-4 w-4" /> Nuevo</Button>}
+                        onCreated={(product) => updateItem(index, { productId: product.id, unitCost: product.cost ?? item.unitCost })}
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Cant.</Label>
@@ -315,6 +492,7 @@ export default function PurchasesPage() {
   const canViewPurchases = usePermission("PURCHASE_VIEW");
   const canCreatePurchase = usePermission("PURCHASE_CREATE");
   const canReceivePurchase = usePermission("PURCHASE_RECEIVE");
+  const canCreateProduct = usePermission("INVENTORY_CREATE");
   const canViewSuppliers = usePermission("SUPPLIER_VIEW") || canViewPurchases;
   const canManageSuppliers = usePermission("SUPPLIER_MANAGE");
   const tenantFeatures = useTenantFeatures();
@@ -325,6 +503,7 @@ export default function PurchasesPage() {
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => fetchSuppliers(true), enabled: purchaseModuleEnabled && canViewSuppliers });
   const { data: purchases = [], isLoading: loadingPurchases } = useQuery({ queryKey: ["purchases"], queryFn: fetchPurchases, enabled: purchaseModuleEnabled && canViewPurchases });
   const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: fetchProducts, enabled: purchaseModuleEnabled && canCreatePurchase });
+  const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories, enabled: purchaseModuleEnabled && canCreatePurchase && canCreateProduct });
 
   const receiveMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/api/purchases/${id}/receive`),
@@ -374,7 +553,14 @@ export default function PurchasesPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {canManageSuppliers && <SupplierDialog />}
           {canCreatePurchase && (
-            <PurchaseDialog suppliers={suppliers} products={products} branches={branches} defaultBranchId={soleBranchId ?? ""} />
+            <PurchaseDialog
+              suppliers={suppliers}
+              products={products}
+              categories={categories}
+              branches={branches}
+              defaultBranchId={soleBranchId ?? ""}
+              canCreateProduct={canCreateProduct}
+            />
           )}
         </div>
       </div>
