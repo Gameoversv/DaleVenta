@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { CircleDollarSign } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleDollarSign, WalletCards } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { AccountsPayableRow } from "@/types/purchase";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { AccountsPayableRow, PurchasePaymentMethod, RecordPurchasePaymentRequest } from "@/types/purchase";
 
 async function fetchPayables(): Promise<AccountsPayableRow[]> {
   const res = await api.get<{ data: AccountsPayableRow[] }>("/api/purchases/accounts-payable");
@@ -22,8 +27,123 @@ function dateOnly(value: string): string {
   return new Date(value).toLocaleDateString();
 }
 
+function emptyToNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function PaymentDialog({ row }: { row: AccountsPayableRow }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(row.balanceDue);
+  const [method, setMethod] = useState<PurchasePaymentMethod>("CASH");
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (payload: RecordPurchasePaymentRequest) => api.post(`/api/purchases/${row.purchaseId}/payments`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts-payable"] });
+      queryClient.invalidateQueries({ queryKey: ["purchases"] });
+      setOpen(false);
+      toast.success("Pago registrado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo registrar el pago";
+      toast.error(message);
+    },
+  });
+  const balance = Number(row.balanceDue);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setAmount(row.balanceDue);
+          setMethod("CASH");
+          setReference("");
+          setNotes("");
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <WalletCards className="h-4 w-4" />
+          Abonar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Registrar pago a proveedor</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              amount,
+              method,
+              paidAt: null,
+              reference: emptyToNull(reference),
+              notes: emptyToNull(notes),
+            });
+          }}
+        >
+          <div className="rounded-md border border-border p-3 text-sm">
+            <p className="font-medium">{row.purchaseNumber} - {row.supplierName}</p>
+            <p className="text-muted-foreground">Pendiente: <span className="font-mono-money">{money(row.balanceDue)}</span></p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`payable-payment-amount-${row.purchaseId}`}>Monto</Label>
+              <Input
+                id={`payable-payment-amount-${row.purchaseId}`}
+                type="number"
+                min="0.01"
+                max={row.balanceDue}
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`payable-payment-method-${row.purchaseId}`}>Metodo</Label>
+              <select
+                id={`payable-payment-method-${row.purchaseId}`}
+                value={method}
+                onChange={(e) => setMethod(e.target.value as PurchasePaymentMethod)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="CASH">Efectivo</option>
+                <option value="TRANSFER">Transferencia</option>
+                <option value="OTHER">Otro</option>
+              </select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`payable-payment-reference-${row.purchaseId}`}>Referencia</Label>
+            <Input id={`payable-payment-reference-${row.purchaseId}`} value={reference} onChange={(e) => setReference(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`payable-payment-notes-${row.purchaseId}`}>Notas</Label>
+            <Input id={`payable-payment-notes-${row.purchaseId}`} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || Number(amount) <= 0 || Number(amount) > balance}>
+              {mutation.isPending ? "Registrando..." : "Registrar pago"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AccountsPayablePage() {
   const canView = usePermission("PURCHASE_PAYABLE_VIEW");
+  const canPay = usePermission("PURCHASE_PAYMENT_RECORD");
   const tenantFeatures = useTenantFeatures();
   const enabled = tenantFeatures.purchaseModuleEnabled;
   const { data: rows, isLoading, isError } = useQuery({
@@ -92,6 +212,7 @@ export default function AccountsPayablePage() {
                     <th className="px-4 py-3 text-right">Total</th>
                     <th className="px-4 py-3 text-right">Pagado</th>
                     <th className="px-4 py-3 text-right">Pendiente</th>
+                    <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -104,6 +225,9 @@ export default function AccountsPayablePage() {
                       <td className="px-4 py-3 text-right font-mono-money">{money(row.total)}</td>
                       <td className="px-4 py-3 text-right font-mono-money text-muted-foreground">{money(row.paidAmount)}</td>
                       <td className="px-4 py-3 text-right font-mono-money font-semibold text-warning">{money(row.balanceDue)}</td>
+                      <td className="px-4 py-3 text-right">
+                        {canPay && Number(row.balanceDue) > 0 && <PaymentDialog row={row} />}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
