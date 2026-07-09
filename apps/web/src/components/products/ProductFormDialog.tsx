@@ -42,6 +42,9 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
   const tenantFeatures = useTenantFeatures();
   const isEdit = !!product;
   const hasCustomUnit = !!product?.unit && !PRODUCT_UNITS.some((unit) => unit.value === product.unit);
+  const generalCategoryId = categories.find((category) => category.name.toLowerCase() === "general")?.id;
+  const productCategoryIsActive = !!product?.categoryId && categories.some((category) => category.id === product.categoryId);
+  const safeCategoryId = productCategoryIsActive ? product!.categoryId : generalCategoryId ?? "";
 
   const {
     register,
@@ -51,7 +54,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
   } = useForm<ProductForm>({
     resolver: zodResolver(createSchema),
     defaultValues: {
-      categoryId: product?.categoryId ?? "",
+      categoryId: product ? safeCategoryId : "",
       internalCode: product?.internalCode ?? "",
       barcode: product?.barcode ?? "",
       description: product?.description ?? "",
@@ -69,7 +72,7 @@ export function ProductFormDialog({ product, categories, trigger }: ProductFormD
     mutationFn: (values: ProductForm) =>
       isEdit
         ? api.put(`/api/products/${product!.id}`, {
-            categoryId: values.categoryId || product!.categoryId,
+            categoryId: values.categoryId || generalCategoryId || product!.categoryId,
             description: values.description,
             unit: values.unit,
             cost: values.cost,
