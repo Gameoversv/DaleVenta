@@ -97,7 +97,7 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
           <DialogTitle>{isEdit ? "Editar cliente" : "Nuevo cliente"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="customer-first-name">Nombre</Label>
               <Input id="customer-first-name" {...register("firstName")} />

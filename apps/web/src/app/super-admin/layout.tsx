@@ -58,11 +58,11 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
-        <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+      <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+        <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
           <BrandMark />
         </div>
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-4 pb-8">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -101,7 +101,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent align="start" className="max-h-[80vh] w-56 overflow-y-auto">
                 {NAV_ITEMS.map((item) => {
                   const Icon = item.icon;
                   return (

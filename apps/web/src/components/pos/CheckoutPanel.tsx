@@ -332,7 +332,7 @@ export function CheckoutPanel({
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {METHOD_TILES.map((tile) => {
             const Icon = tile.icon;
             const active = method === tile.id;
