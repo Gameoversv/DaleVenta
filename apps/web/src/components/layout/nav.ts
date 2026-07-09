@@ -57,7 +57,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/cash-shift/history", label: "Historial de caja", icon: History, permission: "CASHSHIFT_VIEW_HISTORY" },
       { href: "/fiscal", label: "Fiscal", icon: Landmark, roles: ["ADMIN"] },
       { href: "/audit", label: "Auditoria", icon: ScrollText, permission: "AUDIT_VIEW" },
-      { href: "/settings", label: "Configuracion", icon: Settings, anyPermission: ["SETTINGS_MANAGE", "USERS_MANAGE"] },
+      { href: "/settings", label: "Configuracion", icon: Settings },
     ],
   },
 ];
