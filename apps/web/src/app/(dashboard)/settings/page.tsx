@@ -294,6 +294,7 @@ function InvoiceSettingsCard() {
 
 export default function SettingsPage() {
   const canManageSettings = usePermission("SETTINGS_MANAGE");
+  const canManageUsers = usePermission("USERS_MANAGE");
   const { data: tenantFeatures } = useQuery({
     queryKey: ["tenant-features"],
     queryFn: fetchTenantFeatures,
@@ -321,11 +322,11 @@ export default function SettingsPage() {
     [denominations]
   );
 
-  if (!canManageSettings) {
+  if (!canManageSettings && !canManageUsers) {
     return (
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Configuracion</h1>
-        <p className="text-muted-foreground">No tienes permiso para administrar la configuracion.</p>
+        <p className="text-muted-foreground">No tienes permiso para administrar configuracion o usuarios.</p>
       </div>
     );
   }
@@ -334,12 +335,12 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Configuracion</h1>
-        {cashDenominationsEnabled && <CreateDenominationDialog />}
+        {canManageSettings && cashDenominationsEnabled && <CreateDenominationDialog />}
       </div>
 
-      <InvoiceSettingsCard />
+      {canManageSettings && <InvoiceSettingsCard />}
 
-      {cashDenominationsEnabled && (
+      {canManageSettings && cashDenominationsEnabled && (
         <Card>
           <button
             type="button"
@@ -389,17 +390,19 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Usuarios y permisos</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">Administra usuarios internos, roles y accesos al sistema.</p>
-          <Button asChild variant="outline">
-            <Link href="/settings/users">Abrir usuarios</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      {canManageUsers && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Usuarios y permisos</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Administra usuarios internos, roles y accesos al sistema.</p>
+            <Button asChild variant="outline">
+              <Link href="/settings/users">Abrir usuarios</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
