@@ -7,7 +7,9 @@ import rd.dalventa.api.product.domain.Category;
 import rd.dalventa.api.product.dto.CategoryResponse;
 import rd.dalventa.api.product.dto.CreateCategoryRequest;
 import rd.dalventa.api.product.repository.CategoryRepository;
+import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,7 @@ public class CategoryService {
     public static final String GENERAL_CATEGORY_NAME = "General";
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
     @Transactional
     public CategoryResponse create(CreateCategoryRequest req) {
@@ -48,5 +51,23 @@ public class CategoryService {
         var category = new Category(GENERAL_CATEGORY_NAME);
         category.setTenantId(tenantId);
         return categoryRepository.save(category);
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        var tenantId = TenantContext.require();
+        var category = categoryRepository.findByIdAndTenantIdAndActiveTrue(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"));
+        if (GENERAL_CATEGORY_NAME.equalsIgnoreCase(category.getName())) {
+            throw new IllegalArgumentException("La categoria General no se puede eliminar");
+        }
+
+        var general = ensureGeneralCategory(tenantId);
+        productRepository.findAllByTenantIdAndCategoryId(tenantId, category.getId()).forEach(product -> {
+            product.setCategoryId(general.getId());
+            productRepository.save(product);
+        });
+        category.setActive(false);
+        categoryRepository.save(category);
     }
 }

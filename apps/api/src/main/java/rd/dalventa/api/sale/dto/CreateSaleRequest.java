@@ -15,6 +15,7 @@ public record CreateSaleRequest(
         @JsonProperty("customerId") UUID customerId,
         @JsonProperty("fiscalReceiptType") FiscalReceiptType fiscalReceiptType,
         @JsonProperty("discountAmount") BigDecimal discountAmount,
+        @JsonProperty("rentalDetails") RentalDetailsRequest rentalDetails,
         @NotNull @Valid List<SaleItemRequest> items,
         @NotNull @Valid List<PaymentRequest> payments
 ) {}

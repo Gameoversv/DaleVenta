@@ -41,6 +41,7 @@ import rd.dalventa.api.cashshift.repository.CashMovementRepository;
 import rd.dalventa.api.cashshift.repository.CashMovementDenominationRepository;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.credit.service.CreditService;
+import rd.dalventa.api.rental.service.RentalService;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
 import rd.dalventa.api.report.service.DailyCloseReportService;
@@ -81,6 +82,7 @@ public class SaleService {
     private final DailyCloseReportService dailyCloseReportService;
     private final FiscalService fiscalService;
     private final TenantRepository tenantRepository;
+    private final RentalService rentalService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
@@ -178,11 +180,12 @@ public class SaleService {
         sale.setTotal(total);
         sale = saleRepository.save(sale);
 
+        List<SaleItem> persistedItems = new ArrayList<>();
         for (SaleItem item : items) {
             var persisted = new SaleItem(sale.getId(), item.getProductId(), item.getQuantity(),
                     item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
             persisted.setTenantId(tenantId);
-            saleItemRepository.save(persisted);
+            persistedItems.add(saleItemRepository.save(persisted));
         }
 
         for (PaymentRequest paymentReq : req.payments()) {
@@ -249,6 +252,8 @@ public class SaleService {
                 throw new IllegalArgumentException("Metodo de pago no soportado en esta version");
             }
         }
+
+        rentalService.createForSale(tenantId, sale, persistedItems, req.rentalDetails(), userId);
 
         return toResponse(sale);
     }
@@ -361,6 +366,7 @@ public class SaleService {
                 creditService.reverseCharge(tenantId, sale.getCustomerId(), payment.getAmount(), sale.getId(), userId);
             }
         }
+        rentalService.cancelBySaleId(tenantId, sale.getId());
 
         sale.setStatus(SaleStatus.VOIDED);
         sale.setVoidedAt(java.time.Instant.now());

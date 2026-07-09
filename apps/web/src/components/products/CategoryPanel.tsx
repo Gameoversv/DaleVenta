@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface CategoryPanelProps {
 export function CategoryPanel({ selectedCategoryId, onSelectCategory }: CategoryPanelProps) {
   const queryClient = useQueryClient();
   const canCreate = usePermission("INVENTORY_CREATE");
+  const canEdit = usePermission("INVENTORY_EDIT");
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   const {
@@ -51,6 +53,21 @@ export function CategoryPanel({ selectedCategoryId, onSelectCategory }: Category
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/categories/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onSelectCategory(null);
+      toast.success("Categoria eliminada");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Error al eliminar categoria";
+      toast.error(message);
+    },
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -68,17 +85,30 @@ export function CategoryPanel({ selectedCategoryId, onSelectCategory }: Category
           Todas
         </button>
         {categories?.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => onSelectCategory(cat.id)}
-            className={cn(
-              "w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent",
-              selectedCategoryId === cat.id && "bg-accent font-medium"
+          <div key={cat.id} className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onSelectCategory(cat.id)}
+              className={cn(
+                "min-w-0 flex-1 rounded-md px-3 py-2 text-left text-sm hover:bg-accent",
+                selectedCategoryId === cat.id && "bg-accent font-medium"
+              )}
+            >
+              <span className="block truncate">{cat.name}</span>
+            </button>
+            {canEdit && cat.name.toLowerCase() !== "general" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Eliminar ${cat.name}`}
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(cat.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
-          >
-            {cat.name}
-          </button>
+          </div>
         ))}
         {canCreate && (
           <form

@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
     List<Product> findAllByTenantId(UUID tenantId);
+    List<Product> findAllByTenantIdAndCategoryId(UUID tenantId, UUID categoryId);
     List<Product> findAllByTenantIdAndActiveTrue(UUID tenantId);
     List<Product> findAllByTenantIdAndActive(UUID tenantId, boolean active);
     Optional<Product> findByIdAndTenantId(UUID id, UUID tenantId);

@@ -18,12 +18,19 @@ export interface PaymentRequest {
   reference?: string;
 }
 
+export interface RentalDetailsRequest {
+  expectedReturnAt: string;
+  depositAmount?: string;
+  notes?: string;
+}
+
 export interface CreateSaleRequest {
   registerId: string;
   cashShiftId: string;
   customerId?: string | null;
   fiscalReceiptType?: FiscalReceiptType | null;
   discountAmount?: string;
+  rentalDetails?: RentalDetailsRequest;
   items: SaleItemRequest[];
   payments: PaymentRequest[];
 }

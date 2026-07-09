@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DenominationCountGrid, formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
 import type { DenominationCountEntry, DenominationResponse } from "@/types/cash-shift";
-import type { ChangeSuggestionResponse, PaymentRequest } from "@/types/sale";
+import type { ChangeSuggestionResponse, PaymentRequest, RentalDetailsRequest } from "@/types/sale";
 import type { CustomerResponse } from "@/types/customer";
 import type { CreditAccountResponse, CreditProfileResponse } from "@/types/credit";
 import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
@@ -56,7 +56,13 @@ interface CheckoutPanelProps {
   fiscalModuleEnabled: boolean;
   fiscalSequences: FiscalReceiptSequence[];
   cashDenominationsEnabled: boolean;
-  onConfirm: (payments: PaymentRequest[], discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => void;
+  hasRentalItems: boolean;
+  onConfirm: (
+    payments: PaymentRequest[],
+    discountAmount: number,
+    fiscalReceiptType?: FiscalReceiptType | null,
+    rentalDetails?: RentalDetailsRequest
+  ) => void;
 }
 
 const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Banknote; activeClass: string }> = [
@@ -79,6 +85,7 @@ export function CheckoutPanel({
   fiscalModuleEnabled,
   fiscalSequences,
   cashDenominationsEnabled,
+  hasRentalItems,
   onConfirm,
 }: CheckoutPanelProps) {
   const canDiscount = usePermission("SALE_DISCOUNT");
@@ -96,6 +103,9 @@ export function CheckoutPanel({
   const [reference, setReference] = useState("");
   const [mixedBank, setMixedBank] = useState("");
   const [mixedReference, setMixedReference] = useState("");
+  const [rentalReturnAt, setRentalReturnAt] = useState("");
+  const [rentalDeposit, setRentalDeposit] = useState("0");
+  const [rentalNotes, setRentalNotes] = useState("");
 
   const { data: denominations } = useQuery({
     queryKey: ["denominations"],
@@ -181,7 +191,8 @@ export function CheckoutPanel({
       ? mixedBank.trim() !== "" && mixedReference.trim() !== ""
       : creditEligible && mixedCreditWithinLimit);
   const creditReady = method === "CREDIT" && creditEligible && creditWithinLimit;
-  const canConfirm = !disabled && total > 0 && (cashReady || transferReady || mixedReady || creditReady) && !isSubmitting;
+  const rentalReady = !hasRentalItems || (customer != null && rentalReturnAt.trim() !== "");
+  const canConfirm = !disabled && total > 0 && rentalReady && (cashReady || transferReady || mixedReady || creditReady) && !isSubmitting;
 
   const handleConfirm = () => {
     const payments: PaymentRequest[] =
@@ -219,7 +230,14 @@ export function CheckoutPanel({
                   { method: "CREDIT", amount: mixedCreditAmount.toFixed(2) },
                 ]
             : [{ method: "CREDIT", amount: total.toFixed(2) }];
-    onConfirm(payments, discountAmount, fiscalReceiptType || null);
+    const rentalDetails = hasRentalItems
+      ? {
+          expectedReturnAt: new Date(rentalReturnAt).toISOString(),
+          depositAmount: rentalDeposit || "0",
+          notes: rentalNotes.trim() || undefined,
+        }
+      : undefined;
+    onConfirm(payments, discountAmount, fiscalReceiptType || null, rentalDetails);
   };
 
   return (
@@ -267,6 +285,42 @@ export function CheckoutPanel({
             {fiscalSequences.filter((sequence) => sequence.active && sequence.remaining > 0).length === 0 && (
               <p className="text-xs text-muted-foreground">No hay secuencias NCF activas disponibles.</p>
             )}
+          </div>
+        )}
+
+        {hasRentalItems && (
+          <div className="space-y-3 rounded-md border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">Contrato de alquiler</p>
+              <p className="text-xs text-muted-foreground">Se creara un contrato activo ligado a esta factura.</p>
+            </div>
+            {!customer && <p className="text-sm text-destructive">Selecciona un cliente para facturar alquileres.</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="rental-return-at">Devolucion esperada</Label>
+                <Input
+                  id="rental-return-at"
+                  type="datetime-local"
+                  value={rentalReturnAt}
+                  onChange={(event) => setRentalReturnAt(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rental-deposit">Deposito</Label>
+                <Input
+                  id="rental-deposit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={rentalDeposit}
+                  onChange={(event) => setRentalDeposit(event.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rental-notes">Notas</Label>
+              <Input id="rental-notes" value={rentalNotes} onChange={(event) => setRentalNotes(event.target.value)} />
+            </div>
           </div>
         )}
 

@@ -13,7 +13,7 @@ import { SaleConfirmation } from "./SaleConfirmation";
 import type { CartLine } from "./cart";
 import type { ProductResponse } from "@/types/product";
 import type { CustomerResponse } from "@/types/customer";
-import type { CreateSaleRequest, PaymentRequest, SaleResponse } from "@/types/sale";
+import type { CreateSaleRequest, PaymentRequest, RentalDetailsRequest, SaleResponse } from "@/types/sale";
 import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
 import type { TenantFeatures } from "@/types/auth";
 
@@ -107,14 +107,22 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
 
   const resolved = resolveCart(cart, products ?? []);
   const preDiscountTotal = resolved.reduce((sum, r) => sum + r.lineTotal, 0);
+  const productById = new Map((products ?? []).map((product) => [product.id, product]));
+  const hasRentalItems = cart.some((line) => productById.get(line.productId)?.rentable);
 
-  const handleConfirm = (payments: PaymentRequest[], discountAmount: number, fiscalReceiptType?: FiscalReceiptType | null) => {
+  const handleConfirm = (
+    payments: PaymentRequest[],
+    discountAmount: number,
+    fiscalReceiptType?: FiscalReceiptType | null,
+    rentalDetails?: RentalDetailsRequest
+  ) => {
     const request: CreateSaleRequest = {
       registerId,
       cashShiftId,
       customerId: customer?.id ?? null,
       fiscalReceiptType: fiscalReceiptType ?? null,
       discountAmount: discountAmount > 0 ? discountAmount.toFixed(2) : undefined,
+      rentalDetails,
       items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, useWholesalePrice: l.useWholesalePrice })),
       payments,
     };
@@ -145,6 +153,7 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
           fiscalModuleEnabled={fiscalModuleEnabled}
           fiscalSequences={fiscalSequences}
           cashDenominationsEnabled={fiscalStatus?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled}
+          hasRentalItems={hasRentalItems}
           onConfirm={handleConfirm}
         />
       </div>

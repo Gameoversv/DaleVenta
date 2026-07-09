@@ -11,6 +11,7 @@ import rd.dalventa.api.product.service.CategoryService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -30,5 +31,12 @@ public class CategoryController {
     @PreAuthorize("@permissionService.has('INVENTORY_VIEW')")
     public ApiResponse<List<CategoryResponse>> list() {
         return ApiResponse.ok(categoryService.list());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@permissionService.has('INVENTORY_EDIT')")
+    public ApiResponse<Void> delete(@PathVariable UUID id) {
+        categoryService.delete(id);
+        return ApiResponse.ok(null);
     }
 }
