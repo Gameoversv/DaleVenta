@@ -84,18 +84,38 @@ public class RentalService {
         });
     }
 
+    @Transactional
+    public RentalContractResponse markReturned(UUID id) {
+        var tenantId = TenantContext.require();
+        ensureRentalModuleEnabled(tenantId);
+        var contract = rentalContractRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato de alquiler no encontrado"));
+        if (contract.getStatus() == rd.dalventa.api.rental.domain.RentalContractStatus.RETURNED) {
+            return toResponse(contract);
+        }
+        if (contract.getStatus() == rd.dalventa.api.rental.domain.RentalContractStatus.CANCELLED) {
+            throw new IllegalArgumentException("No se puede recibir un alquiler anulado");
+        }
+        contract.markReturned();
+        return toResponse(rentalContractRepository.save(contract));
+    }
+
     @Transactional(readOnly = true)
     public List<RentalContractResponse> list() {
         var tenantId = TenantContext.require();
+        ensureRentalModuleEnabled(tenantId);
+        return rentalContractRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private void ensureRentalModuleEnabled(UUID tenantId) {
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
         if (!tenant.isRentalModuleEnabled()) {
             throw new IllegalArgumentException("El modulo de alquileres no esta activo para este tenant");
         }
-        return rentalContractRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
     }
 
     private RentalContractResponse toResponse(RentalContract contract) {

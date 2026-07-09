@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface RentalContractRepository extends JpaRepository<RentalContract, UUID> {
     List<RentalContract> findAllByTenantIdOrderByCreatedAtDesc(UUID tenantId);
+    Optional<RentalContract> findByIdAndTenantId(UUID id, UUID tenantId);
     Optional<RentalContract> findByTenantIdAndSaleId(UUID tenantId, UUID saleId);
 
     @Query(value = "select coalesce(max(cast(substring(contract_number from 4) as bigint)), 0) from rental_contracts where tenant_id = :tenantId", nativeQuery = true)

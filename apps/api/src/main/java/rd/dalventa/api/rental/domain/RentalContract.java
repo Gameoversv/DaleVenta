@@ -61,4 +61,9 @@ public class RentalContract extends TenantAwareEntity {
     public void cancel() {
         this.status = RentalContractStatus.CANCELLED;
     }
+
+    public void markReturned() {
+        this.status = RentalContractStatus.RETURNED;
+        this.returnedAt = Instant.now();
+    }
 }

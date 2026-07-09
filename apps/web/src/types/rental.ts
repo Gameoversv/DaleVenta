@@ -1,4 +1,4 @@
-export type RentalContractStatus = "ACTIVE" | "RETURNED" | "CANCELLED";
+export type RentalContractStatus = "RESERVED" | "ACTIVE" | "RETURNED" | "CANCELLED";
 
 export interface RentalContractItemResponse {
   id: string;
