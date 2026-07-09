@@ -92,8 +92,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
-      <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+    <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary/15">
           <Zap className="h-4 w-4 text-sidebar-primary" />
         </div>
@@ -101,7 +101,7 @@ export function Sidebar() {
           <p className="font-display text-sm font-bold text-sidebar-foreground">DaleVenta</p>
         </div>
       </div>
-      <nav className="flex flex-col gap-5 p-4">
+      <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4 pb-8">
         {NAV_SECTIONS.map((section) => (
           <NavSectionBlock key={section.label} section={section} pathname={pathname} />
         ))}

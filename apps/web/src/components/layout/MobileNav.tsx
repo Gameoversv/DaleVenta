@@ -73,7 +73,7 @@ export function MobileNav() {
       >
         <Menu className="h-5 w-5" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent align="start" className="max-h-[80vh] w-64 overflow-y-auto">
         <div className="flex items-center gap-2 px-2 py-1.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15">
             <Zap className="h-3.5 w-3.5 text-primary" />
