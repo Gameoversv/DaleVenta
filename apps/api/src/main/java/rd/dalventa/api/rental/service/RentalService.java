@@ -87,6 +87,11 @@ public class RentalService {
     @Transactional(readOnly = true)
     public List<RentalContractResponse> list() {
         var tenantId = TenantContext.require();
+        var tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
+        if (!tenant.isRentalModuleEnabled()) {
+            throw new IllegalArgumentException("El modulo de alquileres no esta activo para este tenant");
+        }
         return rentalContractRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId)
                 .stream()
                 .map(this::toResponse)

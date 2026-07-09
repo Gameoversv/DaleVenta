@@ -98,7 +98,7 @@ export function CheckoutPanel({
   const [mixedCashInput, setMixedCashInput] = useState("");
   const [mixedReceivedEntries, setMixedReceivedEntries] = useState<DenominationCountEntry[]>([]);
   const [mixedReceivedAmountInput, setMixedReceivedAmountInput] = useState("");
-  const [mixedSecondMethod, setMixedSecondMethod] = useState<"TRANSFER" | "CREDIT">("TRANSFER");
+  const [mixedSecondMethod, setMixedSecondMethod] = useState<"TRANSFER" | "CREDIT">("CREDIT");
   const [bank, setBank] = useState("");
   const [reference, setReference] = useState("");
   const [mixedBank, setMixedBank] = useState("");
@@ -114,7 +114,9 @@ export function CheckoutPanel({
   });
 
   const discountAmount = canDiscount ? Math.max(0, parseFloat(discountInput) || 0) : 0;
-  const total = Math.max(0, preDiscountTotal - discountAmount);
+  const saleTotal = Math.max(0, preDiscountTotal - discountAmount);
+  const rentalDepositAmount = hasRentalItems ? Math.max(0, Number(rentalDeposit) || 0) : 0;
+  const total = saleTotal + rentalDepositAmount;
   const mixedCashAmount = Math.max(0, Number(mixedCashInput) || 0);
   const mixedRemainingAmount = Math.max(0, total - mixedCashAmount);
   const mixedTransferAmount = mixedSecondMethod === "TRANSFER" ? mixedRemainingAmount : 0;
@@ -262,6 +264,12 @@ export function CheckoutPanel({
         <div className="rounded-xl bg-primary/5 p-4 text-center">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total a cobrar</p>
           <p className="font-mono-money font-display text-4xl font-extrabold text-primary">{money(total)}</p>
+          {hasRentalItems && (
+            <div className="mt-2 flex justify-center gap-4 text-xs text-muted-foreground">
+              <span>Alquiler: {money(saleTotal)}</span>
+              <span>Deposito: {money(rentalDepositAmount)}</span>
+            </div>
+          )}
         </div>
 
         {fiscalModuleEnabled && (

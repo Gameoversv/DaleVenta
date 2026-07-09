@@ -17,6 +17,7 @@ import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 import rd.dalventa.api.shared.web.DuplicateResourceException;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
+import rd.dalventa.api.tenant.repository.TenantRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ public class ProductService {
     private final PermissionResolutionService permissionResolutionService;
     private final CurrentUserProvider currentUserProvider;
     private final AuditLogService auditLogService;
+    private final TenantRepository tenantRepository;
 
     @Transactional
     public ProductResponse create(CreateProductRequest req) {
@@ -50,21 +52,23 @@ public class ProductService {
 
         var product = new Product(categoryId, req.internalCode(), req.barcode(), req.description(),
                 req.unit(), req.cost(), req.salePrice(), req.wholesalePrice(), req.taxRate(), req.tracksInventory());
-        product.setRentable(req.rentable());
+        boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
+        product.setRentable(rentalModuleEnabled && req.rentable());
         product.setTenantId(tenantId);
-        return toResponse(productRepository.save(product));
+        return toResponse(productRepository.save(product), rentalModuleEnabled);
     }
 
     @Transactional(readOnly = true)
     public List<ProductResponse> list(Boolean active, boolean includeInactive) {
         var tenantId = TenantContext.require();
+        boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
         var products = includeInactive
                 ? productRepository.findAllByTenantId(tenantId)
                 : active != null
                     ? productRepository.findAllByTenantIdAndActive(tenantId, active)
                     : productRepository.findAllByTenantIdAndActiveTrue(tenantId);
         return products
-                .stream().map(this::toResponse).toList();
+                .stream().map(product -> toResponse(product, rentalModuleEnabled)).toList();
     }
 
     @Transactional
@@ -87,7 +91,8 @@ public class ProductService {
         product.setWholesalePrice(req.wholesalePrice());
         product.setTaxRate(req.taxRate());
         product.setTracksInventory(req.tracksInventory());
-        product.setRentable(req.rentable());
+        boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
+        product.setRentable(rentalModuleEnabled && req.rentable());
         product.setActive(req.active());
         product = productRepository.save(product);
         var actorId = currentUserProvider.current()
@@ -103,13 +108,19 @@ public class ProductService {
             auditLogService.record(AuditAction.PRODUCT_PRICE_CHANGE, "PRODUCT", product.getId(), actorId,
                     "Precios actualizados para " + product.getDescription());
         }
-        return toResponse(product);
+        return toResponse(product, rentalModuleEnabled);
     }
 
-    private ProductResponse toResponse(Product product) {
+    private ProductResponse toResponse(Product product, boolean rentalModuleEnabled) {
         var user = currentUserProvider.current();
         boolean showCost = user.isPresent() && permissionResolutionService.has(user.get(), PermissionCode.COST_VIEW);
         boolean showPrice = user.isPresent() && permissionResolutionService.has(user.get(), PermissionCode.PRICE_VIEW);
-        return ProductResponse.from(product, showCost, showPrice);
+        return ProductResponse.from(product, showCost, showPrice, rentalModuleEnabled);
+    }
+
+    private boolean rentalModuleEnabled(UUID tenantId) {
+        return tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
+                .isRentalModuleEnabled();
     }
 }

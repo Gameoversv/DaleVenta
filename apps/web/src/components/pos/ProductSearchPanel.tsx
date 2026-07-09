@@ -37,7 +37,7 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
   const filtered = useMemo(() => {
     return products.filter((p) => {
       if (categoryId === "rentals") {
-        if (!p.rentable) return false;
+        if (!tenantFeatures.rentalModuleEnabled || !p.rentable) return false;
       } else if (categoryId && p.categoryId !== categoryId) {
         return false;
       }
@@ -48,7 +48,7 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
         (p.barcode ?? "").toLowerCase().includes(normalized)
       );
     });
-  }, [products, categoryId, normalized]);
+  }, [products, categoryId, normalized, tenantFeatures.rentalModuleEnabled]);
 
   const visible = filtered.slice(0, 60);
 
@@ -125,7 +125,9 @@ export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelPro
                   {money(p.salePrice)} / {productUnitLabel(p.unit)}
                 </span>
                 <span className="text-xs text-muted-foreground">{p.internalCode}</span>
-                {p.rentable && <span className="text-xs font-medium text-info">Alquiler</span>}
+                {tenantFeatures.rentalModuleEnabled && p.rentable && (
+                  <span className="text-xs font-medium text-info">Alquiler</span>
+                )}
               </button>
             ))}
           </div>

@@ -61,12 +61,7 @@ export default function RentalsPage() {
   });
 
   if (!tenantFeatures.rentalModuleEnabled) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Alquileres</h1>
-        <p className="text-sm text-muted-foreground">Este modulo no esta activo para este tenant.</p>
-      </div>
-    );
+    return null;
   }
 
   if (!canView) {

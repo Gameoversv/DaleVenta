@@ -29,13 +29,17 @@ public record ProductResponse(
         boolean active
 ) {
     public static ProductResponse from(Product p, boolean showCost, boolean showPrice) {
+        return from(p, showCost, showPrice, true);
+    }
+
+    public static ProductResponse from(Product p, boolean showCost, boolean showPrice, boolean rentalModuleEnabled) {
         return new ProductResponse(
                 p.getId(), p.getCategoryId(), p.getInternalCode(), p.getBarcode(), p.getDescription(),
                 p.getUnit(),
                 showCost ? p.getCost() : null,
                 showPrice ? p.getSalePrice() : null,
                 showPrice ? p.getWholesalePrice() : null,
-                p.getTaxRate(), p.isTracksInventory(), p.isRentable(), p.isActive()
+                p.getTaxRate(), p.isTracksInventory(), rentalModuleEnabled && p.isRentable(), p.isActive()
         );
     }
 }

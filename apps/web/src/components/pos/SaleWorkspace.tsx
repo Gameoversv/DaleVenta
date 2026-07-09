@@ -108,7 +108,8 @@ export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
   const resolved = resolveCart(cart, products ?? []);
   const preDiscountTotal = resolved.reduce((sum, r) => sum + r.lineTotal, 0);
   const productById = new Map((products ?? []).map((product) => [product.id, product]));
-  const hasRentalItems = cart.some((line) => productById.get(line.productId)?.rentable);
+  const rentalModuleEnabled = fiscalStatus?.rentalModuleEnabled ?? tenantFeatures.rentalModuleEnabled;
+  const hasRentalItems = rentalModuleEnabled && cart.some((line) => productById.get(line.productId)?.rentable);
 
   const handleConfirm = (
     payments: PaymentRequest[],

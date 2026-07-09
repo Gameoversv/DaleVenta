@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePermission } from "@/hooks/usePermission";
+import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import api from "@/lib/api";
 import { productUnitLabel } from "@/lib/product-units";
 import { ProductFormDialog } from "./ProductFormDialog";
@@ -33,6 +34,7 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const canCreate = usePermission("INVENTORY_CREATE");
   const canEdit = usePermission("INVENTORY_EDIT");
+  const tenantFeatures = useTenantFeatures();
   const queryClient = useQueryClient();
   const { data: products, isLoading } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
@@ -133,7 +135,7 @@ export function ProductTable({ categoryId }: { categoryId: string | null }) {
                           <Badge variant={product.active ? "success" : "secondary"}>
                             {product.active ? "Activo" : "Inactivo"}
                           </Badge>
-                          {product.rentable && <Badge variant="info">Alquiler</Badge>}
+                          {tenantFeatures.rentalModuleEnabled && product.rentable && <Badge variant="info">Alquiler</Badge>}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">

@@ -116,6 +116,9 @@ public class SaleService {
         var userId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
+        boolean rentalModuleEnabled = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
+                .isRentalModuleEnabled();
 
         var sale = new Sale(register.getBranchId(), req.registerId(), req.cashShiftId(), req.customerId(), userId);
         sale.setTenantId(tenantId);
@@ -132,10 +135,14 @@ public class SaleService {
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;
         List<SaleItem> items = new ArrayList<>();
+        boolean hasRentalItems = false;
 
         for (SaleItemRequest itemReq : req.items()) {
             var product = productRepository.findByIdAndTenantId(itemReq.productId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+            if (rentalModuleEnabled && product.isRentable()) {
+                hasRentalItems = true;
+            }
 
             var unitPrice = itemReq.useWholesalePrice() ? product.getWholesalePrice() : product.getSalePrice();
             var lineSubtotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.quantity()))
@@ -166,11 +173,27 @@ public class SaleService {
                         .orElse(false);
         BigDecimal discountAmount = canDiscount ? requestedDiscount : BigDecimal.ZERO.setScale(2);
         BigDecimal total = subtotal.add(taxTotal).subtract(discountAmount);
+        BigDecimal rentalDepositAmount = BigDecimal.ZERO.setScale(2);
+        if (hasRentalItems) {
+            if (req.customerId() == null) {
+                throw new IllegalArgumentException("Un alquiler requiere cliente");
+            }
+            if (req.rentalDetails() == null || req.rentalDetails().expectedReturnAt() == null) {
+                throw new IllegalArgumentException("Un alquiler requiere fecha esperada de devolucion");
+            }
+            rentalDepositAmount = req.rentalDetails().depositAmount() != null
+                    ? req.rentalDetails().depositAmount().setScale(2, java.math.RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO.setScale(2);
+            if (rentalDepositAmount.signum() < 0) {
+                throw new IllegalArgumentException("El deposito no puede ser negativo");
+            }
+        }
+        BigDecimal amountToCollect = total.add(rentalDepositAmount);
 
         BigDecimal paymentsSum = req.payments().stream()
                 .map(PaymentRequest::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (paymentsSum.compareTo(total) != 0) {
+        if (paymentsSum.compareTo(amountToCollect) != 0) {
             throw new IllegalArgumentException("La suma de los pagos no coincide con el total de la venta");
         }
 
@@ -253,7 +276,9 @@ public class SaleService {
             }
         }
 
-        rentalService.createForSale(tenantId, sale, persistedItems, req.rentalDetails(), userId);
+        if (rentalModuleEnabled) {
+            rentalService.createForSale(tenantId, sale, persistedItems, req.rentalDetails(), userId);
+        }
 
         return toResponse(sale);
     }
