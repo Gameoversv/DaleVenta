@@ -1,4 +1,5 @@
 export type PurchaseStatus = "DRAFT" | "RECEIVED" | "VOID";
+export type PurchasePaymentMethod = "CASH" | "TRANSFER" | "OTHER";
 
 export interface SupplierResponse {
   id: string;
@@ -68,5 +69,38 @@ export interface PurchaseResponse {
   taxTotal: string;
   discountTotal: string;
   total: string;
+  paidAmount: string;
+  balanceDue: string;
   items: PurchaseItemResponse[];
+}
+
+export interface RecordPurchasePaymentRequest {
+  amount: string;
+  method: PurchasePaymentMethod;
+  paidAt: string | null;
+  reference: string | null;
+  notes: string | null;
+}
+
+export interface PurchasePaymentResponse {
+  id: string;
+  purchaseId: string;
+  supplierId: string;
+  method: PurchasePaymentMethod;
+  amount: string;
+  paidAt: string;
+  reference: string | null;
+  notes: string | null;
+}
+
+export interface AccountsPayableRow {
+  purchaseId: string;
+  purchaseNumber: string;
+  invoiceNumber: string | null;
+  supplierId: string;
+  supplierName: string;
+  purchasedAt: string;
+  total: string;
+  paidAmount: string;
+  balanceDue: string;
 }

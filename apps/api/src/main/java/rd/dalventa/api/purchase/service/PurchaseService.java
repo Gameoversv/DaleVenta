@@ -17,10 +17,15 @@ import rd.dalventa.api.purchase.domain.Purchase;
 import rd.dalventa.api.purchase.domain.PurchaseItem;
 import rd.dalventa.api.purchase.domain.PurchaseStatus;
 import rd.dalventa.api.purchase.dto.CreatePurchaseRequest;
+import rd.dalventa.api.purchase.dto.AccountsPayableRow;
 import rd.dalventa.api.purchase.dto.PurchaseItemRequest;
 import rd.dalventa.api.purchase.dto.PurchaseItemResponse;
+import rd.dalventa.api.purchase.dto.PurchasePaymentResponse;
 import rd.dalventa.api.purchase.dto.PurchaseResponse;
+import rd.dalventa.api.purchase.dto.RecordPurchasePaymentRequest;
+import rd.dalventa.api.purchase.domain.PurchasePayment;
 import rd.dalventa.api.purchase.repository.PurchaseItemRepository;
+import rd.dalventa.api.purchase.repository.PurchasePaymentRepository;
 import rd.dalventa.api.purchase.repository.PurchaseRepository;
 import rd.dalventa.api.purchase.repository.SupplierRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
@@ -33,6 +38,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,6 +55,7 @@ public class PurchaseService {
     private final InventoryMovementRepository inventoryMovementRepository;
     private final CurrentUserProvider currentUserProvider;
     private final TenantRepository tenantRepository;
+    private final PurchasePaymentRepository purchasePaymentRepository;
 
     @Transactional(readOnly = true)
     public List<PurchaseResponse> list() {
@@ -180,6 +187,69 @@ public class PurchaseService {
         return toResponse(purchaseRepository.save(purchase));
     }
 
+    @Transactional(readOnly = true)
+    public List<AccountsPayableRow> accountsPayable() {
+        var tenantId = TenantContext.require();
+        ensureModuleEnabled(tenantId);
+        return purchaseRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId)
+                .stream()
+                .filter(purchase -> purchase.getStatus() == PurchaseStatus.RECEIVED)
+                .map(purchase -> {
+                    BigDecimal paid = paidAmount(tenantId, purchase.getId());
+                    BigDecimal balance = purchase.getTotal().subtract(paid).setScale(2, RoundingMode.HALF_UP);
+                    String supplierName = supplierRepository.findByIdAndTenantId(purchase.getSupplierId(), tenantId)
+                            .map(s -> s.getName())
+                            .orElse("Proveedor eliminado");
+                    return AccountsPayableRow.from(purchase, supplierName, paid, balance);
+                })
+                .filter(row -> row.balanceDue().compareTo(BigDecimal.ZERO) > 0)
+                .sorted(Comparator.comparing(AccountsPayableRow::purchasedAt).reversed())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PurchasePaymentResponse> payments(UUID purchaseId) {
+        var tenantId = TenantContext.require();
+        ensureModuleEnabled(tenantId);
+        purchaseRepository.findByIdAndTenantId(purchaseId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+        return purchasePaymentRepository.findAllByTenantIdAndPurchaseIdOrderByPaidAtDesc(tenantId, purchaseId)
+                .stream()
+                .map(PurchasePaymentResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public PurchaseResponse recordPayment(UUID purchaseId, RecordPurchasePaymentRequest req) {
+        var tenantId = TenantContext.require();
+        ensureModuleEnabled(tenantId);
+        var purchase = purchaseRepository.findByIdAndTenantId(purchaseId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+        if (purchase.getStatus() != PurchaseStatus.RECEIVED) {
+            throw new IllegalArgumentException("Solo se pueden registrar pagos a compras recibidas");
+        }
+        BigDecimal amount = scaled(req.amount());
+        BigDecimal balance = purchase.getTotal().subtract(paidAmount(tenantId, purchaseId)).setScale(2, RoundingMode.HALF_UP);
+        if (amount.compareTo(balance) > 0) {
+            throw new IllegalArgumentException("El pago no puede superar el balance pendiente");
+        }
+        var actorId = currentUserProvider.current()
+                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .getId();
+        var payment = new PurchasePayment();
+        payment.setTenantId(tenantId);
+        payment.setPurchaseId(purchase.getId());
+        payment.setSupplierId(purchase.getSupplierId());
+        payment.setMethod(req.method());
+        payment.setAmount(amount);
+        payment.setPaidAt(req.paidAt() != null ? req.paidAt() : Instant.now());
+        payment.setReference(req.reference());
+        payment.setNotes(req.notes());
+        payment.setCreatedByUserId(actorId);
+        purchasePaymentRepository.save(payment);
+        return toResponse(purchase);
+    }
+
     private BranchInventory createBranchInventory(UUID tenantId, UUID branchId, UUID productId) {
         var branchInventory = new BranchInventory(branchId, productId);
         branchInventory.setTenantId(tenantId);
@@ -208,11 +278,17 @@ public class PurchaseService {
                     );
                 })
                 .toList();
-        return PurchaseResponse.from(purchase, supplierName, branchName, items);
+        BigDecimal paid = paidAmount(tenantId, purchase.getId());
+        BigDecimal balance = purchase.getTotal().subtract(paid).setScale(2, RoundingMode.HALF_UP);
+        return PurchaseResponse.from(purchase, supplierName, branchName, paid, balance, items);
     }
 
     private BigDecimal scaled(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal paidAmount(UUID tenantId, UUID purchaseId) {
+        return purchasePaymentRepository.sumByTenantIdAndPurchaseId(tenantId, purchaseId).setScale(2, RoundingMode.HALF_UP);
     }
 
     private void ensureModuleEnabled(UUID tenantId) {

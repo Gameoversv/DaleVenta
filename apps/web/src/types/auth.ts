@@ -31,7 +31,9 @@ export type PermissionCode =
   | "SUPPLIER_MANAGE"
   | "PURCHASE_VIEW"
   | "PURCHASE_CREATE"
-  | "PURCHASE_RECEIVE";
+  | "PURCHASE_RECEIVE"
+  | "PURCHASE_PAYABLE_VIEW"
+  | "PURCHASE_PAYMENT_RECORD";
 
 export type PermissionEffect = "GRANT" | "REVOKE";
 

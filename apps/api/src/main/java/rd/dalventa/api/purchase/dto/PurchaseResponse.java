@@ -26,9 +26,18 @@ public record PurchaseResponse(
         @JsonProperty("taxTotal") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal taxTotal,
         @JsonProperty("discountTotal") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal discountTotal,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal total,
+        @JsonProperty("paidAmount") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal paidAmount,
+        @JsonProperty("balanceDue") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal balanceDue,
         List<PurchaseItemResponse> items
 ) {
-    public static PurchaseResponse from(Purchase purchase, String supplierName, String branchName, List<PurchaseItemResponse> items) {
+    public static PurchaseResponse from(
+            Purchase purchase,
+            String supplierName,
+            String branchName,
+            BigDecimal paidAmount,
+            BigDecimal balanceDue,
+            List<PurchaseItemResponse> items
+    ) {
         return new PurchaseResponse(
                 purchase.getId(),
                 purchase.getPurchaseNumber(),
@@ -45,6 +54,8 @@ public record PurchaseResponse(
                 purchase.getTaxTotal(),
                 purchase.getDiscountTotal(),
                 purchase.getTotal(),
+                paidAmount,
+                balanceDue,
                 items
         );
     }

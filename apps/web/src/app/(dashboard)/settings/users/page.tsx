@@ -52,6 +52,8 @@ const PERMISSION_LABELS: Record<string, string> = {
   PURCHASE_VIEW: "Ver compras",
   PURCHASE_CREATE: "Crear compras",
   PURCHASE_RECEIVE: "Recibir compras",
+  PURCHASE_PAYABLE_VIEW: "Ver cuentas por pagar",
+  PURCHASE_PAYMENT_RECORD: "Registrar pagos a proveedores",
 };
 
 type StaffRole = Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;

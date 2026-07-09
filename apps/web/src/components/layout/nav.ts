@@ -53,6 +53,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/reports/sales", label: "Reportes", icon: BarChart3, permission: "REPORTS_VIEW" },
       { href: "/reports/daily-close", label: "Cierre diario", icon: ClipboardCheck, permission: "REPORTS_VIEW" },
       { href: "/reports/accounts-receivable", label: "Cuentas por cobrar", icon: Wallet, permission: "REPORTS_VIEW" },
+      { href: "/reports/accounts-payable", label: "Cuentas por pagar", icon: Wallet, anyPermission: ["PURCHASE_PAYABLE_VIEW", "PURCHASE_PAYMENT_RECORD"], feature: "purchaseModuleEnabled" },
       { href: "/products", label: "Productos", icon: Package, permission: "INVENTORY_VIEW" },
       { href: "/inventory", label: "Inventario", icon: Boxes, permission: "INVENTORY_VIEW" },
       { href: "/purchases", label: "Compras", icon: Truck, anyPermission: ["PURCHASE_VIEW", "SUPPLIER_VIEW"], feature: "purchaseModuleEnabled" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Plus, Truck } from "lucide-react";
+import { CheckCircle2, Plus, Truck, WalletCards } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -18,7 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BranchResponse } from "@/types/branch";
 import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
-import type { CreatePurchaseRequest, PurchaseItemRequest, PurchaseResponse, SupplierRequest, SupplierResponse } from "@/types/purchase";
+import type {
+  CreatePurchaseRequest,
+  PurchaseItemRequest,
+  PurchasePaymentMethod,
+  PurchaseResponse,
+  RecordPurchasePaymentRequest,
+  SupplierRequest,
+  SupplierResponse,
+} from "@/types/purchase";
 
 type Tab = "purchases" | "suppliers";
 
@@ -487,11 +495,122 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
   );
 }
 
+function PurchasePaymentDialog({ purchase }: { purchase: PurchaseResponse }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(purchase.balanceDue);
+  const [method, setMethod] = useState<PurchasePaymentMethod>("CASH");
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (payload: RecordPurchasePaymentRequest) => api.post(`/api/purchases/${purchase.id}/payments`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts-payable"] });
+      setOpen(false);
+      toast.success("Pago registrado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo registrar el pago";
+      toast.error(message);
+    },
+  });
+
+  const balance = Number(purchase.balanceDue);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setAmount(purchase.balanceDue);
+          setMethod("CASH");
+          setReference("");
+          setNotes("");
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <WalletCards className="h-4 w-4" />
+          Abonar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Registrar pago a proveedor</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              amount,
+              method,
+              paidAt: null,
+              reference: emptyToNull(reference),
+              notes: emptyToNull(notes),
+            });
+          }}
+        >
+          <div className="rounded-md border border-border p-3 text-sm">
+            <p className="font-medium">{purchase.purchaseNumber} - {purchase.supplierName}</p>
+            <p className="text-muted-foreground">Pendiente: <span className="font-mono-money">{money(purchase.balanceDue)}</span></p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`purchase-payment-amount-${purchase.id}`}>Monto</Label>
+              <Input
+                id={`purchase-payment-amount-${purchase.id}`}
+                type="number"
+                min="0.01"
+                max={purchase.balanceDue}
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`purchase-payment-method-${purchase.id}`}>Metodo</Label>
+              <select
+                id={`purchase-payment-method-${purchase.id}`}
+                value={method}
+                onChange={(e) => setMethod(e.target.value as PurchasePaymentMethod)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="CASH">Efectivo</option>
+                <option value="TRANSFER">Transferencia</option>
+                <option value="OTHER">Otro</option>
+              </select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`purchase-payment-reference-${purchase.id}`}>Referencia</Label>
+            <Input id={`purchase-payment-reference-${purchase.id}`} value={reference} onChange={(e) => setReference(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`purchase-payment-notes-${purchase.id}`}>Notas</Label>
+            <Input id={`purchase-payment-notes-${purchase.id}`} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || Number(amount) <= 0 || Number(amount) > balance}>
+              {mutation.isPending ? "Registrando..." : "Registrar pago"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PurchasesPage() {
   const [tab, setTab] = useState<Tab>("purchases");
   const canViewPurchases = usePermission("PURCHASE_VIEW");
   const canCreatePurchase = usePermission("PURCHASE_CREATE");
   const canReceivePurchase = usePermission("PURCHASE_RECEIVE");
+  const canRecordPurchasePayment = usePermission("PURCHASE_PAYMENT_RECORD");
   const canCreateProduct = usePermission("INVENTORY_CREATE");
   const canViewSuppliers = usePermission("SUPPLIER_VIEW") || canViewPurchases;
   const canManageSuppliers = usePermission("SUPPLIER_MANAGE");
@@ -594,6 +713,7 @@ export default function PurchasesPage() {
                       <th className="px-4 py-3">Sucursal</th>
                       <th className="px-4 py-3">Estado</th>
                       <th className="px-4 py-3 text-right">Total</th>
+                      <th className="px-4 py-3 text-right">Pendiente</th>
                       <th className="px-4 py-3">Items</th>
                       <th className="px-4 py-3 text-right">Acciones</th>
                     </tr>
@@ -606,14 +726,20 @@ export default function PurchasesPage() {
                         <td className="px-4 py-3 text-muted-foreground">{purchase.branchName}</td>
                         <td className="px-4 py-3"><Badge variant={purchase.status === "RECEIVED" ? "success" : "secondary"}>{statusLabel(purchase.status)}</Badge></td>
                         <td className="px-4 py-3 text-right font-mono-money font-semibold">{money(purchase.total)}</td>
+                        <td className="px-4 py-3 text-right font-mono-money text-warning">{money(purchase.balanceDue)}</td>
                         <td className="max-w-sm px-4 py-3 text-muted-foreground">{purchase.items.map((item) => `${item.productName} x ${item.quantity}`).join(", ")}</td>
                         <td className="px-4 py-3 text-right">
-                          {purchase.status === "DRAFT" && canReceivePurchase && (
-                            <Button size="sm" variant="outline" disabled={receiveMutation.isPending} onClick={() => receiveMutation.mutate(purchase.id)}>
-                              <CheckCircle2 className="h-4 w-4" />
-                              Recibir
-                            </Button>
-                          )}
+                          <div className="flex justify-end gap-2">
+                            {purchase.status === "DRAFT" && canReceivePurchase && (
+                              <Button size="sm" variant="outline" disabled={receiveMutation.isPending} onClick={() => receiveMutation.mutate(purchase.id)}>
+                                <CheckCircle2 className="h-4 w-4" />
+                                Recibir
+                              </Button>
+                            )}
+                            {purchase.status === "RECEIVED" && canRecordPurchasePayment && Number(purchase.balanceDue) > 0 && (
+                              <PurchasePaymentDialog purchase={purchase} />
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
