@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Plus, ShieldCheck } from "lucide-react";
+import { KeyRound, Pencil, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -316,6 +316,111 @@ function PermissionsDialog({ user }: { user: UserResponse }) {
   );
 }
 
+function EditUserDialog({ user }: { user: UserResponse }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<UpdateUserRequest>({
+    name: user.name,
+    email: user.email,
+    role: user.role === "ADMIN" ? "ADMIN" : "CASHIER",
+    active: user.active,
+  });
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (values: UpdateUserRequest) => api.put(`/api/users/${user.id}`, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setOpen(false);
+      toast.success("Usuario actualizado");
+    },
+    onError: (err: unknown) => {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        "No se pudo actualizar el usuario";
+      toast.error(message);
+    },
+  });
+
+  const update = (values: Partial<UpdateUserRequest>) => setForm((current) => ({ ...current, ...values }));
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setForm({
+            name: user.name,
+            email: user.email,
+            role: user.role === "ADMIN" ? "ADMIN" : "CASHIER",
+            active: user.active,
+          });
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Editar usuario">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar usuario</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate({
+              ...form,
+              name: form.name.trim(),
+              email: form.email.trim(),
+            });
+          }}
+        >
+          <div className="space-y-2">
+            <Label htmlFor={`edit-user-name-${user.id}`}>Nombre</Label>
+            <Input id={`edit-user-name-${user.id}`} value={form.name} onChange={(e) => update({ name: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`edit-user-email-${user.id}`}>Correo</Label>
+            <Input
+              id={`edit-user-email-${user.id}`}
+              type="email"
+              value={form.email}
+              onChange={(e) => update({ email: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`edit-user-role-${user.id}`}>Rol</Label>
+            <select
+              id={`edit-user-role-${user.id}`}
+              value={form.role}
+              onChange={(event) => update({ role: event.target.value as StaffRole })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {STAFF_ROLES.map((staffRole) => (
+                <option key={staffRole} value={staffRole}>
+                  {roleLabel(staffRole)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.active} onChange={(event) => update({ active: event.target.checked })} />
+            Usuario activo
+          </label>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending || !form.name.trim() || !form.email.trim()}>
+              {mutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function UserRow({ user }: { user: UserResponse }) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(user.role === "ADMIN" ? "ADMIN" : "CASHIER");
@@ -335,7 +440,7 @@ function UserRow({ user }: { user: UserResponse }) {
   });
 
   const updateUser = (values: Partial<UpdateUserRequest>) => {
-    mutation.mutate({ role, active: user.active, ...values });
+    mutation.mutate({ name: user.name, email: user.email, role, active: user.active, ...values });
   };
 
   return (
@@ -373,6 +478,7 @@ function UserRow({ user }: { user: UserResponse }) {
           >
             {user.active ? "Desactivar" : "Activar"}
           </Button>
+          <EditUserDialog user={user} />
           <PermissionsDialog user={user} />
           <ResetPasswordDialog user={user} />
         </div>

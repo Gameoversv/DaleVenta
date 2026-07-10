@@ -60,6 +60,8 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
+  name: string;
+  email: string;
   role: Exclude<RoleName, "SUPER_ADMIN" | "CLIENT">;
   active: boolean;
 }

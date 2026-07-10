@@ -66,8 +66,14 @@ public class UserManagementService {
     public UserResponse update(UUID id, UpdateUserRequest request) {
         validateStaffRole(request.role());
         var user = findTenantUser(id);
+        userRepository.findByEmail(request.email())
+                .filter(existing -> !existing.getId().equals(user.getId()))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("El correo ya esta registrado");
+                });
         var role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new IllegalStateException("Rol no encontrado: " + request.role()));
+        user.updateProfile(request.name(), request.email());
         user.replaceRole(role);
         user.setActive(request.active());
         return UserResponse.from(userRepository.save(user));
