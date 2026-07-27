@@ -6,7 +6,8 @@ spring:
     driver-class-name: org.postgresql.Driver
   flyway:
     enabled: true
-    clean-on-validation-error: true
+    # clean-on-validation-error was removed in Flyway 11. A checksum mismatch now fails the run,
+    # which is what we want: run `./mvnw flyway:clean` deliberately when a migration is edited.
     clean-disabled: false
   jpa:
     show-sql: true
