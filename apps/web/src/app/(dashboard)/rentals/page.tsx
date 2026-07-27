@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useAnyPermission } from "@/hooks/usePermission";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +67,7 @@ function statusVariant(status: RentalContractStatus): "success" | "secondary" | 
 
 export default function RentalsPage() {
   const tenantFeatures = useTenantFeatures();
-  const canView = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
+  const canView = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const canReceive = usePermission("SALE_CREATE");
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<ViewTab>("contracts");

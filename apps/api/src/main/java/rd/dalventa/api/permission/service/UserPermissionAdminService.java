@@ -79,7 +79,7 @@ public class UserPermissionAdminService {
         var actorUserId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
-        auditLogService.record(AuditAction.USER_PERMISSION_OVERRIDE, "USER", userId, actorUserId,
+        auditLogService.recordEvent(AuditAction.USER_PERMISSION_OVERRIDE, "USER", userId, actorUserId,
                 code.name() + " -> " + effectLabel);
     }
 }

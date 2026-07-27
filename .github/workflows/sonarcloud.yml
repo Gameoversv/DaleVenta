@@ -62,7 +62,7 @@ jobs:
       - name: Frontend tests with coverage
         working-directory: apps/web
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm run test:coverage
 
       - name: Run the scanner

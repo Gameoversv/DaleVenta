@@ -97,6 +97,8 @@ public class TenantService {
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         return NON_ALPHANUMERIC.matcher(normalized.toLowerCase(Locale.ROOT))
                 .replaceAll("-")
-                .replaceAll("^-|-$", "");
+                // Grouped so the alternation unambiguously reads as "a leading dash or a trailing
+                // dash", never as part of a longer alternative.
+                .replaceAll("(?:^-)|(?:-$)", "");
     }
 }

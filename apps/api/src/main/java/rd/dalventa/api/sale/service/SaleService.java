@@ -91,7 +91,9 @@ public class SaleService {
         var register = registerRepository.findByIdAndTenantId(req.registerId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
 
-        var cashShift = cashShiftRepository.findByIdAndTenantId(req.cashShiftId(), tenantId)
+        // Guard only: the sale needs an open shift on this register, but nothing below uses the
+        // shift entity itself.
+        cashShiftRepository.findByIdAndTenantId(req.cashShiftId(), tenantId)
                 .filter(s -> s.getStatus() == CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
         if (dailyCloseReportService.isClosed(tenantId, LocalDate.now(ZoneId.systemDefault()), req.registerId())) {
@@ -227,7 +229,7 @@ public class SaleService {
             } else if (paymentReq.method() == PaymentMethod.CASH) {
                 var payment = new Payment(sale.getId(), PaymentMethod.CASH, paymentReq.amount());
                 payment.setTenantId(tenantId);
-                payment = paymentRepository.save(payment);
+                paymentRepository.save(payment);
 
                 if (cashDenominationsEnabled(tenantId)) {
                     BigDecimal receivedTotal = BigDecimal.ZERO;
@@ -399,7 +401,7 @@ public class SaleService {
         sale.setVoidReason(req.voidReason());
         saleRepository.save(sale);
 
-        auditLogService.record(AuditAction.SALE_VOID, "SALE", sale.getId(), userId, req.voidReason());
+        auditLogService.recordEvent(AuditAction.SALE_VOID, "SALE", sale.getId(), userId, req.voidReason());
 
         return toResponse(sale);
     }

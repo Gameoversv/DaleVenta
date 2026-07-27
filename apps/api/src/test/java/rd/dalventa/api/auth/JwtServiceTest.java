@@ -3,8 +3,6 @@ package rd.dalventa.api.auth;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rd.dalventa.api.auth.domain.Role;
-import rd.dalventa.api.auth.domain.RoleName;
 import rd.dalventa.api.auth.domain.User;
 import rd.dalventa.api.auth.service.JwtService;
 import rd.dalventa.api.shared.config.AppProperties;

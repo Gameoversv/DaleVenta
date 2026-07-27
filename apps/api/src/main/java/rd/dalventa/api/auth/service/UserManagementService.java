@@ -97,7 +97,7 @@ public class UserManagementService {
         var actorId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
-        auditLogService.record(AuditAction.USER_PASSWORD_SET, "USER", id, actorId, null);
+        auditLogService.recordEvent(AuditAction.USER_PASSWORD_SET, "USER", id, actorId, null);
     }
 
     public User getTenantStaffUser(UUID id) {

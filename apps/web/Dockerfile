@@ -1,7 +1,10 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# --ignore-scripts stops a compromised dependency from executing arbitrary code during install.
+# Next.js pulls sharp, whose binaries now ship as prebuilt optional dependencies, so nothing here
+# needs a lifecycle script to run.
+RUN npm ci --ignore-scripts
 
 FROM node:22-alpine AS builder
 WORKDIR /app

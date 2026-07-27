@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import rd.dalventa.api.branch.domain.Branch;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.inventory.domain.BranchInventory;
 import rd.dalventa.api.inventory.domain.InventoryMovement;
@@ -16,6 +17,7 @@ import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.purchase.domain.Purchase;
 import rd.dalventa.api.purchase.domain.PurchaseItem;
 import rd.dalventa.api.purchase.domain.PurchaseStatus;
+import rd.dalventa.api.purchase.domain.Supplier;
 import rd.dalventa.api.purchase.dto.CreatePurchaseRequest;
 import rd.dalventa.api.purchase.dto.AccountsPayableRow;
 import rd.dalventa.api.purchase.dto.PurchaseItemRequest;
@@ -198,7 +200,7 @@ public class PurchaseService {
                     BigDecimal paid = paidAmount(tenantId, purchase.getId());
                     BigDecimal balance = purchase.getTotal().subtract(paid).setScale(2, RoundingMode.HALF_UP);
                     String supplierName = supplierRepository.findByIdAndTenantId(purchase.getSupplierId(), tenantId)
-                            .map(s -> s.getName())
+                            .map(Supplier::getName)
                             .orElse("Proveedor eliminado");
                     return AccountsPayableRow.from(purchase, supplierName, paid, balance);
                 })
@@ -259,11 +261,11 @@ public class PurchaseService {
     private PurchaseResponse toResponse(Purchase purchase) {
         var tenantId = purchase.getTenantId();
         String supplierName = supplierRepository.findByIdAndTenantId(purchase.getSupplierId(), tenantId)
-                .map(s -> s.getName())
+                .map(Supplier::getName)
                 .orElse("Proveedor eliminado");
         String branchName = branchRepository.findById(purchase.getBranchId())
                 .filter(branch -> branch.getTenantId().equals(tenantId))
-                .map(branch -> branch.getName())
+                .map(Branch::getName)
                 .orElse("Sucursal eliminada");
         List<PurchaseItemResponse> items = purchaseItemRepository.findAllByPurchaseId(purchase.getId())
                 .stream()

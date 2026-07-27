@@ -5,7 +5,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.PageRequest;
 import rd.dalventa.api.auth.dto.AuthResponse;
 import rd.dalventa.api.shared.ratelimit.ClientIpResolver;
 import rd.dalventa.api.shared.ratelimit.RateLimitProperties;
