@@ -41,7 +41,7 @@ jobs:
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          version: v0.58.1
+          version: v0.72.0
 
       # Reads pom.xml and package-lock.json, so transitive dependencies are covered without a build.
       # --ignore-unfixed keeps the gate on findings that actually have an upgrade path.
@@ -133,7 +133,7 @@ jobs:
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          version: v0.58.1
+          version: v0.72.0
 
       - name: Scan Dockerfiles and compose definitions
         env:
