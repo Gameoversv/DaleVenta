@@ -14,9 +14,10 @@ jobs:
   analyze:
     name: SonarQube Cloud analysis
     runs-on: ubuntu-latest
-    # Skips cleanly until SONAR_TOKEN is configured, so the workflow can be merged before the
-    # project exists on sonarcloud.io. Note the free plan only covers public repositories.
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.SONAR_ENABLED == 'true' }}
+    # Skips cleanly until the project is imported on sonarcloud.io and SONAR_TOKEN exists, so the
+    # workflow can sit in the repository before the setup is finished. Flip the SONAR_ENABLED
+    # repository variable to true to turn it on.
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
 
     steps:
       - uses: actions/checkout@v4
