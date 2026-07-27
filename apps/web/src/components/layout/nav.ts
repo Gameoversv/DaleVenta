@@ -64,3 +64,41 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
 ];
+
+/** Everything a nav item is evaluated against. Mirrors what `useAuth` exposes. */
+export interface NavViewer {
+  role: RoleName | undefined;
+  permissions: PermissionCode[];
+  features: TenantFeatures;
+}
+
+/**
+ * Effective permission check, matching the backend resolution: ADMIN holds every permission,
+ * anyone else needs it granted explicitly.
+ */
+function hasPermission(viewer: NavViewer, code: PermissionCode): boolean {
+  return viewer.role === "ADMIN" || viewer.permissions.includes(code);
+}
+
+/**
+ * Single source of truth for nav visibility, shared by the sidebar and the mobile menu.
+ *
+ * Keeping it a pure function means both surfaces cannot drift apart, and the rules can be tested
+ * without rendering anything — the duplicated component-level gates previously also had to call
+ * `usePermission` inside a loop.
+ */
+export function isNavItemVisible(item: NavItem, viewer: NavViewer): boolean {
+  if (item.feature && !viewer.features[item.feature]) return false;
+  if (item.roles && (!viewer.role || !item.roles.includes(viewer.role))) return false;
+  if (item.permission && !hasPermission(viewer, item.permission)) return false;
+  if (item.anyPermission && !item.anyPermission.some((code) => hasPermission(viewer, code))) return false;
+  return true;
+}
+
+/** Sections with their items filtered; sections left with no visible item are dropped. */
+export function visibleNavSections(viewer: NavViewer): NavSection[] {
+  return NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => isNavItemVisible(item, viewer)),
+  })).filter((section) => section.items.length > 0);
+}

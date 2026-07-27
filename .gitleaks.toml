@@ -1,0 +1,29 @@
+# Gitleaks configuration for DaleVenta.
+# Extends the upstream ruleset and allowlists the placeholders that are meant to be
+# in the repository: env templates, throwaway CI credentials and local compose defaults.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Environment template placeholders (documentation, not credentials)"
+paths = ['''^\.env\.example$''']
+
+[[allowlists]]
+description = "Throwaway credentials for the ephemeral CI database and test JWT signing key"
+paths = [
+  '''^\.github/workflows/.*\.ya?ml$''',
+  '''^apps/api/src/main/resources/application-test\.yml$''',
+  '''^apps/api/src/test/.*$''',
+  '''^README\.md$''',
+]
+regexes = [
+  '''ci-test-secret-256-bits-minimum-length-ok''',
+  '''test-secret-key-256-bits-for-testing-purposes-only''',
+  '''changeme''',
+  '''Secret123!''',
+]
+
+[[allowlists]]
+description = "Local docker-compose defaults, overridden by .env in any real deployment"
+paths = ['''^infra/docker-compose\.yml$''']

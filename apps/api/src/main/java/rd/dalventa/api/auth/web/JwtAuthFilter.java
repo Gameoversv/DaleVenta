@@ -1,10 +1,12 @@
 package rd.dalventa.api.auth.web;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import rd.dalventa.api.tenant.repository.TenantRepository;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -47,7 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         try {
-            String email = jwtService.extractEmail(token);
+            String email = extractEmailOrNull(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 var userDetails = userDetailsService.loadUserByUsername(email);
@@ -90,6 +93,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } finally {
             TenantContext.clear();
             CustomerContext.clear();
+        }
+    }
+
+    /**
+     * A malformed, expired or foreign-signed token is an unauthenticated caller, not a server
+     * fault. Swallowing the parse failure here leaves the security context empty so the request
+     * ends at the 401 entry point instead of escaping the filter chain as a 500.
+     */
+    private String extractEmailOrNull(String token) {
+        try {
+            return jwtService.extractEmail(token);
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.debug("Rejected an unparseable bearer token: {}", ex.getMessage());
+            return null;
         }
     }
 }

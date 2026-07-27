@@ -9,6 +9,9 @@ RUN ./mvnw package -DskipTests -q
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /build/target/*.jar app.jar
+# Run the service as an unprivileged user so a remote code execution does not start as root.
+RUN addgroup -S dalventa && adduser -S -G dalventa dalventa
+COPY --from=builder --chown=dalventa:dalventa /build/target/*.jar app.jar
+USER dalventa
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

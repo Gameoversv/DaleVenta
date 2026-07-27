@@ -6,7 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import type { AuthResponse, MeResponse, PermissionCode, TenantFeatures, UserResponse } from "@/types/auth";
 
-function landingPageFor(user: UserResponse | undefined, permissions: PermissionCode[]): string {
+/** Exported for testing: the first page a user can actually open after signing in. */
+export function landingPageFor(user: UserResponse | undefined, permissions: PermissionCode[]): string {
   if (user?.role === "SUPER_ADMIN") return "/super-admin";
   if (permissions.includes("DASHBOARD_VIEW")) return "/dashboard";
   if (permissions.includes("SALE_CREATE")) return "/pos";

@@ -119,17 +119,44 @@ See the **[Bootstrap RBAC Plan](docs/superpowers/plans/2026-07-04-bootstrap-rbac
 
 ## Testing
 
-**Backend:** 32 test classes (JUnit 5 + Testcontainers)
+**Backend:** 41 test classes (JUnit 5 + MockMvc over a real PostgreSQL)
+**Frontend unit:** Vitest + Testing Library (`npm test` in `apps/web`)
 **Frontend E2E:** 10 Playwright specs (`apps/web/e2e`)
 
-Run all backend tests:
+Coverage is enforced by JaCoCo: the build fails if line coverage drops below the
+`jacoco.line.coverage` threshold in `apps/api/pom.xml` (currently 0.65, target 0.80).
+
+Run the tests only:
 ```bash
 ./mvnw test -Dspring.profiles.active=test
 ```
 
+Run the tests plus the coverage gate (what CI does):
+```bash
+./mvnw verify -Dspring.profiles.active=test
+```
+The HTML report lands in `apps/api/target/site/jacoco/index.html`.
+
 Run a specific test class:
 ```bash
 ./mvnw test -Dtest=AuthServiceTest -Dspring.profiles.active=test
+```
+
+### Cross-cutting test suites
+
+| Suite | What it protects |
+|-------|------------------|
+| `security/TenantIsolationIntegrationTest` | No endpoint may read or mutate another tenant's data |
+| `security/ApiSecurityIntegrationTest` | Auth (401), permissions (403), JWT tampering, CORS, injection, error leakage |
+| `support/IntegrationTestBase#provisionTenant` | One call builds a ready-to-use tenant for any module test |
+
+### Local database
+
+The integration tests need PostgreSQL on `localhost:5432`:
+```bash
+docker run -d --name dalventa_test_db \
+  -e POSTGRES_DB=dalventa_test -e POSTGRES_USER=dalventa -e POSTGRES_PASSWORD=changeme \
+  -p 5432:5432 postgres:16-alpine
 ```
 
 ## What Comes Next
@@ -142,6 +169,42 @@ Fase 1 (MVP) is functionally complete. Remaining before closing it out:
 
 **Phase 2:** exportable reports (PDF/Excel/CSV), returns/voids with authorization flow, internal notifications, customer self-service portal.
 **Phase 3:** raw materials, recipes, production (BOM) for bakery/pastry tenants; advanced analytics.
+
+## Security
+
+### Bootstrap accounts
+
+`DataSeeder` creates `admin@dalventa.rd` and `superadmin@dalventa.rd` on an empty database. The
+super admin manages **every tenant**, so treat its credentials accordingly:
+
+- Set `APP_SEED_ADMIN_PASSWORD` and `APP_SEED_SUPER_ADMIN_PASSWORD` before the first boot. If you
+  leave them blank, the API generates a random password and prints it **once** in the startup log.
+- `APP_SEED_RESET_PASSWORDS` must stay `false`. While it is `true`, every restart rewrites both
+  passwords, which also silently undoes a password changed from the UI.
+- Existing deployments seeded before this behaviour existed used a password committed to this
+  repository. Rotate both accounts.
+
+### Automated scanning
+
+| Workflow | Runs | Checks |
+|----------|------|--------|
+| `security.yml` | push, PR, weekly | Trivy dependency CVEs (Maven + npm), Gitleaks over full git history, Semgrep (OWASP Top Ten, Java, TypeScript, secrets), Trivy IaC/Dockerfile misconfiguration |
+| `codeql.yml` | push, PR, weekly | CodeQL `security-extended` for Java and TypeScript. Skipped while the repository is private without GitHub Advanced Security |
+| `dast.yml` | weekly, manual | ZAP baseline against a throwaway API container |
+
+Reproduce any of them locally with Docker:
+
+```bash
+docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+  detect --source /repo --config /repo/.gitleaks.toml --redact
+docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.97.0 \
+  semgrep scan --config p/owasp-top-ten --config p/java --config p/typescript --metrics off
+docker run --rm -v "$PWD:/repo" aquasec/trivy:latest \
+  fs /repo --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
+```
+
+Accepted findings and the reasoning behind each exclusion are documented inline in
+`.github/workflows/security.yml`.
 
 ## Support
 
