@@ -11,9 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth-context";
-import { usePermission } from "@/hooks/usePermission";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
-import { NAV_SECTIONS, type NavItem } from "@/components/layout/nav";
+import { visibleNavSections, type NavItem } from "@/components/layout/nav";
 
 function NavMenuItem({ item }: { item: NavItem }) {
   const Icon = item.icon;
@@ -27,44 +26,11 @@ function NavMenuItem({ item }: { item: NavItem }) {
   );
 }
 
-function GatedNavMenuItem({ item }: { item: NavItem }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  const allowed = usePermission(item.permission!);
-  if (
-    !allowed ||
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavMenuItem item={item} />;
-}
-
-function AnyGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  const permissions = item.anyPermission!;
-  /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
-  const allowedFlags = permissions.map((code) => usePermission(code));
-  /* eslint-enable react-hooks/rules-of-hooks */
-  if (
-    !allowedFlags.some(Boolean) ||
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavMenuItem item={item} />;
-}
-
-function FeatureGatedNavMenuItem({ item }: { item: NavItem }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  if (
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavMenuItem item={item} />;
-}
-
 export function MobileNav() {
+  const { user, permissions } = useAuth();
+  const features = useTenantFeatures();
+  const sections = visibleNavSections({ role: user?.role, permissions, features });
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -80,27 +46,15 @@ export function MobileNav() {
           </div>
           <span className="font-display text-sm font-bold">DaleVenta</span>
         </div>
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label}>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
               {section.label}
             </DropdownMenuLabel>
-            {section.items.map((item) => {
-              if (item.anyPermission) {
-                return <AnyGatedNavMenuItem key={item.href} item={item} />;
-              }
-              if (item.permission) {
-                return <GatedNavMenuItem key={item.href} item={item} />;
-              }
-              if (item.feature) {
-                return <FeatureGatedNavMenuItem key={item.href} item={item} />;
-              }
-              if (item.roles) {
-                return <FeatureGatedNavMenuItem key={item.href} item={item} />;
-              }
-              return <NavMenuItem key={item.href} item={item} />;
-            })}
+            {section.items.map((item) => (
+              <NavMenuItem key={item.href} item={item} />
+            ))}
           </div>
         ))}
       </DropdownMenuContent>

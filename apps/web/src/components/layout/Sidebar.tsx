@@ -5,9 +5,8 @@ import Link from "next/link";
 import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { usePermission } from "@/hooks/usePermission";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
-import { NAV_SECTIONS, type NavItem, type NavSection } from "@/components/layout/nav";
+import { visibleNavSections, type NavItem, type NavSection } from "@/components/layout/nav";
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
@@ -26,70 +25,24 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-function GatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  const allowed = usePermission(item.permission!);
-  if (
-    !allowed ||
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavLink item={item} active={active} />;
-}
-
-function AnyGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  const permissions = item.anyPermission!;
-  /* eslint-disable react-hooks/rules-of-hooks -- fixed-length array of PermissionCode, stable across renders */
-  const allowedFlags = permissions.map((code) => usePermission(code));
-  /* eslint-enable react-hooks/rules-of-hooks */
-  if (
-    !allowedFlags.some(Boolean) ||
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavLink item={item} active={active} />;
-}
-
-function FeatureGatedNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const { user } = useAuth();
-  const tenantFeatures = useTenantFeatures();
-  if (
-    (item.feature && !tenantFeatures[item.feature]) ||
-    (item.roles && (!user || !item.roles.includes(user.role)))
-  ) return null;
-  return <NavLink item={item} active={active} />;
-}
-
 function NavSectionBlock({ section, pathname }: { section: NavSection; pathname: string }) {
   return (
     <div className="space-y-1">
       <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
         {section.label}
       </p>
-      {section.items.map((item) => {
-        if (item.anyPermission) {
-          return <AnyGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-        }
-        if (item.permission) {
-          return <GatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-        }
-        if (item.feature) {
-          return <FeatureGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-        }
-        if (item.roles) {
-          return <FeatureGatedNavLink key={item.href} item={item} active={pathname === item.href} />;
-        }
-        return <NavLink key={item.href} item={item} active={pathname === item.href} />;
-      })}
+      {section.items.map((item) => (
+        <NavLink key={item.href} item={item} active={pathname === item.href} />
+      ))}
     </div>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, permissions } = useAuth();
+  const features = useTenantFeatures();
+  const sections = visibleNavSections({ role: user?.role, permissions, features });
 
   return (
     <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
@@ -102,7 +55,7 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4 pb-8">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <NavSectionBlock key={section.label} section={section} pathname={pathname} />
         ))}
       </nav>
