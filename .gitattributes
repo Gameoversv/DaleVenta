@@ -1,0 +1,8 @@
+# Shell scripts and the Maven wrapper are executed inside Linux containers. A CRLF checkout on
+# Windows makes the kernel read the shebang as "/bin/sh\r" and the container fails to start with
+# a confusing "no such file or directory", so pin these to LF regardless of core.autocrlf.
+*.sh text eol=lf
+mvnw text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
