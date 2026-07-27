@@ -35,10 +35,13 @@ jobs:
         working-directory: apps/api
         run: ./mvnw -q -B dependency:resolve
 
+      # The upstream action installs a pinned release on the runner. Piping the vendor install
+      # script into a shell would work too, but it is the "curl | sh" pattern our own Semgrep
+      # ruleset rejects, and rightly so.
       - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-            | sh -s -- -b /usr/local/bin v0.58.1
+        uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          version: v0.58.1
 
       # Reads pom.xml and package-lock.json, so transitive dependencies are covered without a build.
       # --ignore-unfixed keeps the gate on findings that actually have an upgrade path.
@@ -127,11 +130,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Scan Dockerfiles and compose definitions
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          scan-type: config
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          format: table
+          version: v0.58.1
+
+      - name: Scan Dockerfiles and compose definitions
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+        run: |
+          trivy config . \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --format table
