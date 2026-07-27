@@ -36,9 +36,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run API tests
+      # `verify` runs the tests and then the JaCoCo coverage gate, which fails the build
+      # if line coverage drops below the threshold configured in apps/api/pom.xml.
+      - name: Run API tests and coverage gate
         working-directory: apps/api
-        run: ./mvnw test -Dspring.profiles.active=test
+        run: ./mvnw verify -Dspring.profiles.active=test
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -53,3 +55,10 @@ jobs:
         with:
           name: api-test-results
           path: apps/api/target/surefire-reports/
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-report
+          path: apps/api/target/site/jacoco/

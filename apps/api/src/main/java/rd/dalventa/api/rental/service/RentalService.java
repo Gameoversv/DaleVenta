@@ -1,8 +1,10 @@
 package rd.dalventa.api.rental.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.product.repository.ProductRepository;
 import rd.dalventa.api.rental.domain.RentalContract;
@@ -114,7 +116,12 @@ public class RentalService {
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
         if (!tenant.isRentalModuleEnabled()) {
-            throw new IllegalArgumentException("El modulo de alquileres no esta activo para este tenant");
+            // A feature the tenant has not contracted is forbidden, not a malformed request.
+            // Matches how the purchase module answers the same situation.
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "El modulo de alquileres no esta activo para este tenant"
+            );
         }
     }
 

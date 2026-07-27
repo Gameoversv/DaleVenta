@@ -43,9 +43,12 @@ class CategoryIntegrationTest extends IntegrationTestBase {
                 .contentType("application/json")
                 .content("{\"name\":\"Categoria B\"}"));
 
+        // Listing also materialises the per-tenant "General" fallback category, so tenant A sees
+        // exactly two rows: its own "Categoria A" plus "General" — and never tenant B's.
         mockMvc.perform(get("/api/categories").header("Authorization", "Bearer " + tokenA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].name").value("Categoria A"));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[*].name",
+                        org.hamcrest.Matchers.containsInAnyOrder("General", "Categoria A")));
     }
 }

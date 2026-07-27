@@ -119,17 +119,43 @@ See the **[Bootstrap RBAC Plan](docs/superpowers/plans/2026-07-04-bootstrap-rbac
 
 ## Testing
 
-**Backend:** 32 test classes (JUnit 5 + Testcontainers)
+**Backend:** 41 test classes (JUnit 5 + MockMvc over a real PostgreSQL)
 **Frontend E2E:** 10 Playwright specs (`apps/web/e2e`)
 
-Run all backend tests:
+Coverage is enforced by JaCoCo: the build fails if line coverage drops below the
+`jacoco.line.coverage` threshold in `apps/api/pom.xml` (currently 0.65, target 0.80).
+
+Run the tests only:
 ```bash
 ./mvnw test -Dspring.profiles.active=test
 ```
 
+Run the tests plus the coverage gate (what CI does):
+```bash
+./mvnw verify -Dspring.profiles.active=test
+```
+The HTML report lands in `apps/api/target/site/jacoco/index.html`.
+
 Run a specific test class:
 ```bash
 ./mvnw test -Dtest=AuthServiceTest -Dspring.profiles.active=test
+```
+
+### Cross-cutting test suites
+
+| Suite | What it protects |
+|-------|------------------|
+| `security/TenantIsolationIntegrationTest` | No endpoint may read or mutate another tenant's data |
+| `security/ApiSecurityIntegrationTest` | Auth (401), permissions (403), JWT tampering, CORS, injection, error leakage |
+| `support/IntegrationTestBase#provisionTenant` | One call builds a ready-to-use tenant for any module test |
+
+### Local database
+
+The integration tests need PostgreSQL on `localhost:5432`:
+```bash
+docker run -d --name dalventa_test_db \
+  -e POSTGRES_DB=dalventa_test -e POSTGRES_USER=dalventa -e POSTGRES_PASSWORD=changeme \
+  -p 5432:5432 postgres:16-alpine
 ```
 
 ## What Comes Next
