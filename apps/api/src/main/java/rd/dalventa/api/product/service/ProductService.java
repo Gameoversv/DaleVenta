@@ -62,11 +62,14 @@ public class ProductService {
     public List<ProductResponse> list(Boolean active, boolean includeInactive) {
         var tenantId = TenantContext.require();
         boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
-        var products = includeInactive
-                ? productRepository.findAllByTenantId(tenantId)
-                : active != null
-                    ? productRepository.findAllByTenantIdAndActive(tenantId, active)
-                    : productRepository.findAllByTenantIdAndActiveTrue(tenantId);
+        List<Product> products;
+        if (includeInactive) {
+            products = productRepository.findAllByTenantId(tenantId);
+        } else if (active != null) {
+            products = productRepository.findAllByTenantIdAndActive(tenantId, active);
+        } else {
+            products = productRepository.findAllByTenantIdAndActiveTrue(tenantId);
+        }
         return products
                 .stream().map(product -> toResponse(product, rentalModuleEnabled)).toList();
     }
@@ -99,13 +102,13 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
         if (previousActive != product.isActive()) {
-            auditLogService.record(AuditAction.PRODUCT_STATUS_CHANGE, "PRODUCT", product.getId(), actorId,
+            auditLogService.recordEvent(AuditAction.PRODUCT_STATUS_CHANGE, "PRODUCT", product.getId(), actorId,
                     product.getDescription() + " -> " + (product.isActive() ? "Activo" : "Inactivo"));
         }
         if (previousCost.compareTo(product.getCost()) != 0
                 || previousSalePrice.compareTo(product.getSalePrice()) != 0
                 || previousWholesalePrice.compareTo(product.getWholesalePrice()) != 0) {
-            auditLogService.record(AuditAction.PRODUCT_PRICE_CHANGE, "PRODUCT", product.getId(), actorId,
+            auditLogService.recordEvent(AuditAction.PRODUCT_PRICE_CHANGE, "PRODUCT", product.getId(), actorId,
                     "Precios actualizados para " + product.getDescription());
         }
         return toResponse(product, rentalModuleEnabled);

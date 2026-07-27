@@ -38,6 +38,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                // CSRF protection is deliberately off, and CodeQL (java/spring-disabled-csrf-protection)
+                // plus Sonar (java:S4502) both flag it. It is safe here only because the browser never
+                // holds an ambient credential: the SPA keeps the JWT in localStorage and sends it in the
+                // Authorization header (see apps/web/src/lib/api.ts), and the session is STATELESS with
+                // no cookie for a forged cross-site request to ride on.
+                // If a token ever moves into a cookie, this must be re-enabled.
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

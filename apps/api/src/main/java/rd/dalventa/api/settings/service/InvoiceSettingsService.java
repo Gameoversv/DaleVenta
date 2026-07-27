@@ -48,7 +48,7 @@ public class InvoiceSettingsService {
         var actorId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
-        auditLogService.record(AuditAction.INVOICE_SETTINGS_UPDATE, "TENANT", tenant.getId(), actorId,
+        auditLogService.recordEvent(AuditAction.INVOICE_SETTINGS_UPDATE, "TENANT", tenant.getId(), actorId,
                 "Configuracion de factura actualizada");
         return InvoiceSettingsResponse.from(tenant);
     }

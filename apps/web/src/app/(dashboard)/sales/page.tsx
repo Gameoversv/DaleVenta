@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Eye, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useAnyPermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { useSoleRegister } from "@/hooks/useSoleRegister";
 import { Button } from "@/components/ui/button";
@@ -195,7 +195,7 @@ function VoidSaleDialog({ registerId, sale }: { registerId: string; sale: SaleRe
 export default function SalesPage() {
   const [manualBranchId, setManualBranchId] = useState("");
   const [manualRegisterId, setManualRegisterId] = useState("");
-  const canViewSales = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
+  const canViewSales = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
   const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canViewSales);
   const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;

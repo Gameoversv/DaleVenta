@@ -132,7 +132,7 @@ public class DailyCloseReportService {
         closing.setCashDifference(report.cashDifference());
         closing = dailyClosingRepository.save(closing);
 
-        auditLogService.record(AuditAction.DAILY_CLOSE_CREATE, "DAILY_CLOSING", closing.getId(), user.getId(),
+        auditLogService.recordEvent(AuditAction.DAILY_CLOSE_CREATE, "DAILY_CLOSING", closing.getId(), user.getId(),
                 "Cierre " + closing.getCloseNumber() + " para " + date + " / " + register.getName());
         return toResponse(closing);
     }

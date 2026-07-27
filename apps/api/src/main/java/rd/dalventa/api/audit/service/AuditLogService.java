@@ -22,7 +22,7 @@ public class AuditLogService {
     private final UserRepository userRepository;
 
     @Transactional
-    public void record(AuditAction action, String entityType, UUID entityId, UUID actorUserId, String reason) {
+    public void recordEvent(AuditAction action, String entityType, UUID entityId, UUID actorUserId, String reason) {
         var log = new AuditLog(actorUserId, action.name(), entityType, entityId, reason);
         log.setTenantId(TenantContext.require());
         auditLogRepository.save(log);

@@ -56,7 +56,7 @@ public class FiscalService {
         profile.setEmail(blankToNull(req.email()));
         profile.setTaxRegime(blankToNull(req.taxRegime()));
         profile = fiscalProfileRepository.save(profile);
-        record(AuditAction.FISCAL_PROFILE_UPDATE, "FISCAL_PROFILE", profile.getId(), "Datos fiscales actualizados");
+        recordEvent(AuditAction.FISCAL_PROFILE_UPDATE, "FISCAL_PROFILE", profile.getId(), "Datos fiscales actualizados");
         return FiscalProfileResponse.from(profile);
     }
 
@@ -79,7 +79,7 @@ public class FiscalService {
         sequence.setTenantId(tenantId);
         apply(sequence, req);
         sequence = fiscalReceiptSequenceRepository.save(sequence);
-        record(AuditAction.FISCAL_SEQUENCE_UPDATE, "FISCAL_SEQUENCE", sequence.getId(), "Secuencia NCF creada");
+        recordEvent(AuditAction.FISCAL_SEQUENCE_UPDATE, "FISCAL_SEQUENCE", sequence.getId(), "Secuencia NCF creada");
         return FiscalReceiptSequenceResponse.from(sequence);
     }
 
@@ -92,7 +92,7 @@ public class FiscalService {
                 .orElseThrow(() -> new ResourceNotFoundException("Secuencia fiscal no encontrada"));
         apply(sequence, req);
         sequence = fiscalReceiptSequenceRepository.save(sequence);
-        record(AuditAction.FISCAL_SEQUENCE_UPDATE, "FISCAL_SEQUENCE", sequence.getId(), "Secuencia NCF actualizada");
+        recordEvent(AuditAction.FISCAL_SEQUENCE_UPDATE, "FISCAL_SEQUENCE", sequence.getId(), "Secuencia NCF actualizada");
         return FiscalReceiptSequenceResponse.from(sequence);
     }
 
@@ -147,11 +147,11 @@ public class FiscalService {
         }
     }
 
-    private void record(AuditAction action, String entityType, UUID entityId, String description) {
+    private void recordEvent(AuditAction action, String entityType, UUID entityId, String description) {
         var actorId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
-        auditLogService.record(action, entityType, entityId, actorId, description);
+        auditLogService.recordEvent(action, entityType, entityId, actorId, description);
     }
 
     private static String blankToNull(String value) {

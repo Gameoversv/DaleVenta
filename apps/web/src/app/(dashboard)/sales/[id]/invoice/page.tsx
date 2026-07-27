@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useAnyPermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,7 @@ function invoiceWidth(printSize: InvoiceResponse["business"]["printSize"]): stri
 
 export default function InvoicePage() {
   const params = useParams<{ id: string }>();
-  const canView = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
+  const canView = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const { data, isLoading, isError } = useQuery({
     queryKey: ["invoice", params.id],
     queryFn: () => fetchInvoice(params.id),

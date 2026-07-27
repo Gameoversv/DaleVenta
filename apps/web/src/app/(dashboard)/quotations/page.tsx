@@ -6,7 +6,7 @@ import { Eye, Plus, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { productUnitLabel } from "@/lib/product-units";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useAnyPermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -199,7 +199,7 @@ function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
 }
 
 export default function QuotationsPage() {
-  const canView = usePermission("SALE_VIEW_HISTORY") || usePermission("SALE_CREATE");
+  const canView = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const canCreate = usePermission("SALE_CREATE");
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);

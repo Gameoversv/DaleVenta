@@ -68,7 +68,7 @@ public class InventoryMovementService {
         var saved = inventoryMovementRepository.save(movement);
 
         if (req.type() == InventoryMovementType.ADJUSTMENT) {
-            auditLogService.record(AuditAction.INVENTORY_ADJUSTMENT, "BRANCH_INVENTORY",
+            auditLogService.recordEvent(AuditAction.INVENTORY_ADJUSTMENT, "BRANCH_INVENTORY",
                     branchInventory.getId(), userId, req.reason());
         }
 

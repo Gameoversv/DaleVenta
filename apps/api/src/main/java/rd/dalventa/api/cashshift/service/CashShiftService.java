@@ -177,7 +177,7 @@ public class CashShiftService {
         shift.setStatus(CashShiftStatus.CLOSED);
         shift.setClosedAt(java.time.Instant.now());
         cashShiftRepository.save(shift);
-        auditLogService.record(AuditAction.CASH_SHIFT_CLOSE, "CASH_SHIFT", shift.getId(),
+        auditLogService.recordEvent(AuditAction.CASH_SHIFT_CLOSE, "CASH_SHIFT", shift.getId(),
                 currentUserProvider.current().orElseThrow(() -> new IllegalStateException("Usuario no autenticado")).getId(),
                 "Turno cerrado. Diferencia: " + difference);
 
