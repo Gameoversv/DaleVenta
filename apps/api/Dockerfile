@@ -10,7 +10,11 @@ RUN ./mvnw package -DskipTests -q
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 # Run the service as an unprivileged user so a remote code execution does not start as root.
-RUN addgroup -S dalventa && adduser -S -G dalventa dalventa
+# LocalStorageService creates app.storage.local.dir (default ./uploads) at startup, so that
+# directory has to exist and be writable by that user before the process drops privileges.
+RUN addgroup -S dalventa && adduser -S -G dalventa dalventa \
+    && mkdir -p /app/uploads \
+    && chown -R dalventa:dalventa /app
 COPY --from=builder --chown=dalventa:dalventa /build/target/*.jar app.jar
 USER dalventa
 EXPOSE 8080
