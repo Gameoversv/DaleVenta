@@ -28,11 +28,11 @@
         <!-- Ratchet: currently at ~0.70 line coverage. Raise as modules gain tests; target 0.80. -->
         <jacoco.line.coverage>0.65</jacoco.line.coverage>
 
-        <!-- SonarQube Cloud. Replace the two placeholders with the real values from sonarcloud.io
-             (Project Information > project key, and the organization key), then set the repository
-             variable SONAR_ENABLED=true and the SONAR_TOKEN secret. -->
-        <sonar.organization>REPLACE-WITH-SONAR-ORG</sonar.organization>
-        <sonar.projectKey>REPLACE-WITH-SONAR-PROJECT-KEY</sonar.projectKey>
+        <!-- SonarQube Cloud. The project key follows the key SonarCloud assigns when a repository
+             is imported from GitHub: <Owner>_<repo>. Analysis stays off until the SONAR_TOKEN
+             secret exists and the SONAR_ENABLED repository variable is set to true. -->
+        <sonar.organization>gameoversv</sonar.organization>
+        <sonar.projectKey>Gameoversv_DaleVenta</sonar.projectKey>
         <sonar.projectName>DaleVenta</sonar.projectName>
         <!-- Analyse both applications from this single scanner run. -->
         <sonar.sources>src/main/java,../web/src</sonar.sources>

@@ -189,8 +189,27 @@ super admin manages **every tenant**, so treat its credentials accordingly:
 | Workflow | Runs | Checks |
 |----------|------|--------|
 | `security.yml` | push, PR, weekly | Trivy dependency CVEs (Maven + npm), Gitleaks over full git history, Semgrep (OWASP Top Ten, Java, TypeScript, secrets), Trivy IaC/Dockerfile misconfiguration |
-| `codeql.yml` | push, PR, weekly | CodeQL `security-extended` for Java and TypeScript. Skipped while the repository is private without GitHub Advanced Security |
+| `codeql.yml` | push, PR, weekly | CodeQL `security-extended` for Java and TypeScript. Skips itself while the repository is private, since code scanning then requires GitHub Advanced Security |
 | `dast.yml` | weekly, manual | ZAP baseline against a throwaway API container |
+| `sonarcloud.yml` | push, PR | SonarQube Cloud code quality and coverage. Runs only while the `SONAR_ENABLED` repository variable is `true` |
+
+#### Enabling SonarQube Cloud
+
+The organization (`gameoversv`) and project key (`Gameoversv_DaleVenta`) are already set in
+`apps/api/pom.xml`. Two steps remain, both outside this repository:
+
+1. Import the repository at [sonarcloud.io](https://sonarcloud.io) into the `gameoversv`
+   organization, choosing **GitHub Actions** as the analysis method so SonarCloud does not also try
+   to run its own automatic analysis.
+2. Generate a token (*My Account > Security*) and register it, then turn the workflow on:
+
+   ```bash
+   gh secret set SONAR_TOKEN --body '<token>'
+   gh variable set SONAR_ENABLED --body true
+   ```
+
+The scanner consumes the coverage the build already writes — `target/site/jacoco/jacoco.xml` for
+the API and `apps/web/coverage/lcov.info` for the web app — so both suites run before it.
 
 Reproduce any of them locally with Docker:
 
