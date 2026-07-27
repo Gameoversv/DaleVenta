@@ -27,6 +27,20 @@
         <jacoco.version>0.8.12</jacoco.version>
         <!-- Ratchet: currently at ~0.70 line coverage. Raise as modules gain tests; target 0.80. -->
         <jacoco.line.coverage>0.65</jacoco.line.coverage>
+
+        <!-- SonarQube Cloud. Replace the two placeholders with the real values from sonarcloud.io
+             (Project Information > project key, and the organization key), then set the repository
+             variable SONAR_ENABLED=true and the SONAR_TOKEN secret. -->
+        <sonar.organization>REPLACE-WITH-SONAR-ORG</sonar.organization>
+        <sonar.projectKey>REPLACE-WITH-SONAR-PROJECT-KEY</sonar.projectKey>
+        <sonar.projectName>DaleVenta</sonar.projectName>
+        <!-- Analyse both applications from this single scanner run. -->
+        <sonar.sources>src/main/java,../web/src</sonar.sources>
+        <sonar.tests>src/test/java</sonar.tests>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.javascript.lcov.reportPaths>${project.basedir}/../web/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
+        <sonar.exclusions>**/node_modules/**,**/.next/**,**/target/**,../web/e2e/**</sonar.exclusions>
+        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -167,6 +181,12 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
             </plugin>
 
             <plugin>
