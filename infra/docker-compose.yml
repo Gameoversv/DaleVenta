@@ -48,6 +48,10 @@ services:
       - ../.env
     environment:
       DB_HOST: postgres
+    # Uploads live outside the container so they survive a rebuild; without this every
+    # `docker compose up --build` would drop every file the tenants have uploaded.
+    volumes:
+      - uploads:/app/uploads
     # No host port mapping: only reachable via the nginx reverse proxy on the
     # internal docker network. Use the `tools` profile / a temporary
     # `docker compose port` mapping for local debugging if needed.
@@ -96,4 +100,6 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  uploads:
     driver: local
