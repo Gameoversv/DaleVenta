@@ -14,7 +14,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      include: ["src/lib/**", "src/hooks/**", "src/components/layout/nav.ts"],
+      // Report on everything Sonar analyses. A narrower include only hides the gap: files missing
+      // from lcov are still counted as uncovered on the Sonar side, so the number looked better
+      // here than it really was.
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        // Type declarations carry no executable code.
+        "src/types/**",
+        // Vendored shadcn/ui primitives, taken as-is and exercised through the screens that use them.
+        "src/components/ui/**",
+        "src/**/*.test.{ts,tsx}",
+      ],
     },
   },
 });
