@@ -11,18 +11,8 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  await page.getByRole("link", { name: "Sucursales" }).click();
-  await page.getByRole("button", { name: "Nueva sucursal" }).click();
-  await page.getByLabel("Nombre").fill("Sucursal Centro");
-  await page.getByLabel("Direccion").fill("Calle Duarte 12");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Sucursal Centro")).toBeVisible();
-
-  await page.getByText("Sucursal Centro").click();
-  await page.getByRole("button", { name: "Nueva caja" }).click();
-  await page.getByLabel("Nombre").fill("Caja 1");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Caja 1")).toBeVisible();
+  // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
+  // tenant has no branch or register picker, both are auto-selected.
 
   await page.getByRole("link", { name: "Productos" }).click();
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");
@@ -33,7 +23,7 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await page.getByLabel("Categoria").selectOption({ label: "Bizcochos" });
   await page.getByLabel("Codigo interno").fill("BIZ-001");
   await page.getByLabel("Descripcion").fill("Bizcocho de chocolate");
-  await page.getByLabel("Unidad").fill("unidad");
+  await page.getByLabel("Unidad").selectOption("unit");
   await page.getByLabel("Costo").fill("100.00");
   await page.getByLabel("Precio venta").fill("250.00");
   await page.getByLabel("Precio mayorista").fill("200.00");
@@ -42,7 +32,6 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await expect(page.getByText("Bizcocho de chocolate")).toBeVisible();
 
   await page.getByRole("link", { name: "Inventario" }).click();
-  await page.locator("#branch-select").selectOption({ label: "Sucursal Centro" });
   await page.getByRole("button", { name: "Ajustar stock" }).click();
   await page.getByLabel("Producto").selectOption({ label: "Bizcocho de chocolate" });
   await page.getByLabel("Cantidad").fill("10");
@@ -52,18 +41,14 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await expect(inventoryRow.locator("td").nth(1)).toHaveText("10");
 
   await page.getByRole("link", { name: "Turno de Caja" }).click();
-  await page.locator("#cash-shift-branch").selectOption({ label: "Sucursal Centro" });
-  await page.locator("#cash-shift-register").selectOption({ label: "Caja 1" });
   await expect(page.getByRole("heading", { name: "Abrir turno" })).toBeVisible();
   await page.getByLabel("RD$500").fill("2");
   await page.getByRole("button", { name: "Abrir turno" }).click();
   await expect(page.getByRole("heading", { name: "Turno abierto" })).toBeVisible();
 
-  await page.getByRole("link", { name: "POS" }).click();
-  await page.locator("#pos-branch").selectOption({ label: "Sucursal Centro" });
-  await page.locator("#pos-register").selectOption({ label: "Caja 1" });
+  await page.getByRole("link", { name: "Punto de venta" }).click();
 
-  await page.getByPlaceholder("Descripcion, codigo o codigo de barras").fill("Bizcocho");
+  await page.getByPlaceholder("Buscar producto por nombre, codigo o barcode...").fill("Bizcocho");
   await page.getByRole("button", { name: /Bizcocho de chocolate/ }).click();
   await expect(page.getByText("RD$250.00").first()).toBeVisible();
 
@@ -80,7 +65,6 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await expect(page.getByRole("heading", { name: "Venta anulada" })).toBeVisible();
 
   await page.getByRole("link", { name: "Inventario" }).click();
-  await page.locator("#branch-select").selectOption({ label: "Sucursal Centro" });
   const revertedRow = page.locator("tr", { hasText: "Bizcocho de chocolate" });
   await expect(revertedRow.locator("td").nth(1)).toHaveText("10");
 });

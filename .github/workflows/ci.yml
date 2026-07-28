@@ -99,3 +99,89 @@ jobs:
         with:
           name: web-coverage-report
           path: apps/web/coverage/
+
+  # The end-to-end suite had gone stale precisely because nothing ran it: eight of its ten specs
+  # were failing against navigation and copy that had since changed, and no build ever noticed.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: dalventa_e2e
+          POSTGRES_USER: dalventa
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Build the API
+        working-directory: apps/api
+        run: ./mvnw -q -B package -DskipTests
+
+      # The specs drive the real stack, so a broken contract between web and API surfaces here
+      # rather than being mocked away.
+      - name: Start the API
+        working-directory: apps/api
+        run: |
+          nohup java -jar target/api-*.jar > api.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/actuator/health > /dev/null && exit 0
+            sleep 3
+          done
+          echo "API did not become healthy"
+          cat api.log
+          exit 1
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: dalventa_e2e
+          DB_USER: dalventa
+          DB_PASSWORD: changeme
+          JWT_SECRET: e2e-ci-secret-256-bits-minimum-length-ok
+          CORS_ALLOWED_ORIGINS: http://localhost:3000
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci --ignore-scripts
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts starts `npm run dev` itself and waits for the port.
+      - name: Run the specs
+        working-directory: apps/web
+        run: npx playwright test --reporter=line
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            apps/web/test-results/
+            apps/api/api.log

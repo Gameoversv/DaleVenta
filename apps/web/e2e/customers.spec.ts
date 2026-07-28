@@ -30,5 +30,6 @@ test("crear cliente, editar cliente, habilitar credito", async ({ page }) => {
   await page.getByLabel("Credito habilitado").check();
   await page.getByLabel("Limite de credito").fill("5000.00");
   await page.getByRole("button", { name: "Guardar perfil" }).click();
-  await expect(page.getByText("Balance actual: RD$0.00")).toBeVisible();
+  await expect(page.getByText("Balance actual")).toBeVisible();
+  await expect(page.getByText("RD$0.00").first()).toBeVisible();
 });
