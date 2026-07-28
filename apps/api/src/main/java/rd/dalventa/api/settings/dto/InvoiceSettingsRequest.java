@@ -1,23 +1,25 @@
 package rd.dalventa.api.settings.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public record InvoiceSettingsRequest(
-        @NotBlank String businessName,
+        @JsonProperty("businessName") @NotBlank String businessName,
         String rnc,
         String phone,
         String email,
         String address,
         String city,
-        String logoUrl,
-        String footerMessage,
-        @Pattern(regexp = "LETTER|THERMAL_80MM|THERMAL_58MM") String printSize,
-        boolean showLogo,
-        boolean showRnc,
-        boolean showPhone,
-        boolean showEmail,
-        boolean showAddress,
-        boolean showCustomer,
-        boolean showTax
+        @JsonProperty("logoUrl") String logoUrl,
+        @JsonProperty("footerMessage") String footerMessage,
+        @JsonProperty("printSize") @Pattern(regexp = "LETTER|THERMAL_80MM|THERMAL_58MM") String printSize,
+        @JsonProperty("showLogo") boolean showLogo,
+        @JsonProperty("showRnc") boolean showRnc,
+        @JsonProperty("showPhone") boolean showPhone,
+        @JsonProperty("showEmail") boolean showEmail,
+        @JsonProperty("showAddress") boolean showAddress,
+        @JsonProperty("showCustomer") boolean showCustomer,
+        @JsonProperty("showTax") boolean showTax
 ) {}

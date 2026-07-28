@@ -11,7 +11,7 @@ test("crear categoria, crear producto, editar producto", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  await page.getByRole("link", { name: "Productos" }).click();
+  await page.getByRole("link", { name: "Productos" }).first().click();
   await expect(page).toHaveURL(/\/products/);
 
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");

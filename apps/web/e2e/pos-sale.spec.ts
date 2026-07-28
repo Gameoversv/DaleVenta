@@ -14,7 +14,7 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
   // tenant has no branch or register picker, both are auto-selected.
 
-  await page.getByRole("link", { name: "Productos" }).click();
+  await page.getByRole("link", { name: "Productos" }).first().click();
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");
   await page.getByRole("button", { name: "+" }).click();
   await expect(page.getByText("Bizcochos")).toBeVisible();
@@ -31,7 +31,7 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Bizcocho de chocolate")).toBeVisible();
 
-  await page.getByRole("link", { name: "Inventario" }).click();
+  await page.getByRole("link", { name: "Inventario" }).first().click();
   await page.getByRole("button", { name: "Ajustar stock" }).click();
   await page.getByLabel("Producto").selectOption({ label: "Bizcocho de chocolate" });
   await page.getByLabel("Cantidad").fill("10");
@@ -40,13 +40,13 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   const inventoryRow = page.locator("tr", { hasText: "Bizcocho de chocolate" });
   await expect(inventoryRow.locator("td").nth(1)).toHaveText("10");
 
-  await page.getByRole("link", { name: "Turno de Caja" }).click();
+  await page.getByRole("link", { name: "Turno de Caja" }).first().click();
   await expect(page.getByRole("heading", { name: "Abrir turno" })).toBeVisible();
   await page.getByLabel("RD$500").fill("2");
   await page.getByRole("button", { name: "Abrir turno" }).click();
   await expect(page.getByRole("heading", { name: "Turno abierto" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Punto de venta" }).click();
+  await page.getByRole("link", { name: "Punto de venta" }).first().click();
 
   await page.getByPlaceholder("Buscar producto por nombre, codigo o barcode...").fill("Bizcocho");
   await page.getByRole("button", { name: /Bizcocho de chocolate/ }).click();
@@ -64,7 +64,7 @@ test("vender en efectivo con cambio exacto y anular la venta revierte el stock",
   await page.getByRole("button", { name: "Confirmar anulacion" }).click();
   await expect(page.getByRole("heading", { name: "Venta anulada" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Inventario" }).click();
+  await page.getByRole("link", { name: "Inventario" }).first().click();
   const revertedRow = page.locator("tr", { hasText: "Bizcocho de chocolate" });
   await expect(revertedRow.locator("td").nth(1)).toHaveText("10");
 });
