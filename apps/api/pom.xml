@@ -34,12 +34,20 @@
         <sonar.organization>gameoversv</sonar.organization>
         <sonar.projectKey>Gameoversv_DaleVenta</sonar.projectKey>
         <sonar.projectName>DaleVenta</sonar.projectName>
-        <!-- Analyse both applications from this single scanner run. -->
-        <sonar.sources>src/main/java,../web/src</sonar.sources>
-        <sonar.tests>src/test/java</sonar.tests>
-        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.javascript.lcov.reportPaths>${project.basedir}/../web/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
-        <sonar.exclusions>**/node_modules/**,**/.next/**,**/target/**,../web/e2e/**</sonar.exclusions>
+        <!-- Analyse both applications from this single scanner run.
+             The scanner refuses to index anything above its base directory, so pointing sources at
+             "../web/src" silently dropped the whole frontend: the first CI analysis covered 339
+             Java files and not one .ts/.tsx. Rebasing on the repository root fixes that, which is
+             why every path below is repo-relative. -->
+        <sonar.projectBaseDir>${project.basedir}/../..</sonar.projectBaseDir>
+        <sonar.sources>apps/api/src/main/java,apps/web/src</sonar.sources>
+        <sonar.tests>apps/api/src/test/java</sonar.tests>
+        <!-- Web tests live beside the code they cover, so they are classified by pattern instead. -->
+        <sonar.test.inclusions>**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx</sonar.test.inclusions>
+        <sonar.java.binaries>apps/api/target/classes</sonar.java.binaries>
+        <sonar.coverage.jacoco.xmlReportPaths>apps/api/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.javascript.lcov.reportPaths>apps/web/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
+        <sonar.exclusions>**/node_modules/**,**/.next/**,**/target/**,apps/web/e2e/**</sonar.exclusions>
         <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
     </properties>
 
