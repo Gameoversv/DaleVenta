@@ -22,7 +22,7 @@ test("crear categoria, crear producto, editar producto", async ({ page }) => {
   await page.getByLabel("Categoria").selectOption({ label: "Bizcochos" });
   await page.getByLabel("Codigo interno").fill("BIZ-001");
   await page.getByLabel("Descripcion").fill("Bizcocho de chocolate");
-  await page.getByLabel("Unidad").fill("unidad");
+  await page.getByLabel("Unidad").selectOption("unit");
   await page.getByLabel("Costo").fill("100.00");
   await page.getByLabel("Precio venta").fill("250.00");
   await page.getByLabel("Precio mayorista").fill("200.00");

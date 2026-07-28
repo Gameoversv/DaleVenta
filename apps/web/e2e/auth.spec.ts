@@ -11,7 +11,7 @@ test("registro de tenant -> login automatico -> dashboard -> logout", async ({ p
   await page.getByRole("button", { name: "Registrar" }).click();
 
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText("Bienvenido, Admin E2E")).toBeVisible();
+  await expect(page.getByText("Hola, Admin")).toBeVisible();
 
   await page.getByRole("button", { name: "Cerrar sesion" }).click();
   await expect(page).toHaveURL(/\/login/);

@@ -11,12 +11,8 @@ test("seleccionar sucursal y ajustar stock", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  await page.getByRole("link", { name: "Sucursales" }).click();
-  await page.getByRole("button", { name: "Nueva sucursal" }).click();
-  await page.getByLabel("Nombre").fill("Sucursal Centro");
-  await page.getByLabel("Direccion").fill("Calle Duarte 12");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Sucursal Centro")).toBeVisible();
+  // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
+  // tenant has no branch or register picker, both are auto-selected.
 
   await page.getByRole("link", { name: "Productos" }).click();
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");
@@ -27,7 +23,7 @@ test("seleccionar sucursal y ajustar stock", async ({ page }) => {
   await page.getByLabel("Categoria").selectOption({ label: "Bizcochos" });
   await page.getByLabel("Codigo interno").fill("BIZ-001");
   await page.getByLabel("Descripcion").fill("Bizcocho de chocolate");
-  await page.getByLabel("Unidad").fill("unidad");
+  await page.getByLabel("Unidad").selectOption("unit");
   await page.getByLabel("Costo").fill("100.00");
   await page.getByLabel("Precio venta").fill("250.00");
   await page.getByLabel("Precio mayorista").fill("200.00");
@@ -37,7 +33,6 @@ test("seleccionar sucursal y ajustar stock", async ({ page }) => {
 
   await page.getByRole("link", { name: "Inventario" }).click();
   await expect(page).toHaveURL(/\/inventory/);
-  await page.getByLabel("Sucursal").selectOption({ label: "Sucursal Centro" });
   await expect(page.getByText("no tiene productos con inventario registrado")).toBeVisible();
 
   await page.getByRole("button", { name: "Ajustar stock" }).click();

@@ -11,23 +11,11 @@ test("abrir turno, registrar movimiento, cerrar turno sin diferencia", async ({ 
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  await page.getByRole("link", { name: "Sucursales" }).click();
-  await page.getByRole("button", { name: "Nueva sucursal" }).click();
-  await page.getByLabel("Nombre").fill("Sucursal Centro");
-  await page.getByLabel("Direccion").fill("Calle Duarte 12");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Sucursal Centro")).toBeVisible();
-
-  await page.getByText("Sucursal Centro").click();
-  await page.getByRole("button", { name: "Nueva caja" }).click();
-  await page.getByLabel("Nombre").fill("Caja 1");
-  await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(page.getByText("Caja 1")).toBeVisible();
+  // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
+  // tenant has no branch or register picker, both are auto-selected.
 
   await page.getByRole("link", { name: "Turno de Caja" }).click();
   await expect(page).toHaveURL(/\/cash-shift/);
-  await page.getByLabel("Sucursal").selectOption({ label: "Sucursal Centro" });
-  await page.getByLabel("Caja").selectOption({ label: "Caja 1" });
 
   await expect(page.getByRole("heading", { name: "Abrir turno" })).toBeVisible();
   await page.getByLabel("RD$500").fill("2");
