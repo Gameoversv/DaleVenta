@@ -65,11 +65,18 @@ jobs:
           npm ci --ignore-scripts
           npm run test:coverage
 
+      # Without the dependency jars the Java analyser degrades to a partial parse and warns loudly.
+      - name: Collect Java dependencies for the analyser
+        working-directory: apps/api
+        run: ./mvnw -q -B dependency:copy-dependencies
+
+      # Run from the repository root. The Maven plugin resolves sonar.sources against its own module
+      # directory, so it could never reach apps/web; configuration lives in sonar-project.properties.
       - name: Run the scanner
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        working-directory: apps/api
-        run: ./mvnw -B sonar:sonar -Dsonar.host.url=https://sonarcloud.io
+          SONAR_HOST_URL: https://sonarcloud.io
 
     services:
       postgres:
