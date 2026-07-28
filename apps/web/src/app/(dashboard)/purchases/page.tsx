@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BranchResponse } from "@/types/branch";
 import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
+import { money } from "@/lib/money";
+import { purchaseStatusLabel } from "@/lib/status-labels";
 import type {
   CreatePurchaseRequest,
   PurchaseItemRequest,
@@ -50,15 +52,7 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
-function statusLabel(status: PurchaseResponse["status"]): string {
-  if (status === "RECEIVED") return "Recibida";
-  if (status === "VOID") return "Anulada";
-  return "Borrador";
-}
 
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();
@@ -724,7 +718,7 @@ export default function PurchasesPage() {
                         <td className="px-4 py-3 font-medium">{purchase.purchaseNumber}</td>
                         <td className="px-4 py-3">{purchase.supplierName}</td>
                         <td className="px-4 py-3 text-muted-foreground">{purchase.branchName}</td>
-                        <td className="px-4 py-3"><Badge variant={purchase.status === "RECEIVED" ? "success" : "secondary"}>{statusLabel(purchase.status)}</Badge></td>
+                        <td className="px-4 py-3"><Badge variant={purchase.status === "RECEIVED" ? "success" : "secondary"}>{purchaseStatusLabel(purchase.status)}</Badge></td>
                         <td className="px-4 py-3 text-right font-mono-money font-semibold">{money(purchase.total)}</td>
                         <td className="px-4 py-3 text-right font-mono-money text-warning">{money(purchase.balanceDue)}</td>
                         <td className="max-w-sm px-4 py-3 text-muted-foreground">{purchase.items.map((item) => `${item.productName} x ${item.quantity}`).join(", ")}</td>

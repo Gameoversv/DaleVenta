@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ExpiringTenantResponse, GlobalStatsResponse, TenantSummaryResponse } from "@/types/superadmin";
+import { dateOnly } from "@/lib/dates";
 
 const STATUS_VARIANT: Record<string, "success" | "warning" | "danger" | "secondary" | "info"> = {
   ACTIVE: "success",
@@ -32,9 +33,6 @@ async function fetchRecentTenants(): Promise<TenantSummaryResponse[]> {
   return res.data.data;
 }
 
-function dateOnly(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : "-";
-}
 
 const TONE_STYLES = {
   primary: "bg-primary/10 text-primary",

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { TenantFeatures } from "@/types/auth";
 import type { FiscalProfile, FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
+import { fiscalError, normalizeFiscalProfile, sequencePayload, type SequenceForm } from "@/lib/fiscal";
 
 const receiptTypeLabels: Record<FiscalReceiptType, string> = {
   B01: "Credito fiscal",
@@ -32,15 +33,6 @@ const emptyProfile: FiscalProfile = {
   taxRegime: "",
 };
 
-interface SequenceForm {
-  receiptType: FiscalReceiptType;
-  prefix: string;
-  startNumber: string;
-  nextNumber: string;
-  endNumber: string;
-  expiresAt: string;
-  active: boolean;
-}
 
 const defaultSequenceForm: SequenceForm = {
   receiptType: "B01",
@@ -59,7 +51,7 @@ async function fetchFiscalStatus(): Promise<TenantFeatures> {
 
 async function fetchFiscalProfile(): Promise<FiscalProfile> {
   const res = await api.get<{ data: FiscalProfile }>("/api/fiscal/profile");
-  return normalizeProfile(res.data.data);
+  return normalizeFiscalProfile(res.data.data);
 }
 
 async function fetchSequences(): Promise<FiscalReceiptSequence[]> {
@@ -67,33 +59,8 @@ async function fetchSequences(): Promise<FiscalReceiptSequence[]> {
   return res.data.data ?? [];
 }
 
-function normalizeProfile(raw: Partial<FiscalProfile> = {}): FiscalProfile {
-  return {
-    businessName: raw.businessName ?? "",
-    tradeName: raw.tradeName ?? "",
-    rnc: raw.rnc ?? "",
-    fiscalAddress: raw.fiscalAddress ?? "",
-    phone: raw.phone ?? "",
-    email: raw.email ?? "",
-    taxRegime: raw.taxRegime ?? "",
-  };
-}
 
-function fiscalError(err: unknown, fallback: string) {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? fallback;
-}
 
-function sequencePayload(form: SequenceForm) {
-  return {
-    receiptType: form.receiptType,
-    prefix: form.prefix.trim() || form.receiptType,
-    startNumber: Number(form.startNumber),
-    nextNumber: Number(form.nextNumber),
-    endNumber: Number(form.endNumber),
-    expiresAt: form.expiresAt,
-    active: form.active,
-  };
-}
 
 function FiscalProfileCard() {
   const queryClient = useQueryClient();
@@ -102,7 +69,7 @@ function FiscalProfileCard() {
   const values = form ?? data ?? emptyProfile;
 
   const mutation = useMutation({
-    mutationFn: (payload: FiscalProfile) => api.put("/api/fiscal/profile", normalizeProfile(payload)),
+    mutationFn: (payload: FiscalProfile) => api.put("/api/fiscal/profile", normalizeFiscalProfile(payload)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fiscal-profile"] });
       setForm(null);
@@ -112,7 +79,7 @@ function FiscalProfileCard() {
   });
 
   const update = <K extends keyof FiscalProfile>(key: K, value: FiscalProfile[K]) => {
-    setForm((current) => ({ ...normalizeProfile(current ?? data), [key]: value }));
+    setForm((current) => ({ ...normalizeFiscalProfile(current ?? data), [key]: value }));
   };
 
   return (

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ImpersonateResponse, TenantDetailResponse, TenantPlan, TenantStatus } from "@/types/superadmin";
+import { dateOnly } from "@/lib/dates";
 
 async function fetchTenant(id: string): Promise<TenantDetailResponse> {
   const res = await api.get<{ data: TenantDetailResponse }>(`/api/super-admin/tenants/${id}`);
@@ -22,9 +23,6 @@ function extractError(err: unknown): string {
   return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Error";
 }
 
-function dateOnly(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : "-";
-}
 
 const STATUSES: TenantStatus[] = ["PENDING", "TRIAL", "ACTIVE", "SUSPENDED", "CANCELLED"];
 const PLANS: TenantPlan[] = ["STARTER", "PRO", "ENTERPRISE"];

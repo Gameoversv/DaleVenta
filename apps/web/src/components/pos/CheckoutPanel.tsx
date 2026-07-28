@@ -16,6 +16,14 @@ import type { ChangeSuggestionResponse, PaymentRequest, RentalDetailsRequest } f
 import type { CustomerResponse } from "@/types/customer";
 import type { CreditAccountResponse, CreditProfileResponse } from "@/types/credit";
 import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
+import { money } from "@/lib/money";
+import {
+  changeAmountCents as changeCents,
+  checkoutTotals,
+  creditAvailable as creditAvailableAmount,
+  paymentReadiness,
+  sumDenominations,
+} from "@/lib/checkout";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
@@ -72,9 +80,6 @@ const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Ba
   { id: "CREDIT", label: "Credito", icon: Wallet2, activeClass: "border-credit bg-credit/10 text-credit" },
 ];
 
-function money(value: number) {
-  return `RD$${value.toFixed(2)}`;
-}
 
 export function CheckoutPanel({
   registerId,
@@ -113,29 +118,26 @@ export function CheckoutPanel({
     enabled: cashDenominationsEnabled,
   });
 
-  const discountAmount = canDiscount ? Math.max(0, parseFloat(discountInput) || 0) : 0;
-  const saleTotal = Math.max(0, preDiscountTotal - discountAmount);
-  const rentalDepositAmount = hasRentalItems ? Math.max(0, Number(rentalDeposit) || 0) : 0;
-  const total = saleTotal + rentalDepositAmount;
+  const { discountAmount, saleTotal, rentalDepositAmount, total } = checkoutTotals({
+    preDiscountTotal,
+    discountInput,
+    canDiscount,
+    hasRentalItems,
+    rentalDeposit,
+  });
   const mixedCashAmount = Math.max(0, Number(mixedCashInput) || 0);
   const mixedRemainingAmount = Math.max(0, total - mixedCashAmount);
   const mixedTransferAmount = mixedSecondMethod === "TRANSFER" ? mixedRemainingAmount : 0;
   const mixedCreditAmount = mixedSecondMethod === "CREDIT" ? mixedRemainingAmount : 0;
 
-  const sumDenominations = (entries: DenominationCountEntry[]) =>
-    entries.reduce((sum, e) => {
-      const denom = denominations?.find((d) => d.id === e.denominationId);
-      return sum + (denom ? Number(denom.value) * e.quantity : 0);
-    }, 0);
-
-  const receivedTotal = sumDenominations(receivedEntries);
-  const mixedReceivedTotal = sumDenominations(mixedReceivedEntries);
+  const receivedTotal = sumDenominations(receivedEntries, denominations);
+  const mixedReceivedTotal = sumDenominations(mixedReceivedEntries, denominations);
   const directReceivedAmount = Math.max(0, Number(receivedAmountInput) || 0);
   const directChangeAmount = directReceivedAmount - total;
   const mixedDirectReceivedAmount = Math.max(0, Number(mixedReceivedAmountInput) || 0);
   const mixedDirectChangeAmount = mixedDirectReceivedAmount - mixedCashAmount;
-  const changeAmountCents = Math.round((receivedTotal - total) * 100);
-  const mixedChangeAmountCents = Math.round((mixedReceivedTotal - mixedCashAmount) * 100);
+  const changeAmountCents = changeCents(receivedTotal, total);
+  const mixedChangeAmountCents = changeCents(mixedReceivedTotal, mixedCashAmount);
 
   const { data: suggestion } = useQuery({
     queryKey: ["change-suggestion", registerId, changeAmountCents, receivedEntries],
@@ -166,35 +168,41 @@ export function CheckoutPanel({
     enabled: (method === "CREDIT" || (method === "MIXED" && mixedSecondMethod === "CREDIT")) && !!customer,
   });
 
-  const creditAvailable =
-    creditProfile && creditAccount
-      ? creditProfile.creditLimit == null
-        ? Infinity
-        : Number(creditProfile.creditLimit) - Number(creditAccount.balance)
-      : null;
+  const creditAvailable = creditAvailableAmount(creditProfile, creditAccount);
   const creditEligible = canAuthorizeCredit && !!customer && creditProfile?.creditEnabled === true;
-  const creditWithinLimit = creditAvailable !== null && total <= creditAvailable;
-  const mixedCreditWithinLimit = creditAvailable !== null && mixedCreditAmount <= creditAvailable;
 
-  const cashReady = cashDenominationsEnabled
-    ? method === "CASH" && changeAmountCents >= 0 && receivedEntries.length > 0 && suggestion?.exact === true
-    : method === "CASH" && directReceivedAmount >= total;
-  const mixedCashReady = cashDenominationsEnabled
-    ? mixedChangeAmountCents >= 0 && mixedReceivedEntries.length > 0 && mixedSuggestion?.exact === true
-    : mixedDirectReceivedAmount >= mixedCashAmount;
-  const transferReady = method === "TRANSFER" && bank.trim() !== "" && reference.trim() !== "";
-  const mixedReady =
-    method === "MIXED" &&
-    mixedCashAmount > 0 &&
-    mixedCashAmount < total &&
-    mixedRemainingAmount > 0 &&
-    mixedCashReady &&
-    (mixedSecondMethod === "TRANSFER"
-      ? mixedBank.trim() !== "" && mixedReference.trim() !== ""
-      : creditEligible && mixedCreditWithinLimit);
-  const creditReady = method === "CREDIT" && creditEligible && creditWithinLimit;
-  const rentalReady = !hasRentalItems || (customer != null && rentalReturnAt.trim() !== "");
-  const canConfirm = !disabled && total > 0 && rentalReady && (cashReady || transferReady || mixedReady || creditReady) && !isSubmitting;
+  const { cashReady, transferReady, mixedReady, creditReady, rentalReady, canConfirm: rulesSatisfied } =
+    paymentReadiness({
+      method,
+      total,
+      cashDenominationsEnabled,
+      changeCents: changeAmountCents,
+      receivedEntryCount: receivedEntries.length,
+      suggestionExact: suggestion?.exact === true,
+      directReceivedAmount,
+      bank,
+      reference,
+      mixedCashAmount,
+      mixedSecondMethod,
+      mixedChangeCents: mixedChangeAmountCents,
+      mixedReceivedEntryCount: mixedReceivedEntries.length,
+      mixedSuggestionExact: mixedSuggestion?.exact === true,
+      mixedDirectReceivedAmount,
+      mixedBank,
+      mixedReference,
+      creditEligible,
+      creditAvailableAmount: creditAvailable,
+      hasRentalItems,
+      hasCustomer: customer != null,
+      rentalReturnAt,
+    });
+  const canConfirm = !disabled && rulesSatisfied && !isSubmitting;
+
+  // Only used to explain the block in the UI; paymentReadiness already enforces both.
+  const mixedRemainingAmountForCredit = Math.max(0, total - mixedCashAmount);
+  const creditWithinLimit = creditAvailable !== null && total <= creditAvailable;
+  const mixedCreditWithinLimit =
+    creditAvailable !== null && mixedRemainingAmountForCredit <= creditAvailable;
 
   const handleConfirm = () => {
     const payments: PaymentRequest[] =

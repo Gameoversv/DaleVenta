@@ -13,6 +13,7 @@ import api from "@/lib/api";
 import { productUnitLabel } from "@/lib/product-units";
 import { ProductFormDialog } from "./ProductFormDialog";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
+import { money } from "@/lib/money";
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products", { params: { includeInactive: true } });
@@ -24,9 +25,6 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | null): string {
-  return value != null ? `RD$${Number(value).toFixed(2)}` : "-";
-}
 
 type StatusFilter = "all" | "active" | "inactive";
 

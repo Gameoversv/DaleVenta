@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DenominationCountEntry, DenominationResponse } from "@/types/cash-shift";
+import { money } from "@/lib/money";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
@@ -75,7 +76,7 @@ export function DenominationCountGrid({ onChange }: DenominationCountGridProps) 
           </div>
         ))}
       </div>
-      <p className="text-sm font-medium">Total: RD${total.toFixed(2)}</p>
+      <p className="text-sm font-medium">Total: {money(total)}</p>
     </div>
   );
 }

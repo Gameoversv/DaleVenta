@@ -11,20 +11,15 @@ import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
 import { productUnitLabel } from "@/lib/product-units";
 import type { InvoiceResponse } from "@/types/sale";
+import { moneyOrZero } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 async function fetchInvoice(id: string): Promise<InvoiceResponse> {
   const res = await api.get<{ data: InvoiceResponse }>(`/api/sales/${id}/invoice`);
   return res.data.data;
 }
 
-function money(value: string | number): string {
-  const amount = Number(value ?? 0);
-  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
-}
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 function fieldValue(record: unknown, names: string[], fallback: string | number = 0): string | number {
   const source = record as Record<string, unknown> | null | undefined;
@@ -168,10 +163,10 @@ export default function InvoicePage() {
                       {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
                     </td>
                     <td className="py-2 text-right">
-                      {money(fieldValue(item, ["unitPrice", "unit_price", "price"]))} /{" "}
+                      {moneyOrZero(fieldValue(item, ["unitPrice", "unit_price", "price"]))} /{" "}
                       {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
                     </td>
-                    <td className="py-2 text-right">{money(fieldValue(item, ["lineTotal", "line_total", "total", "amount"]))}</td>
+                    <td className="py-2 text-right">{moneyOrZero(fieldValue(item, ["lineTotal", "line_total", "total", "amount"]))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -207,25 +202,25 @@ export default function InvoicePage() {
               {data.payments.map((payment) => (
                 <div key={payment.id} className="flex max-w-xs items-center justify-between gap-3">
                   <PaymentMethodBadge method={payment.method} />
-                  <span className="font-mono-money">{money(payment.amount)}</span>
+                  <span className="font-mono-money">{moneyOrZero(payment.amount)}</span>
                 </div>
               ))}
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>{money(data.subtotal)}</span></div>
-              {data.business.showTax && <div className="flex justify-between"><span>Impuesto</span><span>{money(data.taxTotal)}</span></div>}
-              <div className="flex justify-between"><span>Descuento</span><span>{money(data.discountAmount)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span>{moneyOrZero(data.subtotal)}</span></div>
+              {data.business.showTax && <div className="flex justify-between"><span>Impuesto</span><span>{moneyOrZero(data.taxTotal)}</span></div>}
+              <div className="flex justify-between"><span>Descuento</span><span>{moneyOrZero(data.discountAmount)}</span></div>
               {data.rental && Number(data.rental.depositAmount) > 0 && (
                 <div className="flex justify-between">
-                  <span>Deposito alquiler</span><span>{money(data.rental.depositAmount)}</span>
+                  <span>Deposito alquiler</span><span>{moneyOrZero(data.rental.depositAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>{data.rental ? "Total renta" : "Total"}</span><span>{money(data.total)}</span>
+                <span>{data.rental ? "Total renta" : "Total"}</span><span>{moneyOrZero(data.total)}</span>
               </div>
               {data.rental && (
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total cobrado</span><span>{money(data.amountPaid ?? paymentTotal(data))}</span>
+                  <span>Total cobrado</span><span>{moneyOrZero(data.amountPaid ?? paymentTotal(data))}</span>
                 </div>
               )}
             </div>

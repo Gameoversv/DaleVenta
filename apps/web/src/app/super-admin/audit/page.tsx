@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import type { AdminActionResponse } from "@/types/superadmin";
+import { dateTime } from "@/lib/dates";
 
 interface AuditPage {
   data: AdminActionResponse[];
@@ -17,9 +18,6 @@ async function fetchAudit(page: number): Promise<AuditPage> {
   return res.data;
 }
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 export default function SuperAdminAuditPage() {
   const [page, setPage] = useState(0);
