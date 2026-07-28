@@ -167,6 +167,12 @@ jobs:
           # from the same address, which is precisely the traffic that cap exists to throttle, so
           # the whole suite would fail on a 429 once it grew past five specs.
           RATE_LIMIT_ENABLED: "false"
+          # The super admin is seeded by the API rather than registered through the UI, so the
+          # specs need a password they can predict. These are throwaway values for a database that
+          # is created and destroyed with this job — never reuse a deployed environment's secrets
+          # here, and never commit one. e2e/support/super-admin.ts reads the same defaults.
+          APP_SEED_SUPER_ADMIN_PASSWORD: E2eSuperAdmin123!
+          APP_SEED_ADMIN_PASSWORD: E2eAdmin123!
 
       - name: Install dependencies
         working-directory: apps/web
