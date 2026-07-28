@@ -14,6 +14,7 @@ import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
 import type { TenantFeatures } from "@/types/auth";
 import type { DenominationCountEntry, DenominationResponse, InventoryCountEntry } from "@/types/cash-shift";
+import { money } from "@/lib/money";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
@@ -76,7 +77,7 @@ export function OpenShiftForm({ registerId, branchId }: { registerId: string; br
         <div className="rounded-xl bg-primary/5 p-4 text-center">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fondo inicial</p>
           <p className="font-mono-money font-display text-3xl font-extrabold text-primary">
-            RD${(denominationsEnabled ? openingTotal : directOpeningTotal).toFixed(2)}
+            {money(denominationsEnabled ? openingTotal : directOpeningTotal)}
           </p>
         </div>
         <Tabs

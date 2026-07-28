@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { productUnitLabel } from "@/lib/product-units";
 import type { ProductResponse } from "@/types/product";
 import type { CartLine } from "./cart";
+import { money } from "@/lib/money";
 
 interface ResolvedLine {
   line: CartLine;
@@ -66,7 +67,7 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{r.product.description}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      RD${r.unitPrice.toFixed(2)} / {productUnitLabel(r.product.unit)}
+                      {money(r.unitPrice)} / {productUnitLabel(r.product.unit)}
                     </p>
                     <label className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <input
@@ -79,7 +80,7 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
                     </label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono-money whitespace-nowrap text-sm font-bold">RD${r.lineTotal.toFixed(2)}</span>
+                    <span className="font-mono-money whitespace-nowrap text-sm font-bold">{money(r.lineTotal)}</span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -121,22 +122,22 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
         <div className="space-y-1.5 border-t border-border pt-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-mono-money">RD${subtotal.toFixed(2)}</span>
+            <span className="font-mono-money">{money(subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Impuesto</span>
-            <span className="font-mono-money">RD${tax.toFixed(2)}</span>
+            <span className="font-mono-money">{money(tax)}</span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Descuento</span>
-              <span className="font-mono-money text-warning">-RD${discountAmount.toFixed(2)}</span>
+              <span className="font-mono-money text-warning">-{money(discountAmount)}</span>
             </div>
           )}
           <div className="flex items-baseline justify-between border-t border-border pt-2">
             <span className="font-display text-base font-semibold">Total</span>
             <span className="font-mono-money font-display text-3xl font-extrabold text-primary">
-              RD${total.toFixed(2)}
+              {money(total)}
             </span>
           </div>
         </div>
