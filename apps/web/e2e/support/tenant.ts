@@ -7,17 +7,21 @@ import { expect, type Page } from "@playwright/test";
  * a product created by one spec must never make another spec's assertion pass.
  */
 export async function registerTenant(page: Page, label: string) {
-  const email = `e2e-${label}-${Date.now()}@dalventa.test`;
+  // The business name carries the same stamp as the email: the super-admin specs have to pick
+  // this tenant's row out of every tenant every earlier run left behind.
+  const stamp = Date.now();
+  const email = `e2e-${label}-${stamp}@dalventa.test`;
+  const businessName = `Negocio ${label} ${stamp}`;
 
   await page.goto("/register");
-  await page.getByLabel("Nombre del negocio").fill(`Negocio ${label} E2E`);
+  await page.getByLabel("Nombre del negocio").fill(businessName);
   await page.getByLabel("Tu nombre").fill(`Admin ${label}`);
   await page.getByLabel("Correo").fill(email);
   await page.getByLabel("Contrasena").fill("Secret123!");
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  return { email, password: "Secret123!" };
+  return { email, password: "Secret123!", businessName };
 }
 
 /** Opens a screen from the sidebar and waits for the route to settle. */
