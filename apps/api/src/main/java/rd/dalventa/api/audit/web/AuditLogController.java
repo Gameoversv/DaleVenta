@@ -1,7 +1,9 @@
 package rd.dalventa.api.audit.web;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,9 +32,21 @@ public class AuditLogController {
             @RequestParam(defaultValue = "20") int size
     ) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var result = (entityType != null && entityId != null)
-                ? auditLogService.listForEntity(entityType, entityId, pageable)
-                : auditLogService.list(pageable);
+        var result = resolve(entityType, entityId, pageable);
         return ApiResponse.paged(result.getContent(), result.getTotalElements(), page, size);
+    }
+
+    /**
+     * The audit screen filters by kind and sends `entityType` on its own. That case used to fall
+     * through to the unfiltered listing, so the dropdown looked like it worked and quietly changed
+     * nothing. An `entityId` without a type is meaningless on its own and stays unfiltered.
+     */
+    private Page<AuditLogResponse> resolve(String entityType, UUID entityId, Pageable pageable) {
+        if (entityType == null || entityType.isBlank()) {
+            return auditLogService.list(pageable);
+        }
+        return entityId != null
+                ? auditLogService.listForEntity(entityType, entityId, pageable)
+                : auditLogService.listForEntityType(entityType, pageable);
     }
 }

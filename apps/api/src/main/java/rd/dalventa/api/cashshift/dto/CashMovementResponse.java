@@ -1,6 +1,7 @@
 package rd.dalventa.api.cashshift.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.cashshift.domain.CashMovement;
 import rd.dalventa.api.cashshift.domain.CashMovementType;
 
@@ -14,9 +15,9 @@ public record CashMovementResponse(
         CashMovementType type,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal amount,
         String reason,
-        Instant createdAt,
-        UUID userId,
-        UUID saleId,
+        @JsonProperty("createdAt") Instant createdAt,
+        @JsonProperty("userId") UUID userId,
+        @JsonProperty("saleId") UUID saleId,
         List<DenominationCountEntry> denominations
 ) {
     public static CashMovementResponse from(CashMovement m) {
