@@ -34,6 +34,16 @@ public class AuditLogService {
                 .map(log -> AuditLogResponse.from(log, actorName(log.getActorUserId())));
     }
 
+    /**
+     * Filtering by kind alone is what the audit screen's dropdown does; without it the controller
+     * fell through to {@link #list} and the filter silently returned everything.
+     */
+    public Page<AuditLogResponse> listForEntityType(String entityType, Pageable pageable) {
+        var tenantId = TenantContext.require();
+        return auditLogRepository.findAllByTenantIdAndEntityTypeOrderByCreatedAtDesc(tenantId, entityType, pageable)
+                .map(log -> AuditLogResponse.from(log, actorName(log.getActorUserId())));
+    }
+
     public Page<AuditLogResponse> listForEntity(String entityType, UUID entityId, Pageable pageable) {
         var tenantId = TenantContext.require();
         return auditLogRepository
