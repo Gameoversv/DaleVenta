@@ -46,7 +46,13 @@ test("venta a credito aumenta balance, abono lo reduce, abono excesivo se rechaz
   await expect(page.getByText("Maria Gomez")).toBeVisible();
 
   await page.getByRole("button", { name: "Credito" }).click();
-  await page.getByLabel("Credito habilitado").check();
+  // The checkbox is hydrated from the credit profile query, so a click that lands before the
+  // response is overwritten by it. Retry until the state sticks.
+  const creditEnabled = page.getByLabel("Credito habilitado");
+  await expect(async () => {
+    await creditEnabled.check();
+    await expect(creditEnabled).toBeChecked();
+  }).toPass({ timeout: 10_000 });
   await page.getByLabel("Limite de credito").fill("5000.00");
   await page.getByRole("button", { name: "Guardar perfil" }).click();
   await expect(page.getByText("Balance actual", { exact: true })).toBeVisible();
