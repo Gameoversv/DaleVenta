@@ -14,7 +14,7 @@ test("venta a credito aumenta balance, abono lo reduce, abono excesivo se rechaz
   // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
   // tenant has no branch or register picker, both are auto-selected.
 
-  await page.getByRole("link", { name: "Productos" }).click();
+  await page.getByRole("link", { name: "Productos" }).first().click();
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");
   await page.getByRole("button", { name: "+" }).click();
   await expect(page.getByText("Bizcochos")).toBeVisible();
@@ -31,14 +31,14 @@ test("venta a credito aumenta balance, abono lo reduce, abono excesivo se rechaz
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Bizcocho de chocolate")).toBeVisible();
 
-  await page.getByRole("link", { name: "Inventario" }).click();
+  await page.getByRole("link", { name: "Inventario" }).first().click();
   await page.getByRole("button", { name: "Ajustar stock" }).click();
   await page.getByLabel("Producto").selectOption({ label: "Bizcocho de chocolate" });
   await page.getByLabel("Cantidad").fill("10");
   await page.getByLabel("Motivo").fill("Compra inicial");
   await page.getByRole("button", { name: "Guardar" }).click();
 
-  await page.getByRole("link", { name: "Clientes" }).click();
+  await page.getByRole("link", { name: "Clientes" }).first().click();
   await page.getByRole("button", { name: "Nuevo cliente" }).click();
   await page.getByLabel("Nombre").fill("Maria");
   await page.getByLabel("Apellido").fill("Gomez");
@@ -59,13 +59,13 @@ test("venta a credito aumenta balance, abono lo reduce, abono excesivo se rechaz
   await expect(page.getByText("RD$0.00", { exact: true }).first()).toBeVisible();
   await page.keyboard.press("Escape");
 
-  await page.getByRole("link", { name: "Turno de Caja" }).click();
+  await page.getByRole("link", { name: "Turno de Caja" }).first().click();
   await expect(page.getByRole("heading", { name: "Abrir turno" })).toBeVisible();
   await page.getByLabel("RD$500").fill("2");
   await page.getByRole("button", { name: "Abrir turno" }).click();
   await expect(page.getByRole("heading", { name: "Turno abierto" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Punto de venta" }).click();
+  await page.getByRole("link", { name: "Punto de venta" }).first().click();
 
   await page.getByPlaceholder("Buscar cliente (opcional)").fill("Maria");
   await page.getByRole("button", { name: "Maria Gomez" }).click();
@@ -79,7 +79,7 @@ test("venta a credito aumenta balance, abono lo reduce, abono excesivo se rechaz
   await page.getByRole("button", { name: "Cobrar" }).click();
   await expect(page.getByRole("heading", { name: "Venta confirmada" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Clientes" }).click();
+  await page.getByRole("link", { name: "Clientes" }).first().click();
   await page.getByRole("button", { name: "Credito" }).click();
   await expect(page.getByText("Balance actual", { exact: true })).toBeVisible();
   await expect(page.getByText("RD$250.00", { exact: true }).first()).toBeVisible();

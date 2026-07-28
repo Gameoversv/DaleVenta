@@ -11,7 +11,7 @@ test("crear cliente, editar cliente, habilitar credito", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
-  await page.getByRole("link", { name: "Clientes" }).click();
+  await page.getByRole("link", { name: "Clientes" }).first().click();
   await expect(page).toHaveURL(/\/customers/);
 
   await page.getByRole("button", { name: "Nuevo cliente" }).click();

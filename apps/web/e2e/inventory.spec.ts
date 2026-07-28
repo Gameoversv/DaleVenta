@@ -14,7 +14,7 @@ test("seleccionar sucursal y ajustar stock", async ({ page }) => {
   // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
   // tenant has no branch or register picker, both are auto-selected.
 
-  await page.getByRole("link", { name: "Productos" }).click();
+  await page.getByRole("link", { name: "Productos" }).first().click();
   await page.getByPlaceholder("Nueva categoria").fill("Bizcochos");
   await page.getByRole("button", { name: "+" }).click();
   await expect(page.getByText("Bizcochos")).toBeVisible();
@@ -31,7 +31,7 @@ test("seleccionar sucursal y ajustar stock", async ({ page }) => {
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Bizcocho de chocolate")).toBeVisible();
 
-  await page.getByRole("link", { name: "Inventario" }).click();
+  await page.getByRole("link", { name: "Inventario" }).first().click();
   await expect(page).toHaveURL(/\/inventory/);
   await expect(page.getByText("no tiene productos con inventario registrado")).toBeVisible();
 

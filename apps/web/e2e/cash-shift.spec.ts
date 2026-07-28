@@ -14,7 +14,7 @@ test("abrir turno, registrar movimiento, cerrar turno sin diferencia", async ({ 
   // Registration already provisions "Sucursal principal" and "Caja 1"; a single-location
   // tenant has no branch or register picker, both are auto-selected.
 
-  await page.getByRole("link", { name: "Turno de Caja" }).click();
+  await page.getByRole("link", { name: "Turno de Caja" }).first().click();
   await expect(page).toHaveURL(/\/cash-shift/);
 
   await expect(page.getByRole("heading", { name: "Abrir turno" })).toBeVisible();
