@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import type { RentalContractResponse, RentalContractStatus } from "@/types/rental";
 import { money } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
+import { rentalStatusLabel } from "@/lib/status-labels";
 
 type ViewTab = "contracts" | "deposits";
 type ContractFilter = "all" | "overdue" | "rented" | "reserved" | "received";
@@ -47,12 +48,6 @@ function isOverdue(rental: RentalContractResponse): boolean {
   return isOpenRental(rental) && new Date(rental.expectedReturnAt).getTime() < Date.now();
 }
 
-function statusLabel(status: RentalContractStatus): string {
-  if (status === "RESERVED") return "Reservado";
-  if (status === "ACTIVE") return "Alquilado";
-  if (status === "RETURNED") return "Recibido";
-  return "Anulado";
-}
 
 function statusVariant(status: RentalContractStatus): "success" | "secondary" | "danger" | "warning" | "info" {
   if (status === "ACTIVE") return "info";
@@ -266,7 +261,7 @@ export default function RentalsPage() {
                         <td className="px-4 py-3">{rental.customerName}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
-                            <Badge variant={statusVariant(rental.status)}>{statusLabel(rental.status)}</Badge>
+                            <Badge variant={statusVariant(rental.status)}>{rentalStatusLabel(rental.status)}</Badge>
                             {isOverdue(rental) && <Badge variant="danger">Vencido</Badge>}
                           </div>
                         </td>

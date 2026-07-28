@@ -17,6 +17,8 @@ import type { ProductResponse } from "@/types/product";
 import type { CreateQuotationRequest, QuotationResponse } from "@/types/quotation";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
+import { quotationStatusLabel } from "@/lib/status-labels";
+import { escapeHtml } from "@/lib/html";
 
 interface DraftItem {
   productId: string;
@@ -41,24 +43,7 @@ async function fetchCustomers(): Promise<CustomerResponse[]> {
 
 
 
-function statusLabel(status: QuotationResponse["status"]): string {
-  const labels: Record<QuotationResponse["status"], string> = {
-    DRAFT: "Borrador",
-    SENT: "Enviada",
-    ACCEPTED: "Aceptada",
-    EXPIRED: "Vencida",
-    CANCELLED: "Cancelada",
-  };
-  return labels[status];
-}
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
 
 function printQuotation(quotation: QuotationResponse) {
   const rows = quotation.items
@@ -99,7 +84,7 @@ function printQuotation(quotation: QuotationResponse) {
         <div class="meta">
           <div><strong>Cliente:</strong> ${escapeHtml(quotation.customerName)}</div>
           <div><strong>Fecha:</strong> ${escapeHtml(dateTime(quotation.createdAt))}</div>
-          <div><strong>Estado:</strong> ${escapeHtml(statusLabel(quotation.status))}</div>
+          <div><strong>Estado:</strong> ${escapeHtml(quotationStatusLabel(quotation.status))}</div>
           <div><strong>Valida hasta:</strong> ${escapeHtml(quotation.validUntil ?? "-")}</div>
         </div>
         ${quotation.notes ? `<p><strong>Notas:</strong> ${escapeHtml(quotation.notes)}</p>` : ""}
@@ -137,7 +122,7 @@ function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
         </div>
         <div>
           <p className="text-muted-foreground">Estado</p>
-          <p className="font-medium">{statusLabel(quotation.status)}</p>
+          <p className="font-medium">{quotationStatusLabel(quotation.status)}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Fecha</p>
@@ -501,7 +486,7 @@ export default function QuotationsPage() {
                       <td className="py-2">{dateTime(quotation.createdAt)}</td>
                       <td className="py-2 font-medium">{quotation.quotationNumber}</td>
                       <td className="py-2">{quotation.customerName}</td>
-                      <td className="py-2">{statusLabel(quotation.status)}</td>
+                      <td className="py-2">{quotationStatusLabel(quotation.status)}</td>
                       <td className="py-2">{quotation.validUntil ?? "-"}</td>
                       <td className="py-2 text-right font-medium">{moneyOrZero(quotation.total)}</td>
                       <td className="py-2">

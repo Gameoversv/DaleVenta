@@ -16,6 +16,7 @@ import { formatDenominationValue } from "@/components/cash-shift/DenominationCou
 import type { CashMovementResponse, CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
+import { cashMovementTypeLabel } from "@/lib/status-labels";
 
 async function fetchCashShifts(registerId: string): Promise<CashShiftSummaryResponse[]> {
   const res = await api.get<{ data: CashShiftSummaryResponse[] }>("/api/cash-shifts", { params: { registerId } });
@@ -40,11 +41,6 @@ function differenceClass(value: string | null): string {
   return "text-amber-600";
 }
 
-function movementTypeLabel(type: CashMovementResponse["type"]): string {
-  if (type === "ENTRY") return "Entrada";
-  if (type === "WITHDRAWAL") return "Retiro";
-  return "Gasto";
-}
 
 function movementTypeClass(type: CashMovementResponse["type"]): string {
   return type === "ENTRY" ? "text-emerald-600" : "text-rose-600";
@@ -179,7 +175,7 @@ function ShiftDetailDialog({
                     <tr key={movement.id} className="border-b border-border">
                       <td className="py-2">{dateTime(movement.createdAt)}</td>
                       <td className={cn("py-2 font-medium", movementTypeClass(movement.type))}>
-                        {movementTypeLabel(movement.type)}
+                        {cashMovementTypeLabel(movement.type)}
                       </td>
                       <td className="py-2">{movement.reason}</td>
                       <td className="py-2">{movementDenominationsLabel(movement)}</td>
