@@ -28,19 +28,6 @@
         <!-- Ratchet: currently at ~0.70 line coverage. Raise as modules gain tests; target 0.80. -->
         <jacoco.line.coverage>0.65</jacoco.line.coverage>
 
-        <!-- SonarQube Cloud. The project key follows the key SonarCloud assigns when a repository
-             is imported from GitHub: <Owner>_<repo>. Analysis stays off until the SONAR_TOKEN
-             secret exists and the SONAR_ENABLED repository variable is set to true. -->
-        <sonar.organization>gameoversv</sonar.organization>
-        <sonar.projectKey>Gameoversv_DaleVenta</sonar.projectKey>
-        <sonar.projectName>DaleVenta</sonar.projectName>
-        <!-- Analyse both applications from this single scanner run. -->
-        <sonar.sources>src/main/java,../web/src</sonar.sources>
-        <sonar.tests>src/test/java</sonar.tests>
-        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.javascript.lcov.reportPaths>${project.basedir}/../web/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
-        <sonar.exclusions>**/node_modules/**,**/.next/**,**/target/**,../web/e2e/**</sonar.exclusions>
-        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -181,12 +168,6 @@
                         </exclude>
                     </excludes>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>${sonar-maven-plugin.version}</version>
             </plugin>
 
             <plugin>
