@@ -208,11 +208,21 @@ class ApiSecurityIntegrationTest extends IntegrationTestBase {
         return appProperties.getJwt().getSecret();
     }
 
-    /** Flips the last signature character so the payload stays valid but the HMAC does not. */
+    /**
+     * Alters one signature character so the payload stays valid but the HMAC does not.
+     *
+     * Deliberately not the last character: a 256-bit HMAC is 43 base64url characters, and the
+     * final one carries only two significant bits, so four different characters there decode to
+     * the very same 32 bytes. Flipping it left the signature equivalent often enough to make this
+     * test fail intermittently — and the failure looked like the API accepting a forged token.
+     * Every bit of a middle character counts.
+     */
     private String tamperSignature(String token) {
-        char last = token.charAt(token.length() - 1);
-        char replacement = last == 'A' ? 'B' : 'A';
-        return token.substring(0, token.length() - 1) + replacement;
+        int signatureStart = token.lastIndexOf('.') + 1;
+        int target = signatureStart + (token.length() - signatureStart) / 2;
+        char current = token.charAt(target);
+        char replacement = current == 'A' ? 'B' : 'A';
+        return token.substring(0, target) + replacement + token.substring(target + 1);
     }
 
     private String forgeToken(String email, Instant expiry, String secret) {

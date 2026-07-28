@@ -163,6 +163,10 @@ jobs:
           DB_PASSWORD: changeme
           JWT_SECRET: e2e-ci-secret-256-bits-minimum-length-ok
           CORS_ALLOWED_ORIGINS: http://localhost:3000
+          # Registration is capped at five per minute per IP. Every spec registers its own tenant
+          # from the same address, which is precisely the traffic that cap exists to throttle, so
+          # the whole suite would fail on a 429 once it grew past five specs.
+          RATE_LIMIT_ENABLED: "false"
 
       - name: Install dependencies
         working-directory: apps/web
