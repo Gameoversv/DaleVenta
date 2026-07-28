@@ -9,19 +9,13 @@ import { usePermission } from "@/hooks/usePermission";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSummaryResponse } from "@/types/dashboard";
+import { money } from "@/lib/money";
 
 async function fetchDashboardSummary(): Promise<DashboardSummaryResponse> {
   const res = await api.get<{ data: DashboardSummaryResponse }>("/api/dashboard/summary");
   return res.data.data;
 }
 
-function formatMoney(value: string): string {
-  return new Intl.NumberFormat("es-DO", {
-    style: "currency",
-    currency: "DOP",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
 
 interface MetricCardProps {
   title: string;
@@ -112,7 +106,7 @@ export default function DashboardPage() {
             <MetricCard
               title="Ventas de hoy"
               value={data.salesToday.toString()}
-              detail={`${formatMoney(data.revenueToday)} facturados`}
+              detail={`${money(data.revenueToday)} facturados`}
               href="/pos"
               icon={ShoppingCart}
               tone="primary"
@@ -143,7 +137,7 @@ export default function DashboardPage() {
             />
             <MetricCard
               title="Cuentas por cobrar"
-              value={formatMoney(data.accountsReceivable)}
+              value={money(data.accountsReceivable)}
               detail="Balance pendiente de clientes"
               href="/reports/accounts-receivable"
               icon={CircleDollarSign}
@@ -166,7 +160,7 @@ export default function DashboardPage() {
                 <CardTitle>Operacion de hoy</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <DetailRow label="Ingresos registrados" value={formatMoney(data.revenueToday)} />
+                <DetailRow label="Ingresos registrados" value={money(data.revenueToday)} />
                 <DetailRow label="Ventas completadas" value={data.salesToday.toString()} />
                 <DetailRow label="Turnos abiertos" value={data.openCashShifts.toString()} />
               </CardContent>
@@ -179,7 +173,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="pt-0">
                 <DetailRow label="Productos con stock bajo" value={data.lowStockItems.toString()} />
-                <DetailRow label="Balance pendiente" value={formatMoney(data.accountsReceivable)} />
+                <DetailRow label="Balance pendiente" value={money(data.accountsReceivable)} />
                 <DetailRow label="Clientes activos" value={data.activeCustomers.toString()} />
               </CardContent>
             </Card>

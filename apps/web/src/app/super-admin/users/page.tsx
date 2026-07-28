@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { ResetPasswordResponse, UserSummaryResponse } from "@/types/superadmin";
+import { dateOnly } from "@/lib/dates";
 
 interface UsersPage {
   data: UserSummaryResponse[];
@@ -22,9 +23,6 @@ async function fetchUsers(email: string, page: number): Promise<UsersPage> {
   return res.data;
 }
 
-function dateOnly(value: string): string {
-  return new Date(value).toLocaleDateString();
-}
 
 function ResetPasswordDialog({ user }: { user: UserSummaryResponse }) {
   const [open, setOpen] = useState(false);

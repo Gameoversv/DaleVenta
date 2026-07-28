@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
 import type { CashMovementResponse, CashShiftSummaryResponse, DenominationResponse } from "@/types/cash-shift";
+import { moneyOrZero } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 async function fetchCashShifts(registerId: string): Promise<CashShiftSummaryResponse[]> {
   const res = await api.get<{ data: CashShiftSummaryResponse[] }>("/api/cash-shifts", { params: { registerId } });
@@ -30,13 +32,7 @@ async function fetchDenominations(): Promise<DenominationResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | null): string {
-  return value == null ? "RD$0.00" : `RD$${Number(value).toFixed(2)}`;
-}
 
-function dateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : "-";
-}
 
 function differenceClass(value: string | null): string {
   const difference = Number(value ?? "0");
@@ -116,22 +112,22 @@ function ShiftDetailDialog({
             </div>
             <div>
               <p className="text-muted-foreground">Diferencia</p>
-              <p className={cn("font-medium", differenceClass(shift.cashDifference))}>{money(shift.cashDifference)}</p>
+              <p className={cn("font-medium", differenceClass(shift.cashDifference))}>{moneyOrZero(shift.cashDifference)}</p>
             </div>
           </div>
 
           <div className="grid gap-3 text-sm sm:grid-cols-4">
             <div>
               <p className="text-muted-foreground">Apertura efectivo</p>
-              <p className="font-medium">{money(shift.openingTotal)}</p>
+              <p className="font-medium">{moneyOrZero(shift.openingTotal)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Esperado</p>
-              <p className="font-medium">{money(shift.expectedCash)}</p>
+              <p className="font-medium">{moneyOrZero(shift.expectedCash)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Contado</p>
-              <p className="font-medium">{money(shift.countedCash)}</p>
+              <p className="font-medium">{moneyOrZero(shift.countedCash)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Denominaciones</p>
@@ -187,7 +183,7 @@ function ShiftDetailDialog({
                       </td>
                       <td className="py-2">{movement.reason}</td>
                       <td className="py-2">{movementDenominationsLabel(movement)}</td>
-                      <td className="py-2 text-right">{money(movement.amount)}</td>
+                      <td className="py-2 text-right">{moneyOrZero(movement.amount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -328,10 +324,10 @@ export default function CashShiftHistoryPage() {
                         <td className="py-2">{dateTime(shift.openedAt)}</td>
                         <td className="py-2">{dateTime(shift.closedAt)}</td>
                         <td className="py-2"><StatusBadge status={shift.status} /></td>
-                        <td className="py-2 text-right">{money(shift.expectedCash)}</td>
-                        <td className="py-2 text-right">{money(shift.countedCash)}</td>
+                        <td className="py-2 text-right">{moneyOrZero(shift.expectedCash)}</td>
+                        <td className="py-2 text-right">{moneyOrZero(shift.countedCash)}</td>
                         <td className={cn("py-2 text-right font-medium", differenceClass(shift.cashDifference))}>
-                          {money(shift.cashDifference)}
+                          {moneyOrZero(shift.cashDifference)}
                         </td>
                         <td className="py-2">
                           <div className="flex justify-end">

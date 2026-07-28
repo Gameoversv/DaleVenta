@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { CreateQuotationRequest, QuotationResponse } from "@/types/quotation";
+import { moneyOrZero } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 interface DraftItem {
   productId: string;
@@ -37,13 +39,7 @@ async function fetchCustomers(): Promise<CustomerResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | number | null | undefined): string {
-  return `RD$${Number(value ?? 0).toFixed(2)}`;
-}
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 function statusLabel(status: QuotationResponse["status"]): string {
   const labels: Record<QuotationResponse["status"], string> = {
@@ -71,8 +67,8 @@ function printQuotation(quotation: QuotationResponse) {
         <tr>
           <td>${escapeHtml(item.productName)}</td>
           <td>${item.quantity} ${escapeHtml(productUnitLabel(item.productUnit))}</td>
-          <td>${money(item.unitPrice)}</td>
-          <td class="right">${money(item.lineTotal)}</td>
+          <td>${moneyOrZero(item.unitPrice)}</td>
+          <td class="right">${moneyOrZero(item.lineTotal)}</td>
         </tr>
       `
     )
@@ -114,10 +110,10 @@ function printQuotation(quotation: QuotationResponse) {
           <tbody>${rows}</tbody>
         </table>
         <div class="totals">
-          <div class="line"><span>Subtotal</span><span>${money(quotation.subtotal)}</span></div>
-          <div class="line"><span>Impuesto</span><span>${money(quotation.taxTotal)}</span></div>
-          <div class="line"><span>Descuento</span><span>${money(quotation.discountAmount)}</span></div>
-          <div class="line total"><span>Total</span><span>${money(quotation.total)}</span></div>
+          <div class="line"><span>Subtotal</span><span>${moneyOrZero(quotation.subtotal)}</span></div>
+          <div class="line"><span>Impuesto</span><span>${moneyOrZero(quotation.taxTotal)}</span></div>
+          <div class="line"><span>Descuento</span><span>${moneyOrZero(quotation.discountAmount)}</span></div>
+          <div class="line total"><span>Total</span><span>${moneyOrZero(quotation.total)}</span></div>
         </div>
       </body>
     </html>
@@ -153,7 +149,7 @@ function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
         </div>
         <div>
           <p className="text-muted-foreground">Total</p>
-          <p className="font-medium">{money(quotation.total)}</p>
+          <p className="font-medium">{moneyOrZero(quotation.total)}</p>
         </div>
       </div>
       {quotation.notes && (
@@ -179,19 +175,19 @@ function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
                 <td className="py-2">
                   {item.quantity} {productUnitLabel(item.productUnit)}
                 </td>
-                <td className="py-2">{money(item.unitPrice)}</td>
-                <td className="py-2 text-right">{money(item.lineTotal)}</td>
+                <td className="py-2">{moneyOrZero(item.unitPrice)}</td>
+                <td className="py-2 text-right">{moneyOrZero(item.lineTotal)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="ml-auto grid max-w-xs gap-2 text-sm">
-        <div className="flex justify-between"><span>Subtotal</span><span>{money(quotation.subtotal)}</span></div>
-        <div className="flex justify-between"><span>Impuesto</span><span>{money(quotation.taxTotal)}</span></div>
-        <div className="flex justify-between"><span>Descuento</span><span>{money(quotation.discountAmount)}</span></div>
+        <div className="flex justify-between"><span>Subtotal</span><span>{moneyOrZero(quotation.subtotal)}</span></div>
+        <div className="flex justify-between"><span>Impuesto</span><span>{moneyOrZero(quotation.taxTotal)}</span></div>
+        <div className="flex justify-between"><span>Descuento</span><span>{moneyOrZero(quotation.discountAmount)}</span></div>
         <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-          <span>Total</span><span>{money(quotation.total)}</span>
+          <span>Total</span><span>{moneyOrZero(quotation.total)}</span>
         </div>
       </div>
     </div>
@@ -360,7 +356,7 @@ export default function QuotationsPage() {
                         <option value="">Selecciona un producto</option>
                         {activeProducts.map((product) => (
                           <option key={product.id} value={product.id}>
-                            {product.description} - {money(product.salePrice)} / {productUnitLabel(product.unit)}
+                            {product.description} - {moneyOrZero(product.salePrice)} / {productUnitLabel(product.unit)}
                           </option>
                         ))}
                       </select>
@@ -414,7 +410,7 @@ export default function QuotationsPage() {
                                 <td className="px-3 py-2">
                                   {item.quantity} {productUnitLabel(product?.unit)}
                                 </td>
-                                <td className="px-3 py-2">{money(price)}</td>
+                                <td className="px-3 py-2">{moneyOrZero(price)}</td>
                                 <td className="px-3 py-2 text-right">
                                   <Button
                                     type="button"
@@ -454,11 +450,11 @@ export default function QuotationsPage() {
                 <div className="rounded-md border border-border p-4">
                   <h2 className="text-base font-semibold">Resumen</h2>
                   <div className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Subtotal</span><span>{money(draftTotals.subtotal)}</span></div>
-                    <div className="flex justify-between"><span>Impuesto</span><span>{money(draftTotals.taxTotal)}</span></div>
-                    <div className="flex justify-between"><span>Descuento</span><span>{money(draftTotals.discount)}</span></div>
+                    <div className="flex justify-between"><span>Subtotal</span><span>{moneyOrZero(draftTotals.subtotal)}</span></div>
+                    <div className="flex justify-between"><span>Impuesto</span><span>{moneyOrZero(draftTotals.taxTotal)}</span></div>
+                    <div className="flex justify-between"><span>Descuento</span><span>{moneyOrZero(draftTotals.discount)}</span></div>
                     <div className="flex justify-between border-t border-border pt-3 text-lg font-semibold">
-                      <span>Total</span><span>{money(draftTotals.total)}</span>
+                      <span>Total</span><span>{moneyOrZero(draftTotals.total)}</span>
                     </div>
                   </div>
                   <Button
@@ -507,7 +503,7 @@ export default function QuotationsPage() {
                       <td className="py-2">{quotation.customerName}</td>
                       <td className="py-2">{statusLabel(quotation.status)}</td>
                       <td className="py-2">{quotation.validUntil ?? "-"}</td>
-                      <td className="py-2 text-right font-medium">{money(quotation.total)}</td>
+                      <td className="py-2 text-right font-medium">{moneyOrZero(quotation.total)}</td>
                       <td className="py-2">
                         <div className="flex justify-end gap-1">
                           <Dialog>

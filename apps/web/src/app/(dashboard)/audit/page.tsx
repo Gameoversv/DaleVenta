@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import type { AuditLogResponse, PagedApiResponse } from "@/types/audit";
+import { dateTime } from "@/lib/dates";
 
 const ENTITY_FILTERS = [
   { value: "", label: "Todas" },
@@ -28,9 +29,6 @@ async function fetchAudit(page: number, entityType: string): Promise<PagedApiRes
   return res.data;
 }
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 function actionLabel(action: string): string {
   const labels: Record<string, string> = {

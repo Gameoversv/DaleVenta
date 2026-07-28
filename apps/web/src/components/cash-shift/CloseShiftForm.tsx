@@ -15,6 +15,7 @@ import { DenominationCountGrid } from "./DenominationCountGrid";
 import { InventoryCountGrid } from "./InventoryCountGrid";
 import { Input } from "@/components/ui/input";
 import type { TenantFeatures } from "@/types/auth";
+import { money } from "@/lib/money";
 import type {
   CashShiftSummaryResponse,
   DenominationCountEntry,
@@ -39,9 +40,6 @@ async function fetchTenantFeatures(): Promise<TenantFeatures> {
   return res.data.data;
 }
 
-function money(value: number): string {
-  return `RD$${value.toFixed(2)}`;
-}
 
 export function CloseShiftForm({ shift, branchId, onCancel, onClosed }: CloseShiftFormProps) {
   const { tenantFeatures } = useAuth();

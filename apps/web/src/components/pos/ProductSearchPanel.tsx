@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { productUnitLabel } from "@/lib/product-units";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import type { CategoryResponse, ProductResponse } from "@/types/product";
+import { money } from "@/lib/money";
 
 interface ProductSearchPanelProps {
   products: ProductResponse[];
@@ -21,9 +22,6 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | null): string {
-  return value != null ? `RD$${Number(value).toFixed(2)}` : "-";
-}
 
 export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelProps) {
   const [query, setQuery] = useState("");

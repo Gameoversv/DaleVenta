@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { RentalContractResponse, RentalContractStatus } from "@/types/rental";
+import { money } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 type ViewTab = "contracts" | "deposits";
 type ContractFilter = "all" | "overdue" | "rented" | "reserved" | "received";
@@ -35,13 +37,7 @@ async function markRentalReturned(id: string): Promise<RentalContractResponse> {
   return res.data.data;
 }
 
-function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 function isOpenRental(rental: RentalContractResponse): boolean {
   return rental.status === "ACTIVE" || rental.status === "RESERVED";

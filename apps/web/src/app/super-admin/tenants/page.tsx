@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ImpersonateResponse, TenantPlan, TenantStatus, TenantSummaryResponse } from "@/types/superadmin";
+import { dateOnly } from "@/lib/dates";
 
 interface TenantsPage {
   data: TenantSummaryResponse[];
@@ -59,9 +60,6 @@ const STATUS_VARIANT: Record<TenantStatus, "warning" | "info" | "success" | "dan
   CANCELLED: "secondary",
 };
 
-function dateOnly(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : "-";
-}
 
 export default function SuperAdminTenantsPage() {
   const [status, setStatus] = useState("");

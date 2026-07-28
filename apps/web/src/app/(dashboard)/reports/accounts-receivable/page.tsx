@@ -7,15 +7,13 @@ import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Card, CardContent } from "@/components/ui/card";
 import type { AccountsReceivableRow } from "@/types/credit";
+import { money } from "@/lib/money";
 
 async function fetchReceivables(): Promise<AccountsReceivableRow[]> {
   const res = await api.get<{ data: AccountsReceivableRow[] }>("/api/credit/accounts-receivable");
   return res.data.data;
 }
 
-function money(value: string): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
 export default function AccountsReceivablePage() {
   const canView = usePermission("REPORTS_VIEW");

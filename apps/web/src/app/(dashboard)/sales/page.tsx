@@ -19,6 +19,8 @@ import { productUnitLabel } from "@/lib/product-units";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
+import { money } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
@@ -35,13 +37,7 @@ async function fetchSales(registerId: string): Promise<SaleResponse[]> {
   return res.data.data;
 }
 
-function money(value: string): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
-function dateTime(value: string): string {
-  return new Date(value).toLocaleString();
-}
 
 function paymentLabel(sale: SaleResponse): string {
   return sale.payments.map((p) => p.method).join(", ");

@@ -16,6 +16,7 @@ import type { ChangeSuggestionResponse, PaymentRequest, RentalDetailsRequest } f
 import type { CustomerResponse } from "@/types/customer";
 import type { CreditAccountResponse, CreditProfileResponse } from "@/types/credit";
 import type { FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
+import { money } from "@/lib/money";
 
 async function fetchDenominations(): Promise<DenominationResponse[]> {
   const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
@@ -72,9 +73,6 @@ const METHOD_TILES: Array<{ id: PaymentMethodTab; label: string; icon: typeof Ba
   { id: "CREDIT", label: "Credito", icon: Wallet2, activeClass: "border-credit bg-credit/10 text-credit" },
 ];
 
-function money(value: number) {
-  return `RD$${value.toFixed(2)}`;
-}
 
 export function CheckoutPanel({
   registerId,

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BranchResponse } from "@/types/branch";
 import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
+import { money } from "@/lib/money";
 import type {
   CreatePurchaseRequest,
   PurchaseItemRequest,
@@ -50,9 +51,6 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
   return res.data.data;
 }
 
-function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
 function statusLabel(status: PurchaseResponse["status"]): string {
   if (status === "RECEIVED") return "Recibida";

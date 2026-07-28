@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
 import type { DailyCloseReportResponse, DailyClosingResponse } from "@/types/report";
+import { moneyOrZero } from "@/lib/money";
+import { dateTime } from "@/lib/dates";
 
 const TONES = {
   primary: "bg-primary/10 text-primary",
@@ -39,14 +41,7 @@ function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function money(value: string | number): string {
-  const amount = Number(value ?? 0);
-  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
-}
 
-function dateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : "-";
-}
 
 function numberValue(value: unknown): number {
   const parsed = Number(value ?? 0);
@@ -219,10 +214,10 @@ export default function DailyCloseReportPage() {
             <p>{data.date} - {data.registerName}</p>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
-            <MetricCard label="Ingresos" value={money(fieldValue(data, ["grossRevenue", "revenue", "totalRevenue", "salesTotal"]))} icon={DollarSign} tone="primary" />
-            <MetricCard label="Efectivo esperado" value={money(fieldValue(data, ["cashExpected", "expectedCash"]))} icon={Banknote} tone="success" />
-            <MetricCard label="Efectivo contado" value={money(fieldValue(data, ["cashCounted", "countedCash"]))} icon={Calculator} tone="info" />
-            <MetricCard label="Diferencia" value={money(fieldValue(data, ["cashDifference", "difference"]))} icon={Calculator} tone="warning" />
+            <MetricCard label="Ingresos" value={moneyOrZero(fieldValue(data, ["grossRevenue", "revenue", "totalRevenue", "salesTotal"]))} icon={DollarSign} tone="primary" />
+            <MetricCard label="Efectivo esperado" value={moneyOrZero(fieldValue(data, ["cashExpected", "expectedCash"]))} icon={Banknote} tone="success" />
+            <MetricCard label="Efectivo contado" value={moneyOrZero(fieldValue(data, ["cashCounted", "countedCash"]))} icon={Calculator} tone="info" />
+            <MetricCard label="Diferencia" value={moneyOrZero(fieldValue(data, ["cashDifference", "difference"]))} icon={Calculator} tone="warning" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -233,8 +228,8 @@ export default function DailyCloseReportPage() {
               <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
                 <p>Ventas completadas: <span className="font-medium">{numberValue(fieldValue(data, ["completedSales", "salesCount"]))}</span></p>
                 <p>Ventas anuladas: <span className="font-medium">{numberValue(fieldValue(data, ["voidedSales", "cancelledSales"]))}</span></p>
-                <p>Impuesto: <span className="font-mono-money font-medium">{money(fieldValue(data, ["taxTotal", "tax"]))}</span></p>
-                <p>Descuento: <span className="font-mono-money font-medium">{money(fieldValue(data, ["discountTotal", "discountAmount", "discount"]))}</span></p>
+                <p>Impuesto: <span className="font-mono-money font-medium">{moneyOrZero(fieldValue(data, ["taxTotal", "tax"]))}</span></p>
+                <p>Descuento: <span className="font-mono-money font-medium">{moneyOrZero(fieldValue(data, ["discountTotal", "discountAmount", "discount"]))}</span></p>
               </CardContent>
             </Card>
 
@@ -259,7 +254,7 @@ export default function DailyCloseReportPage() {
                         <tr key={payment.method} className="border-b last:border-b-0">
                           <td className="py-2"><PaymentMethodBadge method={payment.method} /></td>
                           <td className="py-2 text-right">{numberValue(fieldValue(payment, ["count", "paymentsCount"]))}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(payment, ["amount", "total"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(payment, ["amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -295,9 +290,9 @@ export default function DailyCloseReportPage() {
                           <td className="py-2">{shift.status}</td>
                           <td className="py-2">{dateTime(shift.openedAt)}</td>
                           <td className="py-2">{dateTime(shift.closedAt)}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["expectedCash", "cashExpected"]))}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["countedCash", "cashCounted"]))}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(shift, ["cashDifference", "difference"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(shift, ["expectedCash", "cashExpected"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(shift, ["countedCash", "cashCounted"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(shift, ["cashDifference", "difference"]))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -334,8 +329,8 @@ export default function DailyCloseReportPage() {
                           <td className="py-2">{closing.closeDate}</td>
                           <td className="py-2">{closing.registerName}</td>
                           <td className="py-2">{closing.closedByName}</td>
-                          <td className="py-2 text-right font-mono-money">{money(closing.grossRevenue)}</td>
-                          <td className="py-2 text-right font-mono-money">{money(closing.cashDifference)}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(closing.grossRevenue)}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(closing.cashDifference)}</td>
                         </tr>
                       ))}
                     </tbody>

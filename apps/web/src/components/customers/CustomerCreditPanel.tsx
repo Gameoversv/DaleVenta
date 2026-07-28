@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { usePermission } from "@/hooks/usePermission";
 import api from "@/lib/api";
 import type { CustomerResponse } from "@/types/customer";
+import { money } from "@/lib/money";
+import { dateOnly } from "@/lib/dates";
 import type {
   CreditAccountResponse,
   CreditInvoiceRow,
@@ -45,13 +47,7 @@ async function fetchInvoices(customerId: string): Promise<CreditInvoiceRow[]> {
   return res.data.data;
 }
 
-function money(value: string): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
-function dateOnly(value: string): string {
-  return new Date(value).toLocaleDateString();
-}
 
 interface CustomerCreditPanelProps {
   customer: CustomerResponse;

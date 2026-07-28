@@ -13,19 +13,15 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AccountsPayableRow, PurchasePaymentMethod, RecordPurchasePaymentRequest } from "@/types/purchase";
+import { money } from "@/lib/money";
+import { dateOnly } from "@/lib/dates";
 
 async function fetchPayables(): Promise<AccountsPayableRow[]> {
   const res = await api.get<{ data: AccountsPayableRow[] }>("/api/purchases/accounts-payable");
   return res.data.data;
 }
 
-function money(value: string | number): string {
-  return `RD$${Number(value).toFixed(2)}`;
-}
 
-function dateOnly(value: string): string {
-  return new Date(value).toLocaleDateString();
-}
 
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();

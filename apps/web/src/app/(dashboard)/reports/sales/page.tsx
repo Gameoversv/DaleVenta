@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
 import type { SalesReportResponse } from "@/types/report";
+import { moneyOrZero } from "@/lib/money";
 
 type ReportTab = "weekly" | "custom";
 
@@ -57,10 +58,6 @@ function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function money(value: string | number): string {
-  const amount = Number(value ?? 0);
-  return `RD$${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
-}
 
 function dateLabel(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString();
@@ -195,9 +192,9 @@ export default function SalesReportPage() {
       {data && (
         <>
           <div className="grid gap-4 md:grid-cols-4">
-            <MetricCard label="Ingresos" value={money(grossRevenue)} icon={DollarSign} tone="primary" />
+            <MetricCard label="Ingresos" value={moneyOrZero(grossRevenue)} icon={DollarSign} tone="primary" />
             <MetricCard label="Ventas completadas" value={String(completedSales)} icon={Receipt} tone="success" />
-            <MetricCard label="Ticket promedio" value={money(averageTicket)} icon={Ticket} tone="info" />
+            <MetricCard label="Ticket promedio" value={moneyOrZero(averageTicket)} icon={Ticket} tone="info" />
             <MetricCard label="Anuladas" value={String(voidedSales)} icon={XCircle} tone="danger" />
           </div>
 
@@ -221,7 +218,7 @@ export default function SalesReportPage() {
                         <tr key={day.date} className="border-b last:border-b-0">
                           <td className="py-2">{dateLabel(day.date)}</td>
                           <td className="py-2 text-right">{numberValue(fieldValue(day, ["salesCount", "count"]))}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(day, ["revenue", "amount", "total"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(day, ["revenue", "amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -254,7 +251,7 @@ export default function SalesReportPage() {
                               <PaymentMethodBadge method={payment.method} />
                             </td>
                             <td className="py-2 text-right">{numberValue(fieldValue(payment, ["paymentsCount", "count"]))}</td>
-                            <td className="py-2 text-right font-mono-money">{money(fieldValue(payment, ["amount", "total"]))}</td>
+                            <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(payment, ["amount", "total"]))}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -287,7 +284,7 @@ export default function SalesReportPage() {
                         <tr key={product.productId} className="border-b last:border-b-0">
                           <td className="py-2">{product.productName}</td>
                           <td className="py-2 text-right">{numberValue(fieldValue(product, ["quantity", "count"]))}</td>
-                          <td className="py-2 text-right font-mono-money">{money(fieldValue(product, ["revenue", "amount", "total"]))}</td>
+                          <td className="py-2 text-right font-mono-money">{moneyOrZero(fieldValue(product, ["revenue", "amount", "total"]))}</td>
                         </tr>
                       ))}
                     </tbody>
