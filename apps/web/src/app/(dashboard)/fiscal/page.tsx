@@ -12,6 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ModuleDisabled } from "@/components/common/module-disabled";
+import { EmptyState } from "@/components/common/empty-state";
 import type { TenantFeatures } from "@/types/auth";
 import type { FiscalProfile, FiscalReceiptSequence, FiscalReceiptType } from "@/types/fiscal";
 import { fiscalError, normalizeFiscalProfile, sequencePayload, type SequenceForm } from "@/lib/fiscal";
@@ -290,7 +294,7 @@ function SequencesCard() {
         {isLoading && <p className="text-sm text-muted-foreground">Cargando secuencias...</p>}
         {isError && <p className="text-sm text-destructive">No se pudieron cargar las secuencias.</p>}
         {!isLoading && !isError && data.length === 0 && (
-          <p className="text-sm text-muted-foreground">No hay secuencias configuradas.</p>
+          <EmptyState message="No hay secuencias configuradas." />
         )}
         {data.length > 0 && (
           <div className="overflow-x-auto">
@@ -345,38 +349,25 @@ export default function FiscalPage() {
   const fiscalModuleEnabled = fiscalStatus?.fiscalModuleEnabled ?? tenantFeatures.fiscalModuleEnabled;
 
   if (user?.role !== "ADMIN") {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Fiscal</h1>
-        <p className="text-sm text-muted-foreground">Solo un administrador puede acceder al modulo fiscal.</p>
-      </div>
-    );
+    return <PermissionDenied title="Fiscal" message="Solo un administrador puede acceder al modulo fiscal." />;
   }
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Fiscal</h1>
+        <PageHeader title="Fiscal" />
         <p className="text-sm text-muted-foreground">Confirmando estado del modulo fiscal...</p>
       </div>
     );
   }
 
   if (!fiscalModuleEnabled) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Fiscal</h1>
-        <p className="text-sm text-muted-foreground">Este modulo no esta activo para este tenant.</p>
-      </div>
-    );
+    return <ModuleDisabled title="Fiscal" />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Fiscal</h1>
-        <p className="text-sm text-muted-foreground">RNC, comprobantes fiscales, secuencias NCF y factura fiscal.</p>
-      </div>
+      <PageHeader title="Fiscal" description="RNC, comprobantes fiscales, secuencias NCF y factura fiscal." />
 
       <Card>
         <CardHeader>

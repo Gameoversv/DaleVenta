@@ -13,6 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 import { cn } from "@/lib/utils";
 import type { DailyCloseReportResponse, DailyClosingResponse } from "@/types/report";
 import { moneyOrZero } from "@/lib/money";
@@ -131,22 +134,18 @@ export default function DailyCloseReportPage() {
   const closingSaved = (closings ?? []).some((closing) => closing.closeDate === date && closing.registerId === registerId);
 
   if (!canViewReports) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Cierre diario</h1>
-        <p className="text-muted-foreground">No tienes permiso para consultar reportes.</p>
-      </div>
-    );
+    return <PermissionDenied title="Cierre diario" message="No tienes permiso para consultar reportes." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between print:hidden">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Cierre diario</h1>
-          <p className="text-sm text-muted-foreground">{data ? data.registerName : "Resumen operativo del dia"}</p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <PageHeader
+        title="Cierre diario"
+        description={data ? data.registerName : "Resumen operativo del dia"}
+        align="end"
+        className="print:hidden"
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="space-y-2">
             <Label htmlFor="daily-close-date">Fecha</Label>
             <Input id="daily-close-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
@@ -201,11 +200,12 @@ export default function DailyCloseReportPage() {
             <LockKeyhole className="h-4 w-4" />
             {closingSaved ? "Guardado" : saveClosing.isPending ? "Guardando..." : "Guardar cierre"}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {isLoading && <p className="text-muted-foreground print:hidden">Cargando cierre...</p>}
-      {isError && <p className="text-sm text-destructive print:hidden">No se pudo cargar el cierre diario.</p>}
+      {isError && <ErrorState message="No se pudo cargar el cierre diario." className="print:hidden" />}
 
       {data && (
         <section className="space-y-6 print:space-y-4">
@@ -239,7 +239,7 @@ export default function DailyCloseReportPage() {
               </CardHeader>
               <CardContent>
                 {(data.payments ?? []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No hay pagos para esta fecha.</p>
+                  <EmptyState message="No hay pagos para esta fecha." />
                 ) : (
                   <table className="w-full text-sm">
                     <thead>
@@ -270,7 +270,7 @@ export default function DailyCloseReportPage() {
             </CardHeader>
             <CardContent>
               {(data.shifts ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay turnos abiertos en esta fecha.</p>
+                <EmptyState message="No hay turnos abiertos en esta fecha." />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

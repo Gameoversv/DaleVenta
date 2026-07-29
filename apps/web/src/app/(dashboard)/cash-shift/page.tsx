@@ -7,6 +7,9 @@ import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { useSoleRegister } from "@/hooks/useSoleRegister";
 import { Button } from "@/components/ui/button";
 import { CashShiftWorkspace } from "@/components/cash-shift/CashShiftWorkspace";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ErrorState } from "@/components/common/empty-state";
 
 export default function CashShiftPage() {
   const [manualBranchId, setManualBranchId] = useState("");
@@ -33,21 +36,14 @@ export default function CashShiftPage() {
 
   if (!canOpenCashShift) {
     return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Turno de Caja</h1>
-        <p className="text-sm text-muted-foreground">
-          Tu usuario no tiene permiso para operar turnos de caja.
-        </p>
-      </div>
+      <PermissionDenied title="Turno de Caja" message="Tu usuario no tiene permiso para operar turnos de caja." />
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Turno de Caja</h1>
-      {branchesError && (
-        <p className="text-sm text-destructive">No se pudieron cargar las sucursales.</p>
-      )}
+      <PageHeader title="Turno de Caja" />
+      {branchesError && <ErrorState message="No se pudieron cargar las sucursales." />}
       {!branchesLoading && branches.length === 0 && (
         <div className="space-y-3 rounded-md border border-border p-4">
           <p className="text-sm text-muted-foreground">

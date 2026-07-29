@@ -13,15 +13,19 @@ async function fetchGlobalSearch(query: string): Promise<GlobalSearchResponse> {
   return res.data.data;
 }
 
-function resultIcon(type: string) {
-  if (type === "Factura") return FileText;
-  if (type === "Cliente") return UserRound;
-  if (type === "Producto") return Package;
-  return Search;
+/**
+ * Renders the glyph rather than returning the component type. Picking a component during render
+ * gives it a fresh identity on every pass, which remounts it and throws away any state it holds.
+ */
+function ResultIcon({ type }: { type: string }) {
+  const className = "h-4 w-4";
+  if (type === "Factura") return <FileText className={className} />;
+  if (type === "Cliente") return <UserRound className={className} />;
+  if (type === "Producto") return <Package className={className} />;
+  return <Search className={className} />;
 }
 
 function ResultRow({ result, onSelect }: { result: GlobalSearchResult; onSelect: () => void }) {
-  const Icon = resultIcon(result.type);
   return (
     <Link
       href={result.href}
@@ -29,7 +33,7 @@ function ResultRow({ result, onSelect }: { result: GlobalSearchResult; onSelect:
       className="flex items-start gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
     >
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-        <Icon className="h-4 w-4" />
+        <ResultIcon type={result.type} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">

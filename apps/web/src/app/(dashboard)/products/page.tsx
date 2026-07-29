@@ -4,23 +4,20 @@ import { useState } from "react";
 import { CategoryPanel } from "@/components/products/CategoryPanel";
 import { ProductTable } from "@/components/products/ProductTable";
 import { usePermission } from "@/hooks/usePermission";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
 
 export default function ProductsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const canViewInventory = usePermission("INVENTORY_VIEW");
 
   if (!canViewInventory) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Productos</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para ver productos.</p>
-      </div>
-    );
+    return <PermissionDenied title="Productos" message="No tienes permiso para ver productos." />;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Productos</h1>
+      <PageHeader title="Productos" />
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         <CategoryPanel selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
         <ProductTable categoryId={selectedCategoryId} />

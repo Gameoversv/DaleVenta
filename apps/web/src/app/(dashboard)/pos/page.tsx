@@ -5,6 +5,8 @@ import { PosWorkspace } from "@/components/pos/PosWorkspace";
 import { usePermission } from "@/hooks/usePermission";
 import { useSoleBranch } from "@/hooks/useSoleBranch";
 import { useSoleRegister } from "@/hooks/useSoleRegister";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
 
 export default function PosPage() {
   const [manualBranchId, setManualBranchId] = useState("");
@@ -17,17 +19,12 @@ export default function PosPage() {
   const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
 
   if (!canCreateSale) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">POS</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para crear ventas.</p>
-      </div>
-    );
+    return <PermissionDenied title="POS" message="No tienes permiso para crear ventas." />;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">POS</h1>
+      <PageHeader title="POS" />
       {(hasMultipleBranches || hasMultipleRegisters) && (
         <div className="flex gap-4">
           {hasMultipleBranches && (

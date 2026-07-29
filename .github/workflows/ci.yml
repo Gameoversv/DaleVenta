@@ -85,6 +85,13 @@ jobs:
         working-directory: apps/web
         run: ./node_modules/.bin/tsc --noEmit
 
+      # The lint config had been silently throwing on every invocation and no job ran it, so the
+      # errors it reports here had never been seen. Kept non-blocking on warnings only: any error
+      # fails the build.
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+
       - name: Unit tests
         working-directory: apps/web
         run: npm run test:coverage

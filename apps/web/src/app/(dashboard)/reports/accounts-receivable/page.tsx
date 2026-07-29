@@ -6,6 +6,9 @@ import { CircleDollarSign } from "lucide-react";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 import type { AccountsReceivableRow } from "@/types/credit";
 import { money } from "@/lib/money";
 
@@ -29,17 +32,12 @@ export default function AccountsReceivablePage() {
   );
 
   if (!canView) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Cuentas por cobrar</h1>
-        <p className="text-muted-foreground">No tienes permiso para ver reportes.</p>
-      </div>
-    );
+    return <PermissionDenied title="Cuentas por cobrar" message="No tienes permiso para ver reportes." />;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold tracking-tight">Cuentas por cobrar</h1>
+      <PageHeader title="Cuentas por cobrar" />
 
       <Card>
         <CardContent className="flex items-center gap-4 p-6">
@@ -58,10 +56,8 @@ export default function AccountsReceivablePage() {
       <Card>
         <CardContent className="p-0">
           {isLoading && <p className="p-6 text-sm text-muted-foreground">Cargando...</p>}
-          {isError && <p className="p-6 text-sm text-destructive">No se pudo cargar la lista.</p>}
-          {rows && rows.length === 0 && (
-            <p className="p-6 text-sm text-muted-foreground">Ningun cliente tiene balance pendiente.</p>
-          )}
+          {isError && <ErrorState message="No se pudo cargar la lista." className="p-6" />}
+          {rows && rows.length === 0 && <EmptyState message="Ningun cliente tiene balance pendiente." className="p-6" />}
           {rows && rows.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
