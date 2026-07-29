@@ -56,26 +56,23 @@ export function InventoryCountGrid({ branchId, onChange }: InventoryCountGridPro
     });
   }, [trackedRows, productById, search]);
 
-  useEffect(() => {
-    if (trackedRows.length === 0) return;
-    setQuantities((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      for (const row of trackedRows) {
-        if (!(row.productId in next)) {
-          next[row.productId] = row.currentStock;
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackedRows.length]);
+  // Untouched rows still have to reach the parent, counted at whatever the branch currently holds.
+  // That used to be done by seeding `quantities` from an effect; deriving it means a row is
+  // reported from the first render it exists, and switching branches cannot leave a stale product
+  // id behind in the payload.
+  const entries = useMemo<InventoryCountEntry[]>(
+    () =>
+      trackedRows.map((row) => ({
+        productId: row.productId,
+        quantity: quantities[row.productId] ?? row.currentStock,
+      })),
+    [trackedRows, quantities]
+  );
 
   useEffect(() => {
-    onChange(Object.entries(quantities).map(([productId, quantity]) => ({ productId, quantity })));
+    onChange(entries);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quantities]);
+  }, [entries]);
 
   const handleChange = (productId: string, rawValue: string) => {
     const quantity = Math.max(0, parseInt(rawValue, 10) || 0);

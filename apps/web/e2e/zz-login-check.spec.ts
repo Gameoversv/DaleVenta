@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 
 test("superadmin login via real browser", async ({ page }) => {
   page.on("console", (msg) => console.log("CONSOLE:", msg.text()));

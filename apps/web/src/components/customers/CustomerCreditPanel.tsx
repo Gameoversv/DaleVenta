@@ -49,6 +49,11 @@ async function fetchInvoices(customerId: string): Promise<CreditInvoiceRow[]> {
 
 
 
+interface CreditProfileDraft {
+  creditEnabled: boolean;
+  creditLimit: string;
+}
+
 interface CustomerCreditPanelProps {
   customer: CustomerResponse;
   trigger: React.ReactNode;
@@ -61,8 +66,10 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
   const canReceivePayment = usePermission("CREDIT_RECEIVE_PAYMENT");
   const queryClient = useQueryClient();
 
-  const [creditEnabled, setCreditEnabled] = useState(false);
-  const [creditLimit, setCreditLimit] = useState("");
+  // Null means "nothing edited yet", so the fields read straight from the fetched profile. Copying
+  // the profile into state from an effect meant a background refetch could overwrite whatever the
+  // user was in the middle of typing; an untouched form still follows the server either way.
+  const [creditDraft, setCreditDraft] = useState<CreditProfileDraft | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentSaleId, setPaymentSaleId] = useState("");
@@ -97,6 +104,8 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
       api.put(`/api/customers/${customer.id}/credit-profile`, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["credit-profile", customer.id] });
+      // Hand the fields back to the server copy now that it holds what was just saved.
+      setCreditDraft(null);
       toast.success("Perfil de credito actualizado");
     },
     onError: (err: unknown) => toast.error(extractError(err)),
@@ -118,12 +127,11 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
     onError: (err: unknown) => toast.error(extractError(err)),
   });
 
-  useEffect(() => {
-    if (profile) {
-      setCreditEnabled(profile.creditEnabled);
-      setCreditLimit(profile.creditLimit ?? "");
-    }
-  }, [profile]);
+  const creditForm: CreditProfileDraft = creditDraft ?? {
+    creditEnabled: profile?.creditEnabled ?? false,
+    creditLimit: profile?.creditLimit ?? "",
+  };
+  const patchCreditForm = (patch: Partial<CreditProfileDraft>) => setCreditDraft({ ...creditForm, ...patch });
 
   const available =
     account && profile && profile.creditLimit != null
@@ -147,8 +155,8 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                 onSubmit={(e) => {
                   e.preventDefault();
                   profileMutation.mutate({
-                    creditEnabled,
-                    creditLimit: creditLimit.trim() === "" ? null : creditLimit,
+                    creditEnabled: creditForm.creditEnabled,
+                    creditLimit: creditForm.creditLimit.trim() === "" ? null : creditForm.creditLimit,
                   });
                 }}
               >
@@ -156,8 +164,8 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                   <input
                     id="credit-enabled"
                     type="checkbox"
-                    checked={creditEnabled}
-                    onChange={(e) => setCreditEnabled(e.target.checked)}
+                    checked={creditForm.creditEnabled}
+                    onChange={(e) => patchCreditForm({ creditEnabled: e.target.checked })}
                   />
                   <Label htmlFor="credit-enabled">Credito habilitado</Label>
                 </div>
@@ -166,8 +174,8 @@ export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelPr
                   <Input
                     id="credit-limit"
                     placeholder="Sin limite"
-                    value={creditLimit}
-                    onChange={(e) => setCreditLimit(e.target.value)}
+                    value={creditForm.creditLimit}
+                    onChange={(e) => patchCreditForm({ creditLimit: e.target.value })}
                   />
                 </div>
                 <Button type="submit" size="sm" disabled={profileMutation.isPending}>

@@ -301,7 +301,7 @@ function PermissionsDialog({ user }: { user: UserResponse }) {
         </DialogHeader>
         <div className="space-y-2 text-sm">
           <p className="text-muted-foreground">
-            Los permisos "segun rol" vienen del rol asignado. Otorgar o revocar crea una excepcion individual.
+            Los permisos &quot;segun rol&quot; vienen del rol asignado. Otorgar o revocar crea una excepcion individual.
           </p>
           {isLoading && <p className="text-muted-foreground">Cargando permisos...</p>}
           {rows && (

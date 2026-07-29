@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Plus, Truck, WalletCards } from "lucide-react";
+import { CheckCircle2, Plus, WalletCards } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -343,7 +343,13 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
 }) {
   const [open, setOpen] = useState(false);
   const [supplierId, setSupplierId] = useState("");
-  const [branchId, setBranchId] = useState(defaultBranchId);
+  // `defaultBranchId` lands once the branches query resolves, which is after this dialog mounts.
+  // Deriving the effective branch beats syncing it in an effect: the previous effect re-applied the
+  // default whenever the field was cleared, so falling back here reproduces that exactly without the
+  // extra render pass.
+  const [pickedBranchId, setPickedBranchId] = useState("");
+  const branchId = pickedBranchId || defaultBranchId;
+  const setBranchId = setPickedBranchId;
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<PurchaseItemRequest[]>([
@@ -363,12 +369,6 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
       toast.error(message);
     },
   });
-
-  useEffect(() => {
-    if (!branchId && defaultBranchId) {
-      setBranchId(defaultBranchId);
-    }
-  }, [branchId, defaultBranchId]);
 
   const total = items.reduce((sum, item) => {
     const subtotal = Number(item.unitCost || 0) * Number(item.quantity || 0);
