@@ -21,6 +21,9 @@ import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
 import { money } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
@@ -234,17 +237,12 @@ export default function SalesPage() {
   const customerName = (id: string | null) => (id ? customerById.get(id) ?? id : "Cliente de contado");
 
   if (!canViewSales) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Historial de ventas</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para consultar ventas.</p>
-      </div>
-    );
+    return <PermissionDenied title="Historial de ventas" message="Tu usuario no tiene permiso para consultar ventas." />;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Historial de ventas</h1>
+      <PageHeader title="Historial de ventas" />
 
       {(hasMultipleBranches || hasMultipleRegisters) && (
         <div className="flex flex-col gap-4 sm:flex-row">
@@ -309,7 +307,7 @@ export default function SalesPage() {
           </CardHeader>
           <CardContent>
             {sales.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay ventas para esta caja todavia.</p>
+              <EmptyState message="No hay ventas para esta caja todavia." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

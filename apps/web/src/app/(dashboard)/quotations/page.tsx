@@ -19,6 +19,9 @@ import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { quotationStatusLabel } from "@/lib/status-labels";
 import { escapeHtml } from "@/lib/html";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 
 interface DraftItem {
   productId: string;
@@ -276,22 +279,16 @@ export default function QuotationsPage() {
   };
 
   if (!canView) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Cotizaciones</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para consultar cotizaciones.</p>
-      </div>
-    );
+    return <PermissionDenied title="Cotizaciones" message="Tu usuario no tiene permiso para consultar cotizaciones." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Cotizaciones</h1>
-          <p className="text-sm text-muted-foreground">Propuestas comerciales antes de convertirlas en venta.</p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        title="Cotizaciones"
+        description="Propuestas comerciales antes de convertirlas en venta."
+        actions={
+          canCreate && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" />Nueva cotizacion</Button>
@@ -453,11 +450,12 @@ export default function QuotationsPage() {
               </div>
             </DialogContent>
           </Dialog>
-        )}
-      </div>
+          )
+        }
+      />
 
       {isLoading && <p className="text-muted-foreground">Cargando cotizaciones...</p>}
-      {isError && <p className="text-sm text-destructive">No se pudieron cargar las cotizaciones.</p>}
+      {isError && <ErrorState message="No se pudieron cargar las cotizaciones." />}
 
       <Card>
         <CardHeader>
@@ -465,7 +463,7 @@ export default function QuotationsPage() {
         </CardHeader>
         <CardContent>
           {(quotations ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No hay cotizaciones registradas todavia.</p>
+            <EmptyState message="No hay cotizaciones registradas todavia." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

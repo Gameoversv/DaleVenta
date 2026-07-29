@@ -11,6 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 import type {
   CreateUserRequest,
   PermissionEffect,
@@ -496,20 +499,12 @@ export default function UsersSettingsPage() {
   });
 
   if (!canManageUsers) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <p className="text-muted-foreground">No tienes permiso para administrar usuarios.</p>
-      </div>
-    );
+    return <PermissionDenied title="Usuarios" message="No tienes permiso para administrar usuarios." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <CreateUserDialog />
-      </div>
+      <PageHeader title="Usuarios" actions={<CreateUserDialog />} />
 
       <Card>
         <CardHeader>
@@ -517,8 +512,8 @@ export default function UsersSettingsPage() {
         </CardHeader>
         <CardContent>
           {isLoading && <p className="text-sm text-muted-foreground">Cargando usuarios...</p>}
-          {isError && <p className="text-sm text-destructive">No se pudieron cargar los usuarios.</p>}
-          {users && users.length === 0 && <p className="text-sm text-muted-foreground">No hay usuarios internos.</p>}
+          {isError && <ErrorState message="No se pudieron cargar los usuarios." />}
+          {users && users.length === 0 && <EmptyState message="No hay usuarios internos." />}
           {users && users.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

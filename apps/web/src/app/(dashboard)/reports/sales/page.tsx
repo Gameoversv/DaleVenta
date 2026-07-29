@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 import { cn } from "@/lib/utils";
 import type { SalesReportResponse } from "@/types/report";
 import { moneyOrZero } from "@/lib/money";
@@ -107,26 +110,15 @@ export default function SalesReportPage() {
   const averageTicket = fieldValue(data, ["averageTicket", "avgTicket"]);
 
   if (!canViewReports) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Reporte de ventas</h1>
-        <p className="text-muted-foreground">No tienes permiso para consultar reportes.</p>
-      </div>
-    );
+    return <PermissionDenied title="Reporte de ventas" message="No tienes permiso para consultar reportes." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Reporte de ventas</h1>
-          {data && (
-            <p className="text-sm text-muted-foreground">
-              {dateLabel(data.from)} - {dateLabel(data.to)}
-            </p>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Reporte de ventas"
+        description={data ? `${dateLabel(data.from)} - ${dateLabel(data.to)}` : undefined}
+      />
 
       <div className="space-y-4">
         <div role="tablist" className="flex gap-1 border-b border-border">
@@ -233,7 +225,7 @@ export default function SalesReportPage() {
               </CardHeader>
               <CardContent>
                 {payments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No hay pagos en este rango.</p>
+                  <EmptyState message="No hay pagos en este rango." />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -268,7 +260,7 @@ export default function SalesReportPage() {
             </CardHeader>
             <CardContent>
               {topProducts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay productos vendidos en este rango.</p>
+                <EmptyState message="No hay productos vendidos en este rango." />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

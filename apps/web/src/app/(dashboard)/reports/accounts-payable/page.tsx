@@ -12,6 +12,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ModuleDisabled } from "@/components/common/module-disabled";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 import type { AccountsPayableRow, PurchasePaymentMethod, RecordPurchasePaymentRequest } from "@/types/purchase";
 import { money } from "@/lib/money";
 import { dateOnly } from "@/lib/dates";
@@ -154,26 +158,16 @@ export default function AccountsPayablePage() {
   );
 
   if (!enabled) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Cuentas por pagar</h1>
-        <p className="text-muted-foreground">Este modulo no esta activo para este tenant.</p>
-      </div>
-    );
+    return <ModuleDisabled title="Cuentas por pagar" />;
   }
 
   if (!canView) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Cuentas por pagar</h1>
-        <p className="text-muted-foreground">No tienes permiso para ver cuentas por pagar.</p>
-      </div>
-    );
+    return <PermissionDenied title="Cuentas por pagar" message="No tienes permiso para ver cuentas por pagar." />;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold tracking-tight">Cuentas por pagar</h1>
+      <PageHeader title="Cuentas por pagar" />
 
       <Card>
         <CardContent className="flex items-center gap-4 p-6">
@@ -192,10 +186,8 @@ export default function AccountsPayablePage() {
       <Card>
         <CardContent className="p-0">
           {isLoading && <p className="p-6 text-sm text-muted-foreground">Cargando...</p>}
-          {isError && <p className="p-6 text-sm text-destructive">No se pudo cargar la lista.</p>}
-          {rows && rows.length === 0 && (
-            <p className="p-6 text-sm text-muted-foreground">No hay compras con balance pendiente.</p>
-          )}
+          {isError && <ErrorState message="No se pudo cargar la lista." className="p-6" />}
+          {rows && rows.length === 0 && <EmptyState message="No hay compras con balance pendiente." className="p-6" />}
           {rows && rows.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-sm">

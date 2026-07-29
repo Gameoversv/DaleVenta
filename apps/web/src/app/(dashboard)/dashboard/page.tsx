@@ -8,6 +8,9 @@ import { useAuth } from "@/lib/auth-context";
 import { usePermission } from "@/hooks/usePermission";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ErrorState } from "@/components/common/empty-state";
 import type { DashboardSummaryResponse } from "@/types/dashboard";
 import { money } from "@/lib/money";
 
@@ -72,32 +75,28 @@ export default function DashboardPage() {
   });
 
   if (!canView) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">No tienes permiso para ver el dashboard.</p>
-      </div>
-    );
+    return <PermissionDenied title="Dashboard" message="No tienes permiso para ver el dashboard." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Hola, {user?.name?.split(" ")[0]}</h1>
-          <p className="text-sm text-muted-foreground">Este es el resumen de tu negocio hoy.</p>
-        </div>
-        <div className="hidden items-center gap-1.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-medium text-success sm:flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          Sistema operativo
-        </div>
-      </div>
+      <PageHeader
+        title={`Hola, ${user?.name?.split(" ")[0] ?? ""}`}
+        description="Este es el resumen de tu negocio hoy."
+        actions={
+          <div className="hidden items-center gap-1.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-medium text-success sm:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            Sistema operativo
+          </div>
+        }
+      />
 
       {isLoading && <p className="text-muted-foreground">Cargando resumen...</p>}
       {isError && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          No se pudo cargar el resumen del negocio. Intenta de nuevo en unos segundos.
-        </div>
+        <ErrorState
+          message="No se pudo cargar el resumen del negocio. Intenta de nuevo en unos segundos."
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"
+        />
       )}
 
       {data && (

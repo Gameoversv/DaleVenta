@@ -16,6 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ModuleDisabled } from "@/components/common/module-disabled";
+import { EmptyState } from "@/components/common/empty-state";
 import type { BranchResponse } from "@/types/branch";
 import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
 import { money } from "@/lib/money";
@@ -639,44 +643,34 @@ export default function PurchasesPage() {
   }), [purchases]);
 
   if (!canViewPurchases && !canViewSuppliers) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Compras</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para consultar compras o proveedores.</p>
-      </div>
-    );
+    return <PermissionDenied title="Compras" message="No tienes permiso para consultar compras o proveedores." />;
   }
 
   if (!purchaseModuleEnabled) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Compras</h1>
-        <p className="text-sm text-muted-foreground">Este modulo no esta activo para este tenant.</p>
-      </div>
-    );
+    return <ModuleDisabled title="Compras" />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Proveedores y compras</h1>
-          <p className="text-sm text-muted-foreground">Registra proveedores, compras y recepciones de inventario.</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {canManageSuppliers && <SupplierDialog />}
-          {canCreatePurchase && (
-            <PurchaseDialog
-              suppliers={suppliers}
-              products={products}
-              categories={categories}
-              branches={branches}
-              defaultBranchId={soleBranchId ?? ""}
-              canCreateProduct={canCreateProduct}
-            />
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Proveedores y compras"
+        description="Registra proveedores, compras y recepciones de inventario."
+        actions={
+          <>
+            {canManageSuppliers && <SupplierDialog />}
+            {canCreatePurchase && (
+              <PurchaseDialog
+                suppliers={suppliers}
+                products={products}
+                categories={categories}
+                branches={branches}
+                defaultBranchId={soleBranchId ?? ""}
+                canCreateProduct={canCreateProduct}
+              />
+            )}
+          </>
+        }
+      />
 
       {canViewPurchases && (
         <div className="grid gap-3 sm:grid-cols-3">
@@ -696,7 +690,7 @@ export default function PurchasesPage() {
           <CardHeader><CardTitle>Historial de compras</CardTitle></CardHeader>
           <CardContent>
             {loadingPurchases && <p className="text-sm text-muted-foreground">Cargando compras...</p>}
-            {!loadingPurchases && purchases.length === 0 && <p className="text-sm text-muted-foreground">No hay compras registradas.</p>}
+            {!loadingPurchases && purchases.length === 0 && <EmptyState message="No hay compras registradas." />}
             {purchases.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[920px] text-sm">
@@ -748,7 +742,7 @@ export default function PurchasesPage() {
           <CardHeader><CardTitle>Proveedores</CardTitle></CardHeader>
           <CardContent>
             {suppliers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay proveedores registrados.</p>
+              <EmptyState message="No hay proveedores registrados." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">

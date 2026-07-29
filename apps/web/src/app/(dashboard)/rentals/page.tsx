@@ -12,6 +12,9 @@ import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 import type { RentalContractResponse, RentalContractStatus } from "@/types/rental";
 import { money } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
@@ -129,22 +132,15 @@ export default function RentalsPage() {
   }
 
   if (!canView) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Alquileres</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para consultar alquileres.</p>
-      </div>
-    );
+    return <PermissionDenied title="Alquileres" message="Tu usuario no tiene permiso para consultar alquileres." />;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Alquileres</h1>
-        <p className="text-sm text-muted-foreground">
-          Contratos, devoluciones, vencimientos y depositos activos por articulo.
-        </p>
-      </div>
+      <PageHeader
+        title="Alquileres"
+        description="Contratos, devoluciones, vencimientos y depositos activos por articulo."
+      />
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -234,7 +230,7 @@ export default function RentalsPage() {
             {isLoading && <p className="text-sm text-muted-foreground">Cargando alquileres...</p>}
             {isError && <p className="text-sm text-destructive">No se pudieron cargar los alquileres.</p>}
             {!isLoading && filteredRentals.length === 0 && (
-              <p className="text-sm text-muted-foreground">No hay contratos para este filtro.</p>
+              <EmptyState message="No hay contratos para este filtro." />
             )}
             {filteredRentals.length > 0 && (
               <div className="overflow-x-auto">
@@ -306,7 +302,7 @@ export default function RentalsPage() {
           </CardHeader>
           <CardContent>
             {depositsByItem.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay depositos activos registrados.</p>
+              <EmptyState message="No hay depositos activos registrados." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[680px] text-sm">

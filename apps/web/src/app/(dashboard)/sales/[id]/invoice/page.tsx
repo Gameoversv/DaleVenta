@@ -13,6 +13,8 @@ import { productUnitLabel } from "@/lib/product-units";
 import type { InvoiceResponse } from "@/types/sale";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ErrorState } from "@/components/common/empty-state";
 
 async function fetchInvoice(id: string): Promise<InvoiceResponse> {
   const res = await api.get<{ data: InvoiceResponse }>(`/api/sales/${id}/invoice`);
@@ -64,12 +66,7 @@ export default function InvoicePage() {
   });
 
   if (!canView) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Factura</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para ver facturas.</p>
-      </div>
-    );
+    return <PermissionDenied title="Factura" message="Tu usuario no tiene permiso para ver facturas." />;
   }
 
   return (
@@ -88,7 +85,7 @@ export default function InvoicePage() {
       </div>
 
       {isLoading && <p className="text-muted-foreground print:hidden">Cargando factura...</p>}
-      {isError && <p className="text-sm text-destructive print:hidden">No se pudo cargar la factura.</p>}
+      {isError && <ErrorState message="No se pudo cargar la factura." className="print:hidden" />}
 
       {data && (
         <section className="bg-white p-6 text-slate-950 shadow-sm ring-1 ring-slate-200 print:p-0 print:text-black print:shadow-none print:ring-0 [&_.border-border]:border-slate-200 [&_.text-muted-foreground]:text-slate-500">

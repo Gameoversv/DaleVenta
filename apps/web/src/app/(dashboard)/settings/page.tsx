@@ -13,6 +13,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 import type { TenantFeatures } from "@/types/auth";
 import type { DenominationResponse } from "@/types/cash-shift";
 import type { InvoicePrintSize, InvoiceSettingsResponse } from "@/types/settings";
@@ -324,19 +327,19 @@ export default function SettingsPage() {
 
   if (!canManageSettings && !canManageUsers) {
     return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Configuracion</h1>
-        <p className="text-muted-foreground">No tienes permiso para administrar configuracion o usuarios.</p>
-      </div>
+      <PermissionDenied
+        title="Configuracion"
+        message="No tienes permiso para administrar configuracion o usuarios."
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Configuracion</h1>
-        {canManageSettings && cashDenominationsEnabled && <CreateDenominationDialog />}
-      </div>
+      <PageHeader
+        title="Configuracion"
+        actions={canManageSettings && cashDenominationsEnabled && <CreateDenominationDialog />}
+      />
 
       {canManageSettings && <InvoiceSettingsCard />}
 
@@ -357,11 +360,9 @@ export default function SettingsPage() {
           {denominationsOpen && (
             <CardContent className="pt-0">
               {isLoading && <p className="text-sm text-muted-foreground">Cargando denominaciones...</p>}
-              {isError && <p className="text-sm text-destructive">No se pudieron cargar las denominaciones.</p>}
+              {isError && <ErrorState message="No se pudieron cargar las denominaciones." />}
               {!isLoading && !isError && orderedDenominations.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No hay denominaciones activas. Crea al menos una para poder contar efectivo en caja.
-                </p>
+                <EmptyState message="No hay denominaciones activas. Crea al menos una para poder contar efectivo en caja." />
               )}
               {orderedDenominations.length > 0 && (
                 <div className="overflow-x-auto">

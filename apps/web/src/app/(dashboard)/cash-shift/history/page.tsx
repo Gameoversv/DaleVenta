@@ -17,6 +17,9 @@ import type { CashMovementResponse, CashShiftSummaryResponse, DenominationRespon
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { cashMovementTypeLabel } from "@/lib/status-labels";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 
 async function fetchCashShifts(registerId: string): Promise<CashShiftSummaryResponse[]> {
   const res = await api.get<{ data: CashShiftSummaryResponse[] }>("/api/cash-shifts", { params: { registerId } });
@@ -226,16 +229,16 @@ export default function CashShiftHistoryPage() {
 
   if (!canViewHistory) {
     return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Historial de caja</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para consultar historial de turnos.</p>
-      </div>
+      <PermissionDenied
+        title="Historial de caja"
+        message="Tu usuario no tiene permiso para consultar historial de turnos."
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Historial de caja</h1>
+      <PageHeader title="Historial de caja" />
 
       {(hasMultipleBranches || hasMultipleRegisters) && (
         <div className="flex flex-col gap-4 sm:flex-row">
@@ -299,7 +302,7 @@ export default function CashShiftHistoryPage() {
           </CardHeader>
           <CardContent>
             {shifts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay turnos registrados para esta caja.</p>
+              <EmptyState message="No hay turnos registrados para esta caja." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

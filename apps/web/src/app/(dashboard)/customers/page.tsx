@@ -12,6 +12,9 @@ import api from "@/lib/api";
 import { CustomerFormDialog } from "@/components/customers/CustomerFormDialog";
 import { CustomerCreditPanel } from "@/components/customers/CustomerCreditPanel";
 import { CustomerPurchaseHistoryDialog } from "@/components/customers/CustomerPurchaseHistoryDialog";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 import type { CustomerResponse } from "@/types/customer";
 
 async function fetchCustomers(q: string): Promise<CustomerResponse[]> {
@@ -36,39 +39,36 @@ export default function CustomersPage() {
   });
 
   if (!canView) {
-    return (
-      <div className="space-y-2">
-        <h1 className="font-display text-2xl font-bold">Clientes</h1>
-        <p className="text-muted-foreground">No tienes permiso para ver clientes.</p>
-      </div>
-    );
+    return <PermissionDenied title="Clientes" message="No tienes permiso para ver clientes." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Clientes</h1>
-        <div className="flex gap-2">
-          {canViewReports && (
-            <Button variant="outline" asChild>
-              <Link href="/reports/accounts-receivable">
-                <CircleDollarSign className="h-4 w-4" />
-                Cuentas por cobrar
-              </Link>
-            </Button>
-          )}
-          {canCreate && (
-            <CustomerFormDialog
-              trigger={
-                <Button>
-                  <Plus className="h-4 w-4" />
-                  Nuevo cliente
-                </Button>
-              }
-            />
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Clientes"
+        actions={
+          <>
+            {canViewReports && (
+              <Button variant="outline" asChild>
+                <Link href="/reports/accounts-receivable">
+                  <CircleDollarSign className="h-4 w-4" />
+                  Cuentas por cobrar
+                </Link>
+              </Button>
+            )}
+            {canCreate && (
+              <CustomerFormDialog
+                trigger={
+                  <Button>
+                    <Plus className="h-4 w-4" />
+                    Nuevo cliente
+                  </Button>
+                }
+              />
+            )}
+          </>
+        }
+      />
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -81,9 +81,7 @@ export default function CustomersPage() {
       </div>
 
       {isLoading && <p className="text-muted-foreground">Cargando clientes...</p>}
-      {customers && customers.length === 0 && (
-        <p className="text-muted-foreground">Aun no hay clientes registrados.</p>
-      )}
+      {customers && customers.length === 0 && <EmptyState message="Aun no hay clientes registrados." />}
       {customers && customers.length > 0 && (
         <Card>
           <CardContent className="p-0">
