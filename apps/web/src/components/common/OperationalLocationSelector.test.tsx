@@ -70,6 +70,136 @@ describe("OperationalLocationSelector", () => {
     expect(screen.getByText("Selecciona la caja donde deseas operar.")).toBeInTheDocument();
   });
 
+  it("waits rather than showing an empty context while the branches load", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ branches: [], branchId: "", selectedBranch: undefined, branchesLoading: true })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText(/cargando sucursales disponibles/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Contexto operativo")).not.toBeInTheDocument();
+  });
+
+  it("reports a failed branch load instead of pretending there is no branch", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ branches: [], branchId: "", selectedBranch: undefined, branchesError: true })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText(/no se pudieron cargar las sucursales/i)).toBeInTheDocument();
+    expect(screen.queryByText(/pide a un administrador/i)).not.toBeInTheDocument();
+  });
+
+  it("requires an explicit branch choice when more than one is allowed", async () => {
+    const user = userEvent.setup();
+    const selectBranch = vi.fn();
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({
+          branchId: "",
+          selectedBranch: undefined,
+          hasMultipleBranches: true,
+          needsBranchSelection: true,
+          branches: [
+            { id: "b-1", name: "Centro", address: null, active: true, createdAt: "" },
+            { id: "b-2", name: "Norte", address: null, active: true, createdAt: "" },
+          ],
+          selectBranch,
+        })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText("Selecciona la sucursal donde deseas operar.")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Sucursal"), "b-2");
+
+    expect(selectBranch).toHaveBeenCalledWith("b-2");
+  });
+
+  it("hides the register field entirely on a screen that does not need one", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ registers: [], registerId: "", selectedRegister: undefined })}
+        idPrefix="inventory"
+        requireRegister={false}
+      />
+    );
+
+    expect(screen.getByText("Centro")).toBeInTheDocument();
+    expect(screen.queryByText("Caja")).not.toBeInTheDocument();
+  });
+
+  it("reports a failed register load alongside the branch it belongs to", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ registers: [], registerId: "", selectedRegister: undefined, registersError: true })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText("Centro")).toBeInTheDocument();
+    expect(screen.getByText(/no se pudieron cargar las cajas de esta sucursal/i)).toBeInTheDocument();
+  });
+
+  it("says the registers are still loading in place of a register name", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ registers: [], registerId: "", selectedRegister: undefined, registersLoading: true })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText(/cargando cajas/i)).toBeInTheDocument();
+  });
+
+  it("falls back to a plain marker when the branch has no register at all", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ registers: [], registerId: "", selectedRegister: undefined })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByText("Sin caja")).toBeInTheDocument();
+  });
+
+  it("offers the way out of a branch with no operative register", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({ registers: [], registerId: "", selectedRegister: undefined, hasNoRegisters: true })}
+        idPrefix="pos"
+        emptyRegisterAction={<button type="button">Administrar cajas</button>}
+      />
+    );
+
+    expect(screen.getByText(/solicita una asignación de caja/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Administrar cajas" })).toBeInTheDocument();
+  });
+
+  it("keeps the register choice locked while its branch is still loading", () => {
+    renderWithProviders(
+      <OperationalLocationSelector
+        location={location({
+          branchId: "",
+          registerId: "",
+          selectedRegister: undefined,
+          hasMultipleRegisters: true,
+          registersLoading: true,
+          registers: [],
+        })}
+        idPrefix="pos"
+      />
+    );
+
+    expect(screen.getByLabelText("Caja")).toBeDisabled();
+    expect(screen.getByText(/cargando cajas/i)).toBeInTheDocument();
+  });
+
   it("passes an explicit register choice back to the shared location state", async () => {
     const user = userEvent.setup();
     const selectRegister = vi.fn();
