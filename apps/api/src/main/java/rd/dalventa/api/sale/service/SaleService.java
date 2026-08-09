@@ -61,6 +61,8 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class SaleService {
 
+    private static final String USER_NOT_AUTHENTICATED = "Usuario no autenticado";
+
     private final SaleRepository saleRepository;
     private final SaleItemRepository saleItemRepository;
     private final PaymentRepository paymentRepository;
@@ -115,7 +117,7 @@ public class SaleService {
         }
 
         var userId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
         boolean rentalModuleEnabled = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
@@ -319,7 +321,7 @@ public class SaleService {
 
     private java.util.UUID currentUserId() {
         return currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
     }
 
@@ -365,7 +367,7 @@ public class SaleService {
         }
 
         var userId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
 
         for (SaleItem item : saleItemRepository.findAllBySaleId(sale.getId())) {

@@ -48,6 +48,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PurchaseService {
 
+    private static final String PURCHASE_NOT_FOUND = "Compra no encontrada";
+    private static final String USER_NOT_AUTHENTICATED = "Usuario no autenticado";
+
     private final PurchaseRepository purchaseRepository;
     private final PurchaseItemRepository purchaseItemRepository;
     private final SupplierRepository supplierRepository;
@@ -74,7 +77,7 @@ public class PurchaseService {
         var tenantId = TenantContext.require();
         ensureModuleEnabled(tenantId);
         var purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException(PURCHASE_NOT_FOUND));
         return toResponse(purchase);
     }
 
@@ -92,7 +95,7 @@ public class PurchaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
 
         var actorId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
         long sequence = purchaseRepository.countByTenantId(tenantId) + 1;
 
@@ -157,12 +160,12 @@ public class PurchaseService {
         var tenantId = TenantContext.require();
         ensureModuleEnabled(tenantId);
         var purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException(PURCHASE_NOT_FOUND));
         if (purchase.getStatus() != PurchaseStatus.DRAFT) {
             throw new IllegalArgumentException("Solo se pueden recibir compras en borrador");
         }
         var actorId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
         for (PurchaseItem item : purchaseItemRepository.findAllByPurchaseId(purchase.getId())) {
             var product = productRepository.findByIdAndTenantId(item.getProductId(), tenantId)
@@ -214,7 +217,7 @@ public class PurchaseService {
         var tenantId = TenantContext.require();
         ensureModuleEnabled(tenantId);
         purchaseRepository.findByIdAndTenantId(purchaseId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException(PURCHASE_NOT_FOUND));
         return purchasePaymentRepository.findAllByTenantIdAndPurchaseIdOrderByPaidAtDesc(tenantId, purchaseId)
                 .stream()
                 .map(PurchasePaymentResponse::from)
@@ -226,7 +229,7 @@ public class PurchaseService {
         var tenantId = TenantContext.require();
         ensureModuleEnabled(tenantId);
         var purchase = purchaseRepository.findByIdAndTenantId(purchaseId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException(PURCHASE_NOT_FOUND));
         if (purchase.getStatus() != PurchaseStatus.RECEIVED) {
             throw new IllegalArgumentException("Solo se pueden registrar pagos a compras recibidas");
         }
@@ -236,7 +239,7 @@ public class PurchaseService {
             throw new IllegalArgumentException("El pago no puede superar el balance pendiente");
         }
         var actorId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
         var payment = new PurchasePayment();
         payment.setTenantId(tenantId);

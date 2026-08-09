@@ -30,6 +30,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SuperAdminService {
 
+    private static final String TENANT_NOT_FOUND = "Taller no encontrado";
+
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -93,7 +95,7 @@ public class SuperAdminService {
 
     public TenantDetailResponse getTenantDetail(UUID id) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         // All staff login users of the taller (everyone except portal CLIENT users),
         // so a super-admin can reach any of them (e.g. to reset a password).
         var owners = userRepository.findByTenantId(id).stream()
@@ -111,7 +113,7 @@ public class SuperAdminService {
     @Transactional
     public TenantSummaryResponse approveTenant(UUID id, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         if (tenant.getStatus() != TenantStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Taller no está pendiente");
         }
@@ -124,7 +126,7 @@ public class SuperAdminService {
     @Transactional
     public TenantSummaryResponse updateStatus(UUID id, UpdateTenantStatusRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.getStatus();
         tenant.setStatus(req.status());
         tenantRepository.save(tenant);
@@ -135,7 +137,7 @@ public class SuperAdminService {
     @Transactional
     public TenantSummaryResponse updatePlan(UUID id, UpdateTenantPlanRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.getPlan();
         tenant.setPlan(req.plan());
         tenantRepository.save(tenant);
@@ -146,7 +148,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updateFiscalModule(UUID id, UpdateTenantFiscalModuleRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isFiscalModuleEnabled();
         tenant.setFiscalModuleEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -157,7 +159,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updateCashDenominations(UUID id, UpdateTenantCashDenominationsRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isCashDenominationsEnabled();
         tenant.setCashDenominationsEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -168,7 +170,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updateMultiBranch(UUID id, UpdateTenantMultiBranchRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isMultiBranchEnabled();
         tenant.setMultiBranchEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -179,7 +181,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updateMultiRegister(UUID id, UpdateTenantMultiRegisterRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isMultiRegisterEnabled();
         tenant.setMultiRegisterEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -190,7 +192,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updateRentalModule(UUID id, UpdateTenantRentalModuleRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isRentalModuleEnabled();
         tenant.setRentalModuleEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -201,7 +203,7 @@ public class SuperAdminService {
     @Transactional
     public TenantDetailResponse updatePurchaseModule(UUID id, UpdateTenantPurchaseModuleRequest req, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var prev = tenant.isPurchaseModuleEnabled();
         tenant.setPurchaseModuleEnabled(req.enabled());
         tenantRepository.save(tenant);
@@ -212,7 +214,7 @@ public class SuperAdminService {
     @Transactional
     public TenantSummaryResponse extendTrial(UUID id, int days, String actor) {
         var tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         var newEnd = (tenant.getTrialEndsAt() != null ? tenant.getTrialEndsAt() : Instant.now())
                 .plus(days, ChronoUnit.DAYS);
         tenant.setTrialEndsAt(newEnd);
@@ -226,7 +228,7 @@ public class SuperAdminService {
     @Transactional
     public ImpersonateResponse impersonate(UUID tenantId, String superAdminEmail) {
         var tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, TENANT_NOT_FOUND));
         // Log in as the tenant's actual ADMIN user rather than minting a token whose
         // claims don't match the authenticated principal's real role/tenant — the
         // JWT filter authenticates by re-loading the user behind the token's email,

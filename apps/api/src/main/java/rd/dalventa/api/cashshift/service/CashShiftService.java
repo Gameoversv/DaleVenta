@@ -39,6 +39,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CashShiftService {
 
+    private static final String REGISTER_NOT_FOUND = "Caja no encontrada";
+
     private final CashShiftRepository cashShiftRepository;
     private final CashShiftDenominationRepository cashShiftDenominationRepository;
     private final RegisterRepository registerRepository;
@@ -147,7 +149,7 @@ public class CashShiftService {
         BigDecimal difference = countedCash.subtract(expectedCash);
 
         var register = registerRepository.findByIdAndTenantId(shift.getRegisterId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException(REGISTER_NOT_FOUND));
 
         boolean hasInventoryDiscrepancy = false;
         for (InventoryCountEntry entry : req.inventoryCounts()) {

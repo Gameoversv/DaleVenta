@@ -21,6 +21,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GlobalSearchService {
 
+    private static final String AMOUNT_SEPARATOR = " · RD$";
+
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
     private final SaleRepository saleRepository;
@@ -45,7 +47,7 @@ public class GlobalSearchService {
                     results.add(new GlobalSearchResult(
                             "Factura",
                             sale.getFiscalNcf() != null ? sale.getFiscalNcf() : sale.getInvoiceNumber(),
-                            sale.getInvoiceNumber() + " · RD$" + sale.getTotal() + " · " + sale.getStatus(),
+                            sale.getInvoiceNumber() + AMOUNT_SEPARATOR + sale.getTotal() + " · " + sale.getStatus(),
                             "/sales/" + sale.getId() + "/invoice"
                     )));
         } else if (permissionResolutionService.has(user, PermissionCode.SALE_CREATE)) {
@@ -53,7 +55,7 @@ public class GlobalSearchService {
                     results.add(new GlobalSearchResult(
                             "Factura",
                             sale.getFiscalNcf() != null ? sale.getFiscalNcf() : sale.getInvoiceNumber(),
-                            sale.getInvoiceNumber() + " · RD$" + sale.getTotal() + " · " + sale.getStatus(),
+                            sale.getInvoiceNumber() + AMOUNT_SEPARATOR + sale.getTotal() + " · " + sale.getStatus(),
                             "/sales/" + sale.getId() + "/invoice"
                     )));
         }
@@ -73,7 +75,7 @@ public class GlobalSearchService {
                     results.add(new GlobalSearchResult(
                             "Producto",
                             product.getDescription(),
-                            product.getInternalCode() + " · " + product.getUnit() + " · RD$" + product.getSalePrice(),
+                            product.getInternalCode() + " · " + product.getUnit() + AMOUNT_SEPARATOR + product.getSalePrice(),
                             "/products"
                     )));
         }

@@ -21,6 +21,9 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtService {
 
+    private static final String CLAIM_EMAIL = "email";
+    private static final String CLAIM_TENANT_ID = "tenantId";
+
     private final AppProperties properties;
 
     public String generateToken(User user) {
@@ -29,14 +32,14 @@ public class JwtService {
 
         var builder = Jwts.builder()
                 .subject(user.getId().toString())
-                .claim("email", user.getEmail())
+                .claim(CLAIM_EMAIL, user.getEmail())
                 .claim("name", user.getName())
                 .claim("role", user.getPrimaryRole().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry));
 
         if (user.getTenantId() != null) {
-            builder.claim("tenantId", user.getTenantId().toString());
+            builder.claim(CLAIM_TENANT_ID, user.getTenantId().toString());
         }
 
         return builder.signWith(getSigningKey()).compact();
@@ -48,10 +51,10 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getId().toString())
-                .claim("email", user.getEmail())
+                .claim(CLAIM_EMAIL, user.getEmail())
                 .claim("name", user.getName())
                 .claim("role", "CLIENT")
-                .claim("tenantId", user.getTenantId().toString())
+                .claim(CLAIM_TENANT_ID, user.getTenantId().toString())
                 .claim("customerId", customerId.toString())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
@@ -65,18 +68,18 @@ public class JwtService {
     }
 
     public java.util.UUID extractTenantId(String token) {
-        String raw = getClaims(token).get("tenantId", String.class);
+        String raw = getClaims(token).get(CLAIM_TENANT_ID, String.class);
         return raw != null ? java.util.UUID.fromString(raw) : null;
     }
 
     public String extractEmail(String token) {
-        return getClaims(token).get("email", String.class);
+        return getClaims(token).get(CLAIM_EMAIL, String.class);
     }
 
     public boolean isTokenValid(String token, String email) {
         try {
             Claims claims = getClaims(token);
-            return email.equals(claims.get("email", String.class))
+            return email.equals(claims.get(CLAIM_EMAIL, String.class))
                     && claims.getExpiration().after(new Date());
         } catch (Exception e) {
             return false;

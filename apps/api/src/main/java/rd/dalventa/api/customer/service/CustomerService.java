@@ -19,6 +19,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CustomerService {
 
+    private static final String CUSTOMER_NOT_FOUND_PREFIX = "Cliente no encontrado: ";
+
     private final CustomerRepository repository;
 
     public Page<CustomerResponse> search(String q, Pageable pageable) {
@@ -28,7 +30,7 @@ public class CustomerService {
     public CustomerResponse findById(UUID id) {
         return repository.findByIdAndTenantIdAndActiveTrue(id, TenantContext.require())
                 .map(CustomerResponse::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND_PREFIX + id));
     }
 
     @Transactional
@@ -55,7 +57,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponse update(UUID id, UpdateCustomerRequest req) {
         var customer = repository.findByIdAndTenantIdAndActiveTrue(id, TenantContext.require())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND_PREFIX + id));
 
         if (req.firstName() != null) customer.setFirstName(req.firstName());
         if (req.lastName() != null) customer.setLastName(req.lastName());
@@ -71,7 +73,7 @@ public class CustomerService {
     @Transactional
     public void delete(UUID id) {
         var customer = repository.findByIdAndTenantIdAndActiveTrue(id, TenantContext.require())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND_PREFIX + id));
         customer.setActive(false);
         repository.save(customer);
     }
