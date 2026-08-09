@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 
 const loginSchema = z.object({
-  email: z.string().email("Correo invalido"),
+  email: z.email("Correo invalido"),
   password: z.string().min(1, "Contrasena requerida"),
 });
 type LoginForm = z.infer<typeof loginSchema>;

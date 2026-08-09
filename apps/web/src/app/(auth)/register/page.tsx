@@ -17,7 +17,7 @@ import type { AuthResponse } from "@/types/auth";
 const registerSchema = z.object({
   tenantName: z.string().min(1, "Nombre del negocio requerido"),
   adminName: z.string().min(1, "Tu nombre es requerido"),
-  adminEmail: z.string().email("Correo invalido"),
+  adminEmail: z.email("Correo invalido"),
   adminPassword: z.string().min(8, "Minimo 8 caracteres"),
   website: z.string().max(0).optional(),
 });

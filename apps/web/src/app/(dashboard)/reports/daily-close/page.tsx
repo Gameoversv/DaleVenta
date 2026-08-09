@@ -88,6 +88,12 @@ function MetricCard({
   );
 }
 
+/** What the save button says: already filed, filing now, or still to file. */
+function saveLabel(saved: boolean, saving: boolean): string {
+  if (saved) return "Guardado";
+  return saving ? "Guardando..." : "Guardar cierre";
+}
+
 export default function DailyCloseReportPage() {
   const canViewReports = usePermission("REPORTS_VIEW");
   const queryClient = useQueryClient();
@@ -198,7 +204,7 @@ export default function DailyCloseReportPage() {
             disabled={!data || !registerId || closingSaved || saveClosing.isPending}
           >
             <LockKeyhole className="h-4 w-4" />
-            {closingSaved ? "Guardado" : saveClosing.isPending ? "Guardando..." : "Guardar cierre"}
+            {saveLabel(closingSaved, saveClosing.isPending)}
           </Button>
           </div>
         }
