@@ -30,6 +30,21 @@ public class DenominationService {
 
     @Transactional
     public void seedDefaults(UUID tenantId) {
+        writeDefaults(tenantId);
+    }
+
+    @Transactional
+    public void seedDefaultsIfMissing(UUID tenantId) {
+        if (!denominationRepository.existsByTenantId(tenantId)) {
+            writeDefaults(tenantId);
+        }
+    }
+
+    /**
+     * Shared by both entry points. Calling the public seed method from within the bean would skip
+     * the Spring proxy, so its transaction settings would never apply.
+     */
+    private void writeDefaults(UUID tenantId) {
         for (BigDecimal value : DEFAULT_BILLS) {
             var d = new Denomination(value, DenominationType.BILL);
             d.setTenantId(tenantId);
@@ -39,13 +54,6 @@ public class DenominationService {
             var d = new Denomination(value, DenominationType.COIN);
             d.setTenantId(tenantId);
             denominationRepository.save(d);
-        }
-    }
-
-    @Transactional
-    public void seedDefaultsIfMissing(UUID tenantId) {
-        if (!denominationRepository.existsByTenantId(tenantId)) {
-            seedDefaults(tenantId);
         }
     }
 

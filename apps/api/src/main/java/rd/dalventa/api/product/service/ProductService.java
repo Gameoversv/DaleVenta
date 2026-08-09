@@ -50,8 +50,17 @@ public class ProductService {
                     .getId()
                 : categoryService.ensureGeneralCategory(tenantId).getId();
 
-        var product = new Product(categoryId, req.internalCode(), req.barcode(), req.description(),
-                req.unit(), req.cost(), req.salePrice(), req.wholesalePrice(), req.taxRate(), req.tracksInventory());
+        var product = new Product();
+        product.setCategoryId(categoryId);
+        product.setInternalCode(req.internalCode());
+        product.setBarcode(req.barcode());
+        product.setDescription(req.description());
+        product.setUnit(req.unit());
+        product.setCost(req.cost());
+        product.setSalePrice(req.salePrice());
+        product.setWholesalePrice(req.wholesalePrice());
+        product.setTaxRate(req.taxRate());
+        product.setTracksInventory(req.tracksInventory());
         boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
         product.setRentable(rentalModuleEnabled && req.rentable());
         product.setTenantId(tenantId);

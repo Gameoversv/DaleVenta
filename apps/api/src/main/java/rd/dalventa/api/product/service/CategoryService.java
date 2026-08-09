@@ -33,13 +33,22 @@ public class CategoryService {
     @Transactional
     public List<CategoryResponse> list() {
         var tenantId = TenantContext.require();
-        ensureGeneralCategory(tenantId);
+        resolveGeneralCategory(tenantId);
         return categoryRepository.findAllByTenantIdAndActiveTrue(tenantId)
                 .stream().map(CategoryResponse::from).toList();
     }
 
     @Transactional
     public Category ensureGeneralCategory(UUID tenantId) {
+        return resolveGeneralCategory(tenantId);
+    }
+
+    /**
+     * Shared by the public entry point and the in-bean callers. Calling
+     * {@link #ensureGeneralCategory(UUID)} from inside the bean would bypass the Spring proxy, so
+     * its transaction settings would never apply; both callers here already run in one.
+     */
+    private Category resolveGeneralCategory(UUID tenantId) {
         var existing = categoryRepository.findByTenantIdAndNameIgnoreCase(tenantId, GENERAL_CATEGORY_NAME).orElse(null);
         if (existing != null) {
             if (!existing.isActive()) {
@@ -62,7 +71,7 @@ public class CategoryService {
             throw new IllegalArgumentException("La categoria General no se puede eliminar");
         }
 
-        var general = ensureGeneralCategory(tenantId);
+        var general = resolveGeneralCategory(tenantId);
         productRepository.findAllByTenantIdAndCategoryId(tenantId, category.getId()).forEach(product -> {
             product.setCategoryId(general.getId());
             productRepository.save(product);

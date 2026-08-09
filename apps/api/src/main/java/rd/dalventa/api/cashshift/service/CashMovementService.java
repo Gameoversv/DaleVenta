@@ -38,7 +38,11 @@ public class CashMovementService {
     private final CurrentUserProvider currentUserProvider;
     private final TenantRepository tenantRepository;
 
-    @Transactional
+    /**
+     * Deliberately not annotated: the overload it delegates to opens the transaction. A second
+     * {@code @Transactional} here would be dead configuration, since a self-call never passes
+     * through the Spring proxy that reads it.
+     */
     public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req) {
         return recordMovement(cashShiftId, req, null);
     }
