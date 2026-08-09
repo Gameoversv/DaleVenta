@@ -50,50 +50,71 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         try {
-            String email = extractEmailOrNull(token);
-
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userDetails = userDetailsService.loadUserByUsername(email);
-                if (jwtService.isTokenValid(token, email)) {
-                    var tenantId = jwtService.extractTenantId(token);
-
-                    // Deny access when the token's tenant (taller) is suspended or
-                    // cancelled. SUPER_ADMIN (incl. impersonation, whose token stays
-                    // under the super-admin's email) is never blocked.
-                    boolean isSuperAdmin = userDetails.getAuthorities().stream()
-                            .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()));
-                    if (tenantId != null && !isSuperAdmin
-                            && tenantRepository.findById(tenantId)
-                                    .map(t -> t.getStatus().blocksAccess())
-                                    .orElse(false)) {
-                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                        response.setContentType("application/json");
-                        response.getWriter().write(
-                                "{\"success\":false,\"error\":\"Taller suspendido\"}");
-                        return;
-                    }
-
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
-                    );
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-
-                    if (tenantId != null) {
-                        TenantContext.set(tenantId);
-                    }
-                    var customerId = jwtService.extractCustomerId(token);
-                    if (customerId != null) {
-                        CustomerContext.set(customerId);
-                    }
-                }
+            if (!authenticate(request, response, token)) {
+                return;
             }
-
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
             CustomerContext.clear();
         }
+    }
+
+    /**
+     * Populates the security context from the token when it checks out. Returns false when the
+     * response has already been written and the chain must stop, which today only happens for a
+     * suspended tenant.
+     */
+    private boolean authenticate(HttpServletRequest request, HttpServletResponse response, String token)
+            throws IOException {
+        String email = extractEmailOrNull(token);
+        if (email == null || SecurityContextHolder.getContext().getAuthentication() != null) {
+            return true;
+        }
+
+        var userDetails = userDetailsService.loadUserByUsername(email);
+        if (!jwtService.isTokenValid(token, email)) {
+            return true;
+        }
+
+        var tenantId = jwtService.extractTenantId(token);
+        if (tenantBlocked(tenantId, userDetails)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"success\":false,\"error\":\"Taller suspendido\"}");
+            return false;
+        }
+
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        if (tenantId != null) {
+            TenantContext.set(tenantId);
+        }
+        var customerId = jwtService.extractCustomerId(token);
+        if (customerId != null) {
+            CustomerContext.set(customerId);
+        }
+        return true;
+    }
+
+    /**
+     * Denies access when the token's tenant (taller) is suspended or cancelled. SUPER_ADMIN
+     * (including impersonation, whose token stays under the super-admin's email) is never blocked.
+     */
+    private boolean tenantBlocked(java.util.UUID tenantId, org.springframework.security.core.userdetails.UserDetails userDetails) {
+        if (tenantId == null) {
+            return false;
+        }
+        boolean isSuperAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()));
+        if (isSuperAdmin) {
+            return false;
+        }
+        return tenantRepository.findById(tenantId)
+                .map(t -> t.getStatus().blocksAccess())
+                .orElse(false);
     }
 
     /**

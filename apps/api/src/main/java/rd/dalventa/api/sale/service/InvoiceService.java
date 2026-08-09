@@ -7,6 +7,7 @@ import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.customer.domain.Customer;
 import rd.dalventa.api.customer.repository.CustomerRepository;
+import rd.dalventa.api.fiscal.domain.FiscalProfile;
 import rd.dalventa.api.fiscal.repository.FiscalProfileRepository;
 import rd.dalventa.api.product.domain.Product;
 import rd.dalventa.api.product.repository.ProductRepository;
@@ -21,7 +22,10 @@ import rd.dalventa.api.sale.repository.PaymentRepository;
 import rd.dalventa.api.sale.repository.SaleItemRepository;
 import rd.dalventa.api.sale.repository.SaleRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
+
+import java.util.List;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
+import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 
 @Service
@@ -53,17 +57,7 @@ public class InvoiceService {
         var fiscalProfile = fiscalProfileRepository.findByTenantId(tenantId).orElse(null);
         var isFiscalInvoice = sale.getFiscalNcf() != null;
 
-        var items = saleItemRepository.findAllBySaleId(sale.getId()).stream()
-                .map(item -> {
-                    var itemProduct = productRepository.findById(item.getProductId())
-                            .filter(product -> tenantId.equals(product.getTenantId()))
-                            .orElse(null);
-                    var productName = itemProduct != null ? itemProduct.getDescription() : "Producto eliminado";
-                    var productUnit = itemProduct != null ? itemProduct.getUnit() : "unit";
-                    return new InvoiceItemResponse(productName, productUnit, item.getQuantity(),
-                            item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
-                })
-                .toList();
+        var items = invoiceItems(sale.getId(), tenantId);
         var payments = paymentRepository.findAllBySaleId(sale.getId()).stream().map(PaymentResponse::from).toList();
         var amountPaid = payments.stream()
                 .map(PaymentResponse::amount)
@@ -79,24 +73,7 @@ public class InvoiceService {
                 sale.getFiscalNcf(),
                 sale.getStatus(),
                 sale.getCreatedAt(),
-                new InvoiceResponse.BusinessInfo(
-                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getBusinessName() : tenant.getName(),
-                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getRnc() : tenant.getRnc(),
-                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getPhone() : tenant.getPhone(),
-                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getEmail() : tenant.getEmail(),
-                        isFiscalInvoice && fiscalProfile != null ? fiscalProfile.getFiscalAddress() : tenant.getAddress(),
-                        tenant.getCity(),
-                        tenant.getLogoUrl(),
-                        tenant.getInvoiceFooterMessage(),
-                        tenant.getInvoicePrintSize(),
-                        tenant.isInvoiceShowLogo(),
-                        tenant.isInvoiceShowRnc(),
-                        tenant.isInvoiceShowPhone(),
-                        tenant.isInvoiceShowEmail(),
-                        tenant.isInvoiceShowAddress(),
-                        tenant.isInvoiceShowCustomer(),
-                        tenant.isInvoiceShowTax()
-                ),
+                businessInfo(tenant, isFiscalInvoice ? fiscalProfile : null),
                 branch != null ? branch.getName() : "-",
                 register != null ? register.getName() : "-",
                 sale.getCustomerId() != null ? customerInfo(sale.getCustomerId(), tenantId) : null,
@@ -108,6 +85,47 @@ public class InvoiceService {
                 rental,
                 items,
                 payments
+        );
+    }
+
+    private List<InvoiceItemResponse> invoiceItems(java.util.UUID saleId, java.util.UUID tenantId) {
+        return saleItemRepository.findAllBySaleId(saleId).stream()
+                .map(item -> {
+                    // A product deleted after the sale must not break the reprint of an old invoice.
+                    var itemProduct = productRepository.findById(item.getProductId())
+                            .filter(product -> tenantId.equals(product.getTenantId()))
+                            .orElse(null);
+                    var productName = itemProduct != null ? itemProduct.getDescription() : "Producto eliminado";
+                    var productUnit = itemProduct != null ? itemProduct.getUnit() : "unit";
+                    return new InvoiceItemResponse(productName, productUnit, item.getQuantity(),
+                            item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
+                })
+                .toList();
+    }
+
+    /**
+     * Fiscal invoices must show the registered fiscal identity; everything else shows the business
+     * profile. {@code fiscalProfile} is null whenever the tenant identity applies, so the header
+     * fields fall back together instead of mixing the two sources.
+     */
+    private InvoiceResponse.BusinessInfo businessInfo(Tenant tenant, FiscalProfile fiscalProfile) {
+        return new InvoiceResponse.BusinessInfo(
+                fiscalProfile != null ? fiscalProfile.getBusinessName() : tenant.getName(),
+                fiscalProfile != null ? fiscalProfile.getRnc() : tenant.getRnc(),
+                fiscalProfile != null ? fiscalProfile.getPhone() : tenant.getPhone(),
+                fiscalProfile != null ? fiscalProfile.getEmail() : tenant.getEmail(),
+                fiscalProfile != null ? fiscalProfile.getFiscalAddress() : tenant.getAddress(),
+                tenant.getCity(),
+                tenant.getLogoUrl(),
+                tenant.getInvoiceFooterMessage(),
+                tenant.getInvoicePrintSize(),
+                tenant.isInvoiceShowLogo(),
+                tenant.isInvoiceShowRnc(),
+                tenant.isInvoiceShowPhone(),
+                tenant.isInvoiceShowEmail(),
+                tenant.isInvoiceShowAddress(),
+                tenant.isInvoiceShowCustomer(),
+                tenant.isInvoiceShowTax()
         );
     }
 

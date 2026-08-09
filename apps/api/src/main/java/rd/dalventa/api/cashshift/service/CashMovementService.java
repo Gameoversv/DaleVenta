@@ -88,58 +88,81 @@ public class CashMovementService {
         boolean isOutflow = req.type() != CashMovementType.ENTRY;
 
         Map<UUID, CashShiftDenomination> locked = new HashMap<>();
-        BigDecimal amount = BigDecimal.ZERO;
+        BigDecimal amount = denominationsEnabled
+                ? lockAndTotalDenominations(cashShiftId, tenantId, req, isOutflow, locked)
+                : requestedAmount(req);
 
+        var movement = saveMovement(cashShiftId, req, saleId, tenantId, amount);
         if (denominationsEnabled) {
-            if (req.denominations().isEmpty()) {
-                throw new IllegalArgumentException("Debe indicar denominaciones para el movimiento");
-            }
-            for (DenominationCountEntry entry : req.denominations()) {
-                var csd = cashShiftDenominationRepository
-                        .lockByCashShiftIdAndDenominationId(cashShiftId, entry.denominationId())
-                        .orElseGet(() -> createCashShiftDenomination(tenantId, cashShiftId, entry.denominationId()));
+            applyDenominations(req, movement, tenantId, isOutflow, locked);
+        }
+        return CashMovementResponse.from(movement);
+    }
 
-                int newQuantity = isOutflow
-                        ? csd.getCurrentQuantity() - entry.quantity()
-                        : csd.getCurrentQuantity() + entry.quantity();
-                if (newQuantity < 0) {
-                    throw new IllegalArgumentException("Existencia insuficiente de esa denominacion en la caja");
-                }
-                locked.put(entry.denominationId(), csd);
-
-                var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
-                amount = amount.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
-            }
-        } else {
-            if (req.amount() == null || req.amount().signum() <= 0) {
-                throw new IllegalArgumentException("Debe indicar un monto mayor que cero");
-            }
-            amount = req.amount().setScale(2, java.math.RoundingMode.HALF_UP);
+    /**
+     * Locks each counted denomination for the shift and adds up what the movement is worth. The
+     * rows stay locked for the rest of the transaction, which is what keeps two registers from
+     * spending the same bills.
+     */
+    private BigDecimal lockAndTotalDenominations(UUID cashShiftId, UUID tenantId, CreateCashMovementRequest req,
+                                                 boolean isOutflow, Map<UUID, CashShiftDenomination> locked) {
+        if (req.denominations().isEmpty()) {
+            throw new IllegalArgumentException("Debe indicar denominaciones para el movimiento");
         }
 
+        BigDecimal amount = BigDecimal.ZERO;
+        for (DenominationCountEntry entry : req.denominations()) {
+            var csd = cashShiftDenominationRepository
+                    .lockByCashShiftIdAndDenominationId(cashShiftId, entry.denominationId())
+                    .orElseGet(() -> createCashShiftDenomination(tenantId, cashShiftId, entry.denominationId()));
+
+            if (nextQuantity(csd, entry, isOutflow) < 0) {
+                throw new IllegalArgumentException("Existencia insuficiente de esa denominacion en la caja");
+            }
+            locked.put(entry.denominationId(), csd);
+
+            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+            amount = amount.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+        }
+        return amount;
+    }
+
+    private static BigDecimal requestedAmount(CreateCashMovementRequest req) {
+        if (req.amount() == null || req.amount().signum() <= 0) {
+            throw new IllegalArgumentException("Debe indicar un monto mayor que cero");
+        }
+        return req.amount().setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private CashMovement saveMovement(UUID cashShiftId, CreateCashMovementRequest req, UUID saleId,
+                                      UUID tenantId, BigDecimal amount) {
         var userId = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
                 .getId();
         var movement = new CashMovement(cashShiftId, req.type(), amount, req.reason(), userId);
         movement.setTenantId(tenantId);
         movement.setSaleId(saleId);
-        movement = cashMovementRepository.save(movement);
+        return cashMovementRepository.save(movement);
+    }
 
-        if (denominationsEnabled) {
-            for (DenominationCountEntry entry : req.denominations()) {
-                var csd = locked.get(entry.denominationId());
-                int updated = isOutflow ? csd.getCurrentQuantity() - entry.quantity() : csd.getCurrentQuantity() + entry.quantity();
-                csd.setCurrentQuantity(updated);
-                cashShiftDenominationRepository.save(csd);
+    private void applyDenominations(CreateCashMovementRequest req, CashMovement movement, UUID tenantId,
+                                    boolean isOutflow, Map<UUID, CashShiftDenomination> locked) {
+        for (DenominationCountEntry entry : req.denominations()) {
+            var csd = locked.get(entry.denominationId());
+            csd.setCurrentQuantity(nextQuantity(csd, entry, isOutflow));
+            cashShiftDenominationRepository.save(csd);
 
-                var cmd = new CashMovementDenomination(movement.getId(), entry.denominationId(), entry.quantity());
-                cmd.setTenantId(tenantId);
-                cashMovementDenominationRepository.save(cmd);
-            }
+            var cmd = new CashMovementDenomination(movement.getId(), entry.denominationId(), entry.quantity());
+            cmd.setTenantId(tenantId);
+            cashMovementDenominationRepository.save(cmd);
         }
+    }
 
-        return CashMovementResponse.from(movement);
+    private static int nextQuantity(CashShiftDenomination csd, DenominationCountEntry entry, boolean isOutflow) {
+        return isOutflow
+                ? csd.getCurrentQuantity() - entry.quantity()
+                : csd.getCurrentQuantity() + entry.quantity();
     }
 
     private CashShiftDenomination createCashShiftDenomination(UUID tenantId, UUID cashShiftId, UUID denominationId) {
