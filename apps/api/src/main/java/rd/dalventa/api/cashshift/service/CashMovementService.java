@@ -38,13 +38,9 @@ public class CashMovementService {
     private final CurrentUserProvider currentUserProvider;
     private final TenantRepository tenantRepository;
 
-    /**
-     * Deliberately not annotated: the overload it delegates to opens the transaction. A second
-     * {@code @Transactional} here would be dead configuration, since a self-call never passes
-     * through the Spring proxy that reads it.
-     */
+    @Transactional
     public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req) {
-        return recordMovement(cashShiftId, req, null);
+        return doRecordMovement(cashShiftId, req, null);
     }
 
     @Transactional(readOnly = true)
@@ -75,6 +71,15 @@ public class CashMovementService {
 
     @Transactional
     public CashMovementResponse recordMovement(UUID cashShiftId, CreateCashMovementRequest req, UUID saleId) {
+        return doRecordMovement(cashShiftId, req, saleId);
+    }
+
+    /**
+     * Shared by both entry points. Delegating through the public overload instead would skip the
+     * Spring proxy, leaving the caller without the transaction the pessimistic denomination locks
+     * below require.
+     */
+    private CashMovementResponse doRecordMovement(UUID cashShiftId, CreateCashMovementRequest req, UUID saleId) {
         cashShiftService.requireShiftInTenant(cashShiftId);
         var tenantId = TenantContext.require();
         boolean denominationsEnabled = tenantRepository.findById(tenantId)
