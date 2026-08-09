@@ -18,7 +18,7 @@ function availableCredit(
   account: CreditAccountResponse | undefined,
   profile: CreditProfileResponse | undefined
 ): string | null {
-  if (!account || !profile || profile.creditLimit == null) return null;
+  if (!account || profile?.creditLimit == null) return null;
   return (Number(profile.creditLimit) - Number(account.balance)).toFixed(2);
 }
 
