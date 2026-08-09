@@ -180,6 +180,38 @@ class FiscalIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("a fiscal invoice is headed by the registered fiscal identity, a normal one by the business")
+    void invoiceHeader_followsTheReceiptType() throws Exception {
+        var t = provisionTenant(ADMIN);
+        createSequence(t, 1, 5);
+        mockMvc.perform(put("/api/fiscal/profile")
+                        .header("Authorization", bearer(t.token()))
+                        .contentType("application/json")
+                        .content("{\"business_name\":\"Reposteria Dona Ana SRL\",\"trade_name\":\"Dona Ana\","
+                                + "\"rnc\":\"131234567\",\"fiscal_address\":\"Calle Duarte 12\","
+                                + "\"phone\":\"8090000000\",\"email\":\"fiscal@donaana.do\","
+                                + "\"tax_regime\":\"Regimen ordinario\"}"))
+                .andExpect(status().isOk());
+
+        var fiscalSaleId = objectMapper.readTree(fiscalSale(t)).path("data").path("id").asText();
+        mockMvc.perform(get("/api/sales/" + fiscalSaleId + "/invoice").header("Authorization", bearer(t.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.business.name").value("Reposteria Dona Ana SRL"))
+                .andExpect(jsonPath("$.data.business.rnc").value("131234567"))
+                .andExpect(jsonPath("$.data.business.address").value("Calle Duarte 12"))
+                .andExpect(jsonPath("$.data.fiscalNcf").value("B0100000001"))
+                .andExpect(jsonPath("$.data.items[0].productName").value("Bizcocho"))
+                .andExpect(jsonPath("$.data.amountPaid").value("500.00"));
+
+        var plainSaleId = objectMapper.readTree(postJson(t.token(), "/api/sales", plainSaleBody(t)))
+                .path("data").path("id").asText();
+        mockMvc.perform(get("/api/sales/" + plainSaleId + "/invoice").header("Authorization", bearer(t.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.business.name").value("DaleVenta Test"))
+                .andExpect(jsonPath("$.data.fiscalNcf").doesNotExist());
+    }
+
     private void createSequence(TenantFixture t, int start, int end) throws Exception {
         mockMvc.perform(post("/api/fiscal/sequences")
                         .header("Authorization", bearer(t.token()))
@@ -196,6 +228,17 @@ class FiscalIntegrationTest extends IntegrationTestBase {
     private String fiscalSaleBody(TenantFixture t) {
         return "{\"registerId\":\"" + t.registerId() + "\",\"cashShiftId\":\"" + t.cashShiftId() + "\","
                 + "\"customerId\":null,\"fiscalReceiptType\":\"B01\","
+                + "\"items\":[{\"productId\":\"" + t.productId()
+                + "\",\"quantity\":2,\"useWholesalePrice\":false}],"
+                + "\"payments\":[{\"method\":\"CASH\",\"amount\":\"500.00\","
+                + "\"receivedDenominations\":[{\"denominationId\":\"" + t.denomination500Id()
+                + "\",\"quantity\":1}]}]}";
+    }
+
+    /** Same basket as {@link #fiscalSaleBody}, without asking for a fiscal receipt. */
+    private String plainSaleBody(TenantFixture t) {
+        return "{\"registerId\":\"" + t.registerId() + "\",\"cashShiftId\":\"" + t.cashShiftId() + "\","
+                + "\"customerId\":null,"
                 + "\"items\":[{\"productId\":\"" + t.productId()
                 + "\",\"quantity\":2,\"useWholesalePrice\":false}],"
                 + "\"payments\":[{\"method\":\"CASH\",\"amount\":\"500.00\","

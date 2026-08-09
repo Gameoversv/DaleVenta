@@ -115,7 +115,7 @@ function printQuotation(quotation: QuotationResponse) {
  * One line of the quotation being drafted. Pulled out of the table body so the remove handler is
  * not the fifth nested function inside the dialog.
  */
-function QuotationDraftRow({
+export function QuotationDraftRow({
   item,
   product,
   onRemove,

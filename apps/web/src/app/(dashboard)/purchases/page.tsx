@@ -67,7 +67,7 @@ function emptyToNull(value: string): string | null {
  * Draft rows carry a client-side id so React can keep inputs attached to their row: the array index
  * shifts when a row above is removed, which moved the typed values to the wrong line.
  */
-type PurchaseItemDraft = PurchaseItemRequest & { rowId: string };
+export type PurchaseItemDraft = PurchaseItemRequest & { rowId: string };
 
 function newItemDraft(): PurchaseItemDraft {
   return { rowId: crypto.randomUUID(), productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" };
@@ -348,7 +348,7 @@ function QuickProductDialog({
  * inline in the map callback they nested five functions in, which is where the row and the
  * dialog state started to blur together.
  */
-function PurchaseItemRow({
+export function PurchaseItemRow({
   item,
   products,
   categories,
