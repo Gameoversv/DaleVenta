@@ -50,7 +50,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         try {
-            if (!authenticate(request, response, token)) {
+            try {
+                applyAuthentication(request, token);
+            } catch (SuspendedTenantException ex) {
+                writeSuspendedTenant(response);
                 return;
             }
             filterChain.doFilter(request, response);
@@ -61,28 +64,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Populates the security context from the token when it checks out. Returns false when the
-     * response has already been written and the chain must stop, which today only happens for a
-     * suspended tenant.
+     * Populates the security context from the token when it checks out. A token that does not
+     * parse, does not validate, or belongs to an already authenticated request simply leaves the
+     * context untouched, which ends the request at the 401 entry point.
      */
-    private boolean authenticate(HttpServletRequest request, HttpServletResponse response, String token)
-            throws IOException {
+    private void applyAuthentication(HttpServletRequest request, String token) {
         String email = extractEmailOrNull(token);
         if (email == null || SecurityContextHolder.getContext().getAuthentication() != null) {
-            return true;
+            return;
         }
 
         var userDetails = userDetailsService.loadUserByUsername(email);
         if (!jwtService.isTokenValid(token, email)) {
-            return true;
+            return;
         }
 
         var tenantId = jwtService.extractTenantId(token);
         if (tenantBlocked(tenantId, userDetails)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"success\":false,\"error\":\"Taller suspendido\"}");
-            return false;
+            throw new SuspendedTenantException();
         }
 
         var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -96,7 +95,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (customerId != null) {
             CustomerContext.set(customerId);
         }
-        return true;
+    }
+
+    private void writeSuspendedTenant(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"success\":false,\"error\":\"Taller suspendido\"}");
+    }
+
+    /**
+     * Signals the one case where the filter answers the request itself instead of handing it down
+     * the chain. Modelled as an exception so the decision to stop is not a boolean derived from the
+     * bearer token deciding whether the chain runs.
+     */
+    private static class SuspendedTenantException extends RuntimeException {
+        SuspendedTenantException() {
+            super(null, null, false, false);
+        }
     }
 
     /**
