@@ -81,6 +81,18 @@ describe("session restore", () => {
     expect(result.current.user).toBeNull();
   });
 
+  it("keeps a token the server merely failed to answer for", async () => {
+    localStorage.setItem("token", "jwt-abc");
+    get.mockImplementation(() => Promise.reject({ response: { status: 500 } }));
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // A server fault is not a rejected session; signing the user out over one would be wrong.
+    expect(localStorage.getItem("token")).toBe("jwt-abc");
+    expect(result.current.user).toBeNull();
+  });
+
   it("does not probe the session on the public auth pages", async () => {
     pathname = "/login";
     localStorage.setItem("token", "jwt-abc");
