@@ -7,7 +7,6 @@ import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.inventory.dto.BranchInventoryResponse;
 import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
-import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.UUID;

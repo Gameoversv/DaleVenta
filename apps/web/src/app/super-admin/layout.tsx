@@ -47,12 +47,12 @@ export default function SuperAdminLayout({ children }: Readonly<{ children: Reac
       router.replace("/login");
       return;
     }
-    if (!isLoading && (!user || user.role !== "SUPER_ADMIN")) {
+    if (!isLoading && user?.role !== "SUPER_ADMIN") {
       router.replace("/login");
     }
   }, [isLoading, user, router]);
 
-  if (isLoading || !user || user.role !== "SUPER_ADMIN") {
+  if (isLoading || user?.role !== "SUPER_ADMIN") {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Cargando...</div>;
   }
 
@@ -84,6 +84,7 @@ export default function SuperAdminLayout({ children }: Readonly<{ children: Reac
             );
           })}
           <button
+            type="button"
             onClick={logout}
             className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >

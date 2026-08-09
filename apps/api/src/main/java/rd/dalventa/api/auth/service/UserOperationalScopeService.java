@@ -49,7 +49,7 @@ public class UserOperationalScopeService {
 
     @Transactional(readOnly = true)
     public List<Register> visibleRegisters(UUID branchId) {
-        requireBranchAccess(branchId);
+        resolveBranchAccess(branchId);
         var user = currentUser();
         var registers = registerRepository.findAllByBranchIdAndActiveTrue(branchId);
         if (!isRestrictedCashier(user)) {
@@ -62,6 +62,18 @@ public class UserOperationalScopeService {
 
     @Transactional(readOnly = true)
     public Branch requireBranchAccess(UUID branchId) {
+        return resolveBranchAccess(branchId);
+    }
+
+    /**
+     * The branch check itself, without a transaction of its own.
+     *
+     * Kept apart from {@link #requireBranchAccess} because a caller inside this class reaches it
+     * through {@code this}, and a self-call never passes through the proxy that would start one.
+     * The annotation on the public entry point is the honest one; a second one here would only
+     * claim a boundary that is not there.
+     */
+    private Branch resolveBranchAccess(UUID branchId) {
         var tenantId = TenantContext.require();
         var branch = branchRepository.findById(branchId)
                 .filter(candidate -> candidate.getTenantId().equals(tenantId))

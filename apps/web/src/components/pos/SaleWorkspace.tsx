@@ -68,8 +68,8 @@ export function SaleWorkspace({ registerId, cashShiftId }: Readonly<SaleWorkspac
 
   const addProduct = (product: ProductResponse) => {
     setCart((prev) => {
-      const existing = prev.find((l) => l.productId === product.id);
-      if (existing) {
+      const alreadyInCart = prev.some((l) => l.productId === product.id);
+      if (alreadyInCart) {
         return prev.map((l) => (l.productId === product.id ? { ...l, quantity: l.quantity + 1 } : l));
       }
       return [...prev, { productId: product.id, quantity: 1, useWholesalePrice: false }];

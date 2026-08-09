@@ -15,6 +15,12 @@ async function fetchProducts(): Promise<ProductResponse[]> {
   return res.data.data;
 }
 
+/** Headline for the closed shift: a square drawer, or which way it came up short. */
+function verdict(difference: number): string {
+  if (difference === 0) return "Caja cuadrada";
+  return difference > 0 ? "Sobrante de caja" : "Faltante de caja";
+}
+
 export function FinalShiftSummary({
   shift,
   onDone,
@@ -54,7 +60,7 @@ export function FinalShiftSummary({
           )}
           <div>
             <p className={cn("font-display text-base font-semibold", isExact ? "text-success" : "text-warning")}>
-              {isExact ? "Caja cuadrada" : difference > 0 ? "Sobrante de caja" : "Faltante de caja"}
+              {verdict(difference)}
             </p>
             <p className="text-sm text-muted-foreground">
               {isExact

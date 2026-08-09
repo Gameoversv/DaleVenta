@@ -101,10 +101,6 @@ function CreateUserDialog() {
     },
   });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    mutation.mutate(form);
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -118,7 +114,13 @@ function CreateUserDialog() {
         <DialogHeader>
           <DialogTitle>Nuevo usuario</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate(form);
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="user-name">Nombre</Label>
             <Input id="user-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -412,7 +414,7 @@ function EditUserDialog({ user }: Readonly<{ user: UserResponse }>) {
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.active} onChange={(event) => update({ active: event.target.checked })} />
-            Usuario activo
+            <span>Usuario activo</span>
           </label>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending || !form.name.trim() || !form.email.trim()}>

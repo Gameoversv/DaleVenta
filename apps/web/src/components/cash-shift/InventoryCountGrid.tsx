@@ -75,7 +75,7 @@ export function InventoryCountGrid({ branchId, onChange }: Readonly<InventoryCou
   }, [entries]);
 
   const handleChange = (productId: string, rawValue: string) => {
-    const quantity = Math.max(0, parseInt(rawValue, 10) || 0);
+    const quantity = Math.max(0, Number.parseInt(rawValue, 10) || 0);
     setQuantities((prev) => ({ ...prev, [productId]: quantity }));
   };
 

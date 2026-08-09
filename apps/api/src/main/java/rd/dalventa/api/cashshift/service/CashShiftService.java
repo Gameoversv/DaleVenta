@@ -107,7 +107,7 @@ public class CashShiftService {
 
     @Transactional(readOnly = true)
     public CashShiftSummaryResponse getCurrentOpenShift(UUID registerId) {
-        var tenantId = TenantContext.require();
+        // Access check resolves the tenant itself, so there is nothing to look up here first.
         userOperationalScopeService.requireRegisterAccess(registerId);
         var shift = cashShiftRepository.findByRegisterIdAndStatus(registerId, CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
