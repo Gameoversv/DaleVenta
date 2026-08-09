@@ -92,8 +92,7 @@ function CreateDenominationDialog() {
     },
   });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submit = () => {
     const amount = Number(form.value);
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -116,7 +115,13 @@ function CreateDenominationDialog() {
         <DialogHeader>
           <DialogTitle>Nueva denominacion</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit();
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="denomination-value">Valor</Label>
             <Input
