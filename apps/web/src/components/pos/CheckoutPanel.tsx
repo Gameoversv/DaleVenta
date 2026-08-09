@@ -171,31 +171,30 @@ export function CheckoutPanel({
   const creditAvailable = creditAvailableAmount(creditProfile, creditAccount);
   const creditEligible = canAuthorizeCredit && !!customer && creditProfile?.creditEnabled === true;
 
-  const { cashReady, transferReady, mixedReady, creditReady, rentalReady, canConfirm: rulesSatisfied } =
-    paymentReadiness({
-      method,
-      total,
-      cashDenominationsEnabled,
-      changeCents: changeAmountCents,
-      receivedEntryCount: receivedEntries.length,
-      suggestionExact: suggestion?.exact === true,
-      directReceivedAmount,
-      bank,
-      reference,
-      mixedCashAmount,
-      mixedSecondMethod,
-      mixedChangeCents: mixedChangeAmountCents,
-      mixedReceivedEntryCount: mixedReceivedEntries.length,
-      mixedSuggestionExact: mixedSuggestion?.exact === true,
-      mixedDirectReceivedAmount,
-      mixedBank,
-      mixedReference,
-      creditEligible,
-      creditAvailableAmount: creditAvailable,
-      hasRentalItems,
-      hasCustomer: customer != null,
-      rentalReturnAt,
-    });
+  const { canConfirm: rulesSatisfied } = paymentReadiness({
+    method,
+    total,
+    cashDenominationsEnabled,
+    changeCents: changeAmountCents,
+    receivedEntryCount: receivedEntries.length,
+    suggestionExact: suggestion?.exact === true,
+    directReceivedAmount,
+    bank,
+    reference,
+    mixedCashAmount,
+    mixedSecondMethod,
+    mixedChangeCents: mixedChangeAmountCents,
+    mixedReceivedEntryCount: mixedReceivedEntries.length,
+    mixedSuggestionExact: mixedSuggestion?.exact === true,
+    mixedDirectReceivedAmount,
+    mixedBank,
+    mixedReference,
+    creditEligible,
+    creditAvailableAmount: creditAvailable,
+    hasRentalItems,
+    hasCustomer: customer != null,
+    rentalReturnAt,
+  });
   const canConfirm = !disabled && rulesSatisfied && !isSubmitting;
 
   // Only used to explain the block in the UI; paymentReadiness already enforces both.

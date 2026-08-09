@@ -93,6 +93,9 @@ export default function InvoicePage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 {data.business.showLogo && data.business.logoUrl && (
+                  // Tenant logos are dynamic storage URLs and this printable document needs the original asset.
+                  // next/image would require a host allowlist that cannot cover each tenant storage provider.
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={data.business.logoUrl} alt={data.business.name} className="mb-3 max-h-16 max-w-40 object-contain" />
                 )}
                 <h1 className="text-2xl font-bold">{data.business.name}</h1>
