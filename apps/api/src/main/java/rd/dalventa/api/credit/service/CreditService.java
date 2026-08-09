@@ -29,6 +29,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CreditService {
 
+    private static final String CUSTOMER_NOT_FOUND = "Cliente no encontrado";
+
     private final CustomerCreditProfileRepository customerCreditProfileRepository;
     private final CreditAccountRepository creditAccountRepository;
     private final CustomerRepository customerRepository;
@@ -38,7 +40,7 @@ public class CreditService {
     public CreditProfileResponse updateProfile(UUID customerId, UpdateCreditProfileRequest req) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var profile = customerCreditProfileRepository.findByCustomerIdAndTenantId(customerId, tenantId)
                 .orElseGet(() -> {
@@ -55,7 +57,7 @@ public class CreditService {
     public CreditProfileResponse getProfile(UUID customerId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var profile = customerCreditProfileRepository.findByCustomerIdAndTenantId(customerId, tenantId)
                 .orElseGet(() -> new CustomerCreditProfile(customerId));
@@ -66,7 +68,7 @@ public class CreditService {
     public CreditAccountResponse getAccount(UUID customerId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var account = creditAccountRepository.findByCustomerIdAndTenantId(customerId, tenantId)
                 .orElseGet(() -> {
@@ -123,7 +125,7 @@ public class CreditService {
     public CreditAccountResponse recordPayment(UUID customerId, RecordCreditPaymentRequest req, UUID userId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var account = getOrCreateAccount(tenantId, customerId);
 
@@ -157,7 +159,7 @@ public class CreditService {
     public java.util.List<CreditInvoiceRow> listOutstandingInvoices(UUID customerId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var account = creditAccountRepository.findByCustomerIdAndTenantId(customerId, tenantId).orElse(null);
         if (account == null) {
@@ -212,7 +214,7 @@ public class CreditService {
     public java.util.List<CreditTransactionResponse> listTransactions(UUID customerId) {
         var tenantId = TenantContext.require();
         customerRepository.findByIdAndTenantIdAndActiveTrue(customerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(CUSTOMER_NOT_FOUND));
 
         var account = creditAccountRepository.findByCustomerIdAndTenantId(customerId, tenantId).orElse(null);
         if (account == null) {

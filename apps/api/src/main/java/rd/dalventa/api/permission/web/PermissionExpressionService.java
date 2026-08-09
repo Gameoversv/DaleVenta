@@ -2,13 +2,13 @@ package rd.dalventa.api.permission.web;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import rd.dalventa.api.permission.domain.PermissionCode;
 import rd.dalventa.api.permission.service.PermissionResolutionService;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
 
 @Slf4j
-@Component("permissionService")
+@Service("permissionService")
 @RequiredArgsConstructor
 public class PermissionExpressionService {
 

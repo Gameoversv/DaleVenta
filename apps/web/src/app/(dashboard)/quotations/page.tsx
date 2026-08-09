@@ -14,11 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
-import type { CreateQuotationRequest, QuotationResponse } from "@/types/quotation";
+import type { CreateQuotationRequest, QuotationItemRequest, QuotationResponse } from "@/types/quotation";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { quotationStatusLabel } from "@/lib/status-labels";
 import { escapeHtml } from "@/lib/html";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
 
 interface DraftItem {
   productId: string;
@@ -108,7 +111,37 @@ function printQuotation(quotation: QuotationResponse) {
   popup.print();
 }
 
-function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
+/**
+ * One line of the quotation being drafted. Pulled out of the table body so the remove handler is
+ * not the fifth nested function inside the dialog.
+ */
+export function QuotationDraftRow({
+  item,
+  product,
+  onRemove,
+}: Readonly<{
+  item: QuotationItemRequest;
+  product: ProductResponse | undefined;
+  onRemove: () => void;
+}>) {
+  const price = item.useWholesalePrice ? product?.wholesalePrice : product?.salePrice;
+  return (
+    <tr className="border-b border-border">
+      <td className="px-3 py-2">{product?.description ?? item.productId}</td>
+      <td className="px-3 py-2">
+        {item.quantity} {productUnitLabel(product?.unit)}
+      </td>
+      <td className="px-3 py-2">{moneyOrZero(price)}</td>
+      <td className="px-3 py-2 text-right">
+        <Button type="button" variant="ghost" size="icon" aria-label="Quitar producto" onClick={onRemove}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </td>
+    </tr>
+  );
+}
+
+function QuotationDetail({ quotation }: Readonly<{ quotation: QuotationResponse }>) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 text-sm sm:grid-cols-3">
@@ -276,22 +309,16 @@ export default function QuotationsPage() {
   };
 
   if (!canView) {
-    return (
-      <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Cotizaciones</h1>
-        <p className="text-sm text-muted-foreground">Tu usuario no tiene permiso para consultar cotizaciones.</p>
-      </div>
-    );
+    return <PermissionDenied title="Cotizaciones" message="Tu usuario no tiene permiso para consultar cotizaciones." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Cotizaciones</h1>
-          <p className="text-sm text-muted-foreground">Propuestas comerciales antes de convertirlas en venta.</p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        title="Cotizaciones"
+        description="Propuestas comerciales antes de convertirlas en venta."
+        actions={
+          canCreate && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" />Nueva cotizacion</Button>
@@ -362,7 +389,7 @@ export default function QuotationsPage() {
                         checked={useWholesalePrice}
                         onChange={(e) => setUseWholesalePrice(e.target.checked)}
                       />
-                      Mayoreo
+                      <span>Mayoreo</span>
                     </label>
                     <Button type="button" onClick={addItem} disabled={!selectedProduct || quantity <= 0}>
                       Agregar
@@ -386,30 +413,14 @@ export default function QuotationsPage() {
                             </td>
                           </tr>
                         ) : (
-                          items.map((item, index) => {
-                            const product = productById.get(item.productId);
-                            const price = item.useWholesalePrice ? product?.wholesalePrice : product?.salePrice;
-                            return (
-                              <tr key={`${item.productId}-${item.useWholesalePrice}`} className="border-b border-border">
-                                <td className="px-3 py-2">{product?.description ?? item.productId}</td>
-                                <td className="px-3 py-2">
-                                  {item.quantity} {productUnitLabel(product?.unit)}
-                                </td>
-                                <td className="px-3 py-2">{moneyOrZero(price)}</td>
-                                <td className="px-3 py-2 text-right">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Quitar producto"
-                                    onClick={() => setItems((current) => current.filter((_, i) => i !== index))}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            );
-                          })
+                          items.map((item, index) => (
+                            <QuotationDraftRow
+                              key={`${item.productId}-${item.useWholesalePrice}`}
+                              item={item}
+                              product={productById.get(item.productId)}
+                              onRemove={() => setItems((current) => current.filter((_, i) => i !== index))}
+                            />
+                          ))
                         )}
                       </tbody>
                     </table>
@@ -453,11 +464,12 @@ export default function QuotationsPage() {
               </div>
             </DialogContent>
           </Dialog>
-        )}
-      </div>
+          )
+        }
+      />
 
       {isLoading && <p className="text-muted-foreground">Cargando cotizaciones...</p>}
-      {isError && <p className="text-sm text-destructive">No se pudieron cargar las cotizaciones.</p>}
+      {isError && <ErrorState message="No se pudieron cargar las cotizaciones." />}
 
       <Card>
         <CardHeader>
@@ -465,7 +477,7 @@ export default function QuotationsPage() {
         </CardHeader>
         <CardContent>
           {(quotations ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No hay cotizaciones registradas todavia.</p>
+            <EmptyState message="No hay cotizaciones registradas todavia." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

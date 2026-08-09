@@ -19,10 +19,10 @@ async function fetchRegisters(branchId: string): Promise<RegisterResponse[]> {
 export function BranchCard({
   branch,
   multiRegisterEnabled,
-}: {
+}: Readonly<{
   branch: BranchResponse;
   multiRegisterEnabled: boolean;
-}) {
+}>) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: registers, isLoading } = useQuery({

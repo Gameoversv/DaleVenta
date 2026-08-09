@@ -16,9 +16,12 @@ import rd.dalventa.api.auth.dto.ChangePasswordRequest;
 import rd.dalventa.api.auth.dto.CreateUserRequest;
 import rd.dalventa.api.auth.dto.ResetUserPasswordResponse;
 import rd.dalventa.api.auth.dto.SetUserPasswordRequest;
+import rd.dalventa.api.auth.dto.UpdateUserAssignmentsRequest;
 import rd.dalventa.api.auth.dto.UpdateUserRequest;
+import rd.dalventa.api.auth.dto.UserAssignmentsResponse;
 import rd.dalventa.api.auth.dto.UserResponse;
 import rd.dalventa.api.auth.service.AuthService;
+import rd.dalventa.api.auth.service.UserAssignmentService;
 import rd.dalventa.api.auth.service.UserManagementService;
 import rd.dalventa.api.shared.web.ApiResponse;
 
@@ -32,6 +35,7 @@ public class UserController {
 
     private final AuthService authService;
     private final UserManagementService userManagementService;
+    private final UserAssignmentService userAssignmentService;
 
     @GetMapping("/me")
     public ApiResponse<UserResponse> me(@AuthenticationPrincipal User user) {
@@ -63,6 +67,21 @@ public class UserController {
     @PreAuthorize("@permissionService.has('USERS_MANAGE')")
     public ApiResponse<UserResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
         return ApiResponse.ok(userManagementService.update(id, request));
+    }
+
+    @GetMapping("/{id}/assignments")
+    @PreAuthorize("@permissionService.has('USERS_MANAGE')")
+    public ApiResponse<UserAssignmentsResponse> assignments(@PathVariable UUID id) {
+        return ApiResponse.ok(userAssignmentService.get(id));
+    }
+
+    @PutMapping("/{id}/assignments")
+    @PreAuthorize("@permissionService.has('USERS_MANAGE')")
+    public ApiResponse<UserAssignmentsResponse> updateAssignments(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateUserAssignmentsRequest request
+    ) {
+        return ApiResponse.ok(userAssignmentService.replace(id, request));
     }
 
     @PostMapping("/{id}/reset-password")

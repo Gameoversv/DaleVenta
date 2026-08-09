@@ -54,18 +54,4 @@ public class Product extends TenantAwareEntity {
     @Column(nullable = false)
     private boolean active = true;
 
-    public Product(UUID categoryId, String internalCode, String barcode, String description, String unit,
-                   BigDecimal cost, BigDecimal salePrice, BigDecimal wholesalePrice, BigDecimal taxRate,
-                   boolean tracksInventory) {
-        this.categoryId = categoryId;
-        this.internalCode = internalCode;
-        this.barcode = barcode;
-        this.description = description;
-        this.unit = unit;
-        this.cost = cost;
-        this.salePrice = salePrice;
-        this.wholesalePrice = wholesalePrice;
-        this.taxRate = taxRate;
-        this.tracksInventory = tracksInventory;
-    }
 }

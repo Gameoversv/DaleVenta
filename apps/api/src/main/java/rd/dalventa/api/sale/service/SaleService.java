@@ -19,7 +19,6 @@ import rd.dalventa.api.inventory.service.InventoryMovementService;
 import rd.dalventa.api.permission.domain.PermissionCode;
 import rd.dalventa.api.permission.service.PermissionResolutionService;
 import rd.dalventa.api.product.repository.ProductRepository;
-import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.sale.domain.Payment;
 import rd.dalventa.api.sale.domain.PaymentMethod;
 import rd.dalventa.api.sale.domain.Sale;
@@ -44,6 +43,7 @@ import rd.dalventa.api.credit.service.CreditService;
 import rd.dalventa.api.rental.service.RentalService;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.report.service.DailyCloseReportService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
@@ -61,11 +61,12 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class SaleService {
 
+    private static final String USER_NOT_AUTHENTICATED = "Usuario no autenticado";
+
     private final SaleRepository saleRepository;
     private final SaleItemRepository saleItemRepository;
     private final PaymentRepository paymentRepository;
     private final TransferPaymentDetailRepository transferPaymentDetailRepository;
-    private final RegisterRepository registerRepository;
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
     private final CashShiftRepository cashShiftRepository;
@@ -83,46 +84,77 @@ public class SaleService {
     private final FiscalService fiscalService;
     private final TenantRepository tenantRepository;
     private final RentalService rentalService;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
         var tenantId = TenantContext.require();
+        var register = userOperationalScopeService.requireRegisterAccess(req.registerId());
 
-        var register = registerRepository.findByIdAndTenantId(req.registerId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        requireSellableRegister(req, tenantId);
+        requireSellableCustomer(req, tenantId);
 
+        var userId = currentUserId();
+        boolean rentalModuleEnabled = rentalModuleEnabled(tenantId);
+
+        var sale = openSale(req, register.getBranchId(), tenantId, userId);
+        var priced = priceItems(req, tenantId, sale.getBranchId(), rentalModuleEnabled);
+
+        var discountAmount = resolveDiscount(req);
+        var total = priced.subtotal().add(priced.taxTotal()).subtract(discountAmount);
+        var rentalDeposit = resolveRentalDeposit(req, priced.hasRentalItems());
+        requirePaymentsCover(req, total.add(rentalDeposit));
+
+        sale.setSubtotal(priced.subtotal());
+        sale.setTaxTotal(priced.taxTotal());
+        sale.setDiscountAmount(discountAmount);
+        sale.setTotal(total);
+        sale = saleRepository.save(sale);
+
+        var persistedItems = persistItems(priced.items(), sale.getId(), tenantId);
+        registerPayments(req, sale, tenantId, userId);
+
+        if (rentalModuleEnabled) {
+            rentalService.createForSale(tenantId, sale, persistedItems, req.rentalDetails(), userId);
+        }
+
+        return toResponse(sale);
+    }
+
+    /** Everything {@link #priceItems} works out in one pass over the requested lines. */
+    private record PricedItems(List<SaleItem> items, BigDecimal subtotal, BigDecimal taxTotal, boolean hasRentalItems) {}
+
+    private void requireSellableRegister(CreateSaleRequest req, java.util.UUID tenantId) {
         // Guard only: the sale needs an open shift on this register, but nothing below uses the
         // shift entity itself.
         cashShiftRepository.findByIdAndTenantId(req.cashShiftId(), tenantId)
-                .filter(s -> s.getStatus() == CashShiftStatus.OPEN)
+                .filter(s -> s.getStatus() == CashShiftStatus.OPEN && s.getRegisterId().equals(req.registerId()))
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
         if (dailyCloseReportService.isClosed(tenantId, LocalDate.now(ZoneId.systemDefault()), req.registerId())) {
             throw new IllegalArgumentException("No se puede vender: esta caja ya tiene cierre diario guardado para hoy");
         }
+    }
 
+    private void requireSellableCustomer(CreateSaleRequest req, java.util.UUID tenantId) {
         if (req.customerId() != null) {
             customerRepository.findByIdAndTenantIdAndActiveTrue(req.customerId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
         }
 
         boolean hasCreditPayment = req.payments().stream().anyMatch(p -> p.method() == PaymentMethod.CREDIT);
-        if (hasCreditPayment && req.customerId() == null) {
+        if (!hasCreditPayment) {
+            return;
+        }
+        if (req.customerId() == null) {
             throw new IllegalArgumentException("Una venta a credito requiere un cliente");
         }
-        if (hasCreditPayment && !currentUserProvider.current()
-                .map(user -> permissionResolutionService.has(user, PermissionCode.CREDIT_AUTHORIZE))
-                .orElse(false)) {
+        if (!currentUserHas(PermissionCode.CREDIT_AUTHORIZE)) {
             throw new org.springframework.security.access.AccessDeniedException("No tiene permiso para vender a credito");
         }
+    }
 
-        var userId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
-                .getId();
-        boolean rentalModuleEnabled = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
-                .isRentalModuleEnabled();
-
-        var sale = new Sale(register.getBranchId(), req.registerId(), req.cashShiftId(), req.customerId(), userId);
+    private Sale openSale(CreateSaleRequest req, java.util.UUID branchId, java.util.UUID tenantId, java.util.UUID userId) {
+        var sale = new Sale(branchId, req.registerId(), req.cashShiftId(), req.customerId(), userId);
         sale.setTenantId(tenantId);
         long invoiceSequence = saleRepository.maxInvoiceSequence(tenantId) + 1;
         sale.setInvoiceSequence(invoiceSequence);
@@ -133,7 +165,12 @@ public class SaleService {
             sale.setFiscalNcf(fiscalReceipt.ncf());
             sale.setFiscalSequenceId(fiscalReceipt.sequenceId());
         }
+        return sale;
+    }
 
+    /** Prices every line and, for the stock-tracked ones, takes the units out of inventory. */
+    private PricedItems priceItems(CreateSaleRequest req, java.util.UUID tenantId, java.util.UUID branchId,
+                                   boolean rentalModuleEnabled) {
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;
         List<SaleItem> items = new ArrayList<>();
@@ -151,143 +188,174 @@ public class SaleService {
                     .setScale(2, java.math.RoundingMode.HALF_UP);
             var lineTax = lineSubtotal.multiply(product.getTaxRate())
                     .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-            var lineTotal = lineSubtotal.add(lineTax);
 
             subtotal = subtotal.add(lineSubtotal);
             taxTotal = taxTotal.add(lineTax);
-
-            var item = new SaleItem(null, product.getId(), itemReq.quantity(), unitPrice, product.getTaxRate(), lineTotal);
-            items.add(item);
+            items.add(new SaleItem(null, product.getId(), itemReq.quantity(), unitPrice, product.getTaxRate(),
+                    lineSubtotal.add(lineTax)));
 
             if (product.isTracksInventory()) {
                 inventoryMovementService.recordMovement(new CreateInventoryMovementRequest(
-                        sale.getBranchId(), product.getId(), InventoryMovementType.EXIT,
+                        branchId, product.getId(), InventoryMovementType.EXIT,
                         itemReq.quantity(), "Venta"));
             }
         }
 
-        BigDecimal requestedDiscount = req.discountAmount() != null
+        return new PricedItems(items, subtotal, taxTotal, hasRentalItems);
+    }
+
+    /** A discount the cashier is not allowed to grant is dropped rather than rejected. */
+    private BigDecimal resolveDiscount(CreateSaleRequest req) {
+        BigDecimal requested = req.discountAmount() != null
                 ? req.discountAmount().setScale(2, java.math.RoundingMode.HALF_UP)
                 : BigDecimal.ZERO.setScale(2);
-        boolean canDiscount = requestedDiscount.signum() == 0
-                || currentUserProvider.current()
-                        .map(user -> permissionResolutionService.has(user, PermissionCode.SALE_DISCOUNT))
-                        .orElse(false);
-        BigDecimal discountAmount = canDiscount ? requestedDiscount : BigDecimal.ZERO.setScale(2);
-        BigDecimal total = subtotal.add(taxTotal).subtract(discountAmount);
-        BigDecimal rentalDepositAmount = BigDecimal.ZERO.setScale(2);
-        if (hasRentalItems) {
-            if (req.customerId() == null) {
-                throw new IllegalArgumentException("Un alquiler requiere cliente");
-            }
-            if (req.rentalDetails() == null || req.rentalDetails().expectedReturnAt() == null) {
-                throw new IllegalArgumentException("Un alquiler requiere fecha esperada de devolucion");
-            }
-            rentalDepositAmount = req.rentalDetails().depositAmount() != null
-                    ? req.rentalDetails().depositAmount().setScale(2, java.math.RoundingMode.HALF_UP)
-                    : BigDecimal.ZERO.setScale(2);
-            if (rentalDepositAmount.signum() < 0) {
-                throw new IllegalArgumentException("El deposito no puede ser negativo");
-            }
-        }
-        BigDecimal amountToCollect = total.add(rentalDepositAmount);
+        boolean allowed = requested.signum() == 0 || currentUserHas(PermissionCode.SALE_DISCOUNT);
+        return allowed ? requested : BigDecimal.ZERO.setScale(2);
+    }
 
+    private BigDecimal resolveRentalDeposit(CreateSaleRequest req, boolean hasRentalItems) {
+        if (!hasRentalItems) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        if (req.customerId() == null) {
+            throw new IllegalArgumentException("Un alquiler requiere cliente");
+        }
+        if (req.rentalDetails() == null || req.rentalDetails().expectedReturnAt() == null) {
+            throw new IllegalArgumentException("Un alquiler requiere fecha esperada de devolucion");
+        }
+        var deposit = req.rentalDetails().depositAmount() != null
+                ? req.rentalDetails().depositAmount().setScale(2, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2);
+        if (deposit.signum() < 0) {
+            throw new IllegalArgumentException("El deposito no puede ser negativo");
+        }
+        return deposit;
+    }
+
+    private void requirePaymentsCover(CreateSaleRequest req, BigDecimal amountToCollect) {
         BigDecimal paymentsSum = req.payments().stream()
                 .map(PaymentRequest::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (paymentsSum.compareTo(amountToCollect) != 0) {
             throw new IllegalArgumentException("La suma de los pagos no coincide con el total de la venta");
         }
+    }
 
-        sale.setSubtotal(subtotal);
-        sale.setTaxTotal(taxTotal);
-        sale.setDiscountAmount(discountAmount);
-        sale.setTotal(total);
-        sale = saleRepository.save(sale);
-
+    private List<SaleItem> persistItems(List<SaleItem> items, java.util.UUID saleId, java.util.UUID tenantId) {
         List<SaleItem> persistedItems = new ArrayList<>();
         for (SaleItem item : items) {
-            var persisted = new SaleItem(sale.getId(), item.getProductId(), item.getQuantity(),
+            var persisted = new SaleItem(saleId, item.getProductId(), item.getQuantity(),
                     item.getUnitPrice(), item.getTaxRate(), item.getLineTotal());
             persisted.setTenantId(tenantId);
             persistedItems.add(saleItemRepository.save(persisted));
         }
+        return persistedItems;
+    }
 
+    private void registerPayments(CreateSaleRequest req, Sale sale, java.util.UUID tenantId, java.util.UUID userId) {
         for (PaymentRequest paymentReq : req.payments()) {
-            if (paymentReq.method() == PaymentMethod.TRANSFER) {
-                if (transferPaymentDetailRepository.existsByTenantIdAndBankAndReference(
-                        tenantId, paymentReq.bank(), paymentReq.reference())) {
-                    throw new DuplicateResourceException("Ya existe una transferencia con esa referencia");
-                }
-                var payment = new Payment(sale.getId(), PaymentMethod.TRANSFER, paymentReq.amount());
-                payment.setTenantId(tenantId);
-                payment = paymentRepository.save(payment);
-
-                var detail = new TransferPaymentDetail(payment.getId(), paymentReq.bank(), paymentReq.reference(), paymentReq.amount());
-                detail.setTenantId(tenantId);
-                transferPaymentDetailRepository.save(detail);
-            } else if (paymentReq.method() == PaymentMethod.CASH) {
-                var payment = new Payment(sale.getId(), PaymentMethod.CASH, paymentReq.amount());
-                payment.setTenantId(tenantId);
-                paymentRepository.save(payment);
-
-                if (cashDenominationsEnabled(tenantId)) {
-                    BigDecimal receivedTotal = BigDecimal.ZERO;
-                    for (var entry : paymentReq.receivedDenominations()) {
-                        var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
-                        receivedTotal = receivedTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
-                    }
-                    BigDecimal changeAmount = receivedTotal.subtract(paymentReq.amount());
-                    if (changeAmount.signum() < 0) {
-                        throw new IllegalArgumentException("El monto recibido es menor al monto de este pago");
-                    }
-
-                    var suggestion = cashShiftChangeService.suggest(new ChangeSuggestionRequest(
-                            req.registerId(), changeAmount.multiply(BigDecimal.valueOf(100)).longValueExact(),
-                            paymentReq.receivedDenominations()));
-                    if (!suggestion.exact()) {
-                        throw new IllegalArgumentException("No hay combinacion exacta de denominaciones para el cambio");
-                    }
-
-                    cashMovementService.recordMovement(req.cashShiftId(),
-                            new CreateCashMovementRequest(CashMovementType.ENTRY,
-                                    "Venta - efectivo recibido", paymentReq.receivedDenominations()),
-                            sale.getId());
-
-                    if (changeAmount.signum() > 0) {
-                        cashMovementService.recordMovement(req.cashShiftId(),
-                                new CreateCashMovementRequest(CashMovementType.WITHDRAWAL,
-                                        "Venta - cambio entregado", suggestion.combination()),
-                                sale.getId());
-                    }
-                } else {
-                    cashMovementService.recordMovement(req.cashShiftId(),
-                            new CreateCashMovementRequest(CashMovementType.ENTRY,
-                                    "Venta - efectivo", paymentReq.amount(), List.of()),
-                            sale.getId());
-                }
-            } else if (paymentReq.method() == PaymentMethod.CREDIT) {
-                var payment = new Payment(sale.getId(), PaymentMethod.CREDIT, paymentReq.amount());
-                payment.setTenantId(tenantId);
-                paymentRepository.save(payment);
-
-                creditService.charge(tenantId, req.customerId(), paymentReq.amount(), sale.getId(), userId);
-            } else {
-                throw new IllegalArgumentException("Metodo de pago no soportado en esta version");
+            switch (paymentReq.method()) {
+                case TRANSFER -> registerTransferPayment(paymentReq, sale, tenantId);
+                case CASH -> registerCashPayment(req, paymentReq, sale, tenantId);
+                case CREDIT -> registerCreditPayment(req, paymentReq, sale, tenantId, userId);
+                default -> throw new IllegalArgumentException("Metodo de pago no soportado en esta version");
             }
         }
+    }
 
-        if (rentalModuleEnabled) {
-            rentalService.createForSale(tenantId, sale, persistedItems, req.rentalDetails(), userId);
+    private void registerTransferPayment(PaymentRequest paymentReq, Sale sale, java.util.UUID tenantId) {
+        if (transferPaymentDetailRepository.existsByTenantIdAndBankAndReference(
+                tenantId, paymentReq.bank(), paymentReq.reference())) {
+            throw new DuplicateResourceException("Ya existe una transferencia con esa referencia");
+        }
+        var payment = new Payment(sale.getId(), PaymentMethod.TRANSFER, paymentReq.amount());
+        payment.setTenantId(tenantId);
+        payment = paymentRepository.save(payment);
+
+        var detail = new TransferPaymentDetail(payment.getId(), paymentReq.bank(), paymentReq.reference(), paymentReq.amount());
+        detail.setTenantId(tenantId);
+        transferPaymentDetailRepository.save(detail);
+    }
+
+    private void registerCashPayment(CreateSaleRequest req, PaymentRequest paymentReq, Sale sale, java.util.UUID tenantId) {
+        var payment = new Payment(sale.getId(), PaymentMethod.CASH, paymentReq.amount());
+        payment.setTenantId(tenantId);
+        paymentRepository.save(payment);
+
+        if (cashDenominationsEnabled(tenantId)) {
+            settleCashDenominations(req, paymentReq, sale, tenantId);
+            return;
         }
 
-        return toResponse(sale);
+        cashMovementService.recordMovement(req.cashShiftId(),
+                new CreateCashMovementRequest(CashMovementType.ENTRY,
+                        "Venta - efectivo", paymentReq.amount(), List.of()),
+                sale.getId());
+    }
+
+    /**
+     * Moves the counted bills into the drawer and the change back out. The sale is refused when the
+     * drawer cannot make the exact change, so the cashier is never left improvising.
+     */
+    private void settleCashDenominations(CreateSaleRequest req, PaymentRequest paymentReq, Sale sale,
+                                         java.util.UUID tenantId) {
+        BigDecimal receivedTotal = BigDecimal.ZERO;
+        for (var entry : paymentReq.receivedDenominations()) {
+            var denomination = denominationRepository.findByIdAndTenantId(entry.denominationId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Denominacion no encontrada"));
+            receivedTotal = receivedTotal.add(denomination.getValue().multiply(BigDecimal.valueOf(entry.quantity())));
+        }
+
+        BigDecimal changeAmount = receivedTotal.subtract(paymentReq.amount());
+        if (changeAmount.signum() < 0) {
+            throw new IllegalArgumentException("El monto recibido es menor al monto de este pago");
+        }
+
+        var suggestion = cashShiftChangeService.suggest(new ChangeSuggestionRequest(
+                req.registerId(), changeAmount.multiply(BigDecimal.valueOf(100)).longValueExact(),
+                paymentReq.receivedDenominations()));
+        if (!suggestion.exact()) {
+            throw new IllegalArgumentException("No hay combinacion exacta de denominaciones para el cambio");
+        }
+
+        cashMovementService.recordMovement(req.cashShiftId(),
+                new CreateCashMovementRequest(CashMovementType.ENTRY,
+                        "Venta - efectivo recibido", paymentReq.receivedDenominations()),
+                sale.getId());
+
+        if (changeAmount.signum() > 0) {
+            cashMovementService.recordMovement(req.cashShiftId(),
+                    new CreateCashMovementRequest(CashMovementType.WITHDRAWAL,
+                            "Venta - cambio entregado", suggestion.combination()),
+                    sale.getId());
+        }
+    }
+
+    private void registerCreditPayment(CreateSaleRequest req, PaymentRequest paymentReq, Sale sale,
+                                       java.util.UUID tenantId, java.util.UUID userId) {
+        var payment = new Payment(sale.getId(), PaymentMethod.CREDIT, paymentReq.amount());
+        payment.setTenantId(tenantId);
+        paymentRepository.save(payment);
+
+        creditService.charge(tenantId, req.customerId(), paymentReq.amount(), sale.getId(), userId);
+    }
+
+    private boolean currentUserHas(PermissionCode permission) {
+        return currentUserProvider.current()
+                .map(user -> permissionResolutionService.has(user, permission))
+                .orElse(false);
+    }
+
+    private boolean rentalModuleEnabled(java.util.UUID tenantId) {
+        return tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"))
+                .isRentalModuleEnabled();
     }
 
     @Transactional(readOnly = true)
     public List<SaleResponse> list(java.util.UUID registerId) {
         var tenantId = TenantContext.require();
+        userOperationalScopeService.requireRegisterAccess(registerId);
         var sales = hasFullSaleHistory()
                 ? saleRepository.findAllByTenantIdAndRegisterIdOrderByCreatedAtDesc(tenantId, registerId)
                 : saleRepository.findAllByTenantIdAndRegisterIdAndUserIdOrderByCreatedAtDesc(
@@ -319,7 +387,7 @@ public class SaleService {
 
     private java.util.UUID currentUserId() {
         return currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
     }
 
@@ -328,6 +396,7 @@ public class SaleService {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(sale.getRegisterId());
         if (!hasFullSaleHistory() && !sale.getUserId().equals(currentUserId())) {
             throw new ResourceNotFoundException("Venta no encontrada");
         }
@@ -347,6 +416,7 @@ public class SaleService {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(sale.getRegisterId());
 
         if (sale.getStatus() == SaleStatus.VOIDED) {
             throw new DuplicateResourceException("Esta venta ya esta anulada");
@@ -363,7 +433,7 @@ public class SaleService {
         }
 
         var userId = currentUserProvider.current()
-                .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"))
+                .orElseThrow(() -> new IllegalStateException(USER_NOT_AUTHENTICATED))
                 .getId();
 
         for (SaleItem item : saleItemRepository.findAllBySaleId(sale.getId())) {

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,7 +19,7 @@ class SaleDiscountIntegrationTest extends IntegrationTestBase {
         cleanAll();
     }
 
-    private record Setup(String token, UUID registerId, UUID cashShiftId, UUID productId) {}
+    private record Setup(String token, UUID branchId, UUID registerId, UUID cashShiftId, UUID productId) {}
 
     private Setup setup(String email) throws Exception {
         String token = registerTenantAndGetToken(email, "Secret123!");
@@ -28,7 +29,7 @@ class SaleDiscountIntegrationTest extends IntegrationTestBase {
                         .contentType("application/json")
                         .content("{\"name\":\"Sucursal Centro\",\"address\":\"Calle Duarte 12\"}"))
                 .andReturn().getResponse().getContentAsString();
-        var branchId = objectMapper.readTree(branchRes).path("data").path("id").asText();
+        var branchId = UUID.fromString(objectMapper.readTree(branchRes).path("data").path("id").asText());
 
         var registerRes = mockMvc.perform(post("/api/registers")
                         .header("Authorization", "Bearer " + token)
@@ -77,7 +78,7 @@ class SaleDiscountIntegrationTest extends IntegrationTestBase {
                 .andReturn().getResponse().getContentAsString();
         var cashShiftId = UUID.fromString(objectMapper.readTree(openRes).path("data").path("id").asText());
 
-        return new Setup(token, registerId, cashShiftId, productId);
+        return new Setup(token, branchId, registerId, cashShiftId, productId);
     }
 
     @Test
@@ -123,6 +124,12 @@ class SaleDiscountIntegrationTest extends IntegrationTestBase {
         var admin = userRepository.findAll().stream()
                 .filter(u -> u.getEmail().equals("admin3@dalventa.test"))
                 .findFirst().orElseThrow();
+        mockMvc.perform(put("/api/users/" + admin.getId() + "/assignments")
+                        .header("Authorization", "Bearer " + s.token())
+                        .contentType("application/json")
+                        .content("{\"branchIds\":[\"" + s.branchId() + "\"],\"registerIds\":[\""
+                                + s.registerId() + "\"]}"))
+                .andExpect(status().isOk());
         admin.getRoles().clear();
         admin.addRole(roleRepository.findByName(rd.dalventa.api.auth.domain.RoleName.CASHIER).orElseThrow());
         userRepository.save(admin);

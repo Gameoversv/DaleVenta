@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Plus, Truck, WalletCards } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, Plus, WalletCards } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -16,6 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { ModuleDisabled } from "@/components/common/module-disabled";
+import { EmptyState } from "@/components/common/empty-state";
 import type { BranchResponse } from "@/types/branch";
 import type { CategoryResponse, CreateProductRequest, ProductResponse } from "@/types/product";
 import { money } from "@/lib/money";
@@ -56,10 +60,20 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
 
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  return trimmed || null;
 }
 
-function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
+/**
+ * Draft rows carry a client-side id so React can keep inputs attached to their row: the array index
+ * shifts when a row above is removed, which moved the typed values to the wrong line.
+ */
+export type PurchaseItemDraft = PurchaseItemRequest & { rowId: string };
+
+function newItemDraft(): PurchaseItemDraft {
+  return { rowId: crypto.randomUUID(), productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" };
+}
+
+function SupplierDialog({ supplier }: Readonly<{ supplier?: SupplierResponse }>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<SupplierRequest>({
     name: supplier?.name ?? "",
@@ -154,7 +168,7 @@ function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
           {supplier && (
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={Boolean(form.active)} onChange={(e) => update("active", e.target.checked)} />
-              Activo
+              <span>Activo</span>
             </label>
           )}
           <DialogFooter>
@@ -172,11 +186,11 @@ function QuickProductDialog({
   categories,
   trigger,
   onCreated,
-}: {
+}: Readonly<{
   categories: CategoryResponse[];
   trigger: React.ReactNode;
   onCreated: (product: ProductResponse) => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CreateProductRequest>({
     categoryId: "",
@@ -316,7 +330,7 @@ function QuickProductDialog({
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.tracksInventory} onChange={(e) => update("tracksInventory", e.target.checked)} />
-            Rastrea inventario
+            <span>Rastrea inventario</span>
           </label>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending || !form.internalCode.trim() || !form.description.trim()}>
@@ -329,22 +343,89 @@ function QuickProductDialog({
   );
 }
 
-function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: {
+/**
+ * One draft line of a purchase. Extracted from the dialog so the handlers stay one level deep:
+ * inline in the map callback they nested five functions in, which is where the row and the
+ * dialog state started to blur together.
+ */
+export function PurchaseItemRow({
+  item,
+  products,
+  categories,
+  canCreateProduct,
+  canRemove,
+  onChange,
+  onRemove,
+}: Readonly<{
+  item: PurchaseItemDraft;
+  products: ProductResponse[];
+  categories: CategoryResponse[];
+  canCreateProduct: boolean;
+  canRemove: boolean;
+  onChange: (patch: Partial<PurchaseItemDraft>) => void;
+  onRemove: () => void;
+}>) {
+  return (
+    <div className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
+      <div className="space-y-2">
+        <Label>Producto</Label>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <select value={item.productId} onChange={(e) => onChange({ productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">Selecciona</option>
+            {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
+          </select>
+          {canCreateProduct && (
+            <QuickProductDialog
+              categories={categories}
+              trigger={<Button type="button" variant="outline" className="w-full sm:w-auto"><Plus className="h-4 w-4" /> Nuevo</Button>}
+              onCreated={(product) => onChange({ productId: product.id, unitCost: product.cost ?? item.unitCost })}
+            />
+          )}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Cant.</Label>
+        <Input type="number" min="1" value={item.quantity} onChange={(e) => onChange({ quantity: Number(e.target.value) })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Costo</Label>
+        <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={(e) => onChange({ unitCost: e.target.value })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Itbis %</Label>
+        <Input type="number" min="0" step="0.01" value={item.taxRate} onChange={(e) => onChange({ taxRate: e.target.value })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Desc.</Label>
+        <Input type="number" min="0" step="0.01" value={item.discountAmount} onChange={(e) => onChange({ discountAmount: e.target.value })} />
+      </div>
+      <Button type="button" variant="ghost" disabled={!canRemove} onClick={onRemove}>
+        Quitar
+      </Button>
+    </div>
+  );
+}
+
+function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: Readonly<{
   suppliers: SupplierResponse[];
   products: ProductResponse[];
   categories: CategoryResponse[];
   branches: BranchResponse[];
   defaultBranchId: string;
   canCreateProduct: boolean;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const [supplierId, setSupplierId] = useState("");
-  const [branchId, setBranchId] = useState(defaultBranchId);
+  // `defaultBranchId` lands once the branches query resolves, which is after this dialog mounts.
+  // Deriving the effective branch beats syncing it in an effect: the previous effect re-applied the
+  // default whenever the field was cleared, so falling back here reproduces that exactly without the
+  // extra render pass.
+  const [pickedBranchId, setPickedBranchId] = useState("");
+  const branchId = pickedBranchId || defaultBranchId;
+  const setBranchId = setPickedBranchId;
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<PurchaseItemRequest[]>([
-    { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" },
-  ]);
+  const [items, setItems] = useState<PurchaseItemDraft[]>([newItemDraft()]);
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (payload: CreatePurchaseRequest) => api.post("/api/purchases", payload),
@@ -360,12 +441,6 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
     },
   });
 
-  useEffect(() => {
-    if (!branchId && defaultBranchId) {
-      setBranchId(defaultBranchId);
-    }
-  }, [branchId, defaultBranchId]);
-
   const total = items.reduce((sum, item) => {
     const subtotal = Number(item.unitCost || 0) * Number(item.quantity || 0);
     const discount = Number(item.discountAmount || 0);
@@ -373,7 +448,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
     return sum + Math.max(0, subtotal - discount) + tax;
   }, 0);
 
-  const updateItem = (index: number, patch: Partial<PurchaseItemRequest>) => {
+  const updateItem = (index: number, patch: Partial<PurchaseItemDraft>) => {
     setItems((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
 
@@ -399,7 +474,15 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
               invoiceNumber: emptyToNull(invoiceNumber),
               purchasedAt: null,
               notes: emptyToNull(notes),
-              items: items.filter((item) => item.productId),
+              items: items
+                .filter((item) => item.productId)
+                .map(({ productId, quantity, unitCost, taxRate, discountAmount }) => ({
+                  productId,
+                  quantity,
+                  unitCost,
+                  taxRate,
+                  discountAmount,
+                })),
             });
           }}
         >
@@ -425,45 +508,18 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
           </div>
           <div className="space-y-3">
             {items.map((item, index) => (
-              <div key={index} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
-                <div className="space-y-2">
-                  <Label>Producto</Label>
-                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                    <select value={item.productId} onChange={(e) => updateItem(index, { productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                      <option value="">Selecciona</option>
-                      {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
-                    </select>
-                    {canCreateProduct && (
-                      <QuickProductDialog
-                        categories={categories}
-                        trigger={<Button type="button" variant="outline" className="w-full sm:w-auto"><Plus className="h-4 w-4" /> Nuevo</Button>}
-                        onCreated={(product) => updateItem(index, { productId: product.id, unitCost: product.cost ?? item.unitCost })}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Cant.</Label>
-                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Costo</Label>
-                  <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={(e) => updateItem(index, { unitCost: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Itbis %</Label>
-                  <Input type="number" min="0" step="0.01" value={item.taxRate} onChange={(e) => updateItem(index, { taxRate: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Desc.</Label>
-                  <Input type="number" min="0" step="0.01" value={item.discountAmount} onChange={(e) => updateItem(index, { discountAmount: e.target.value })} />
-                </div>
-                <Button type="button" variant="ghost" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>
-                  Quitar
-                </Button>
-              </div>
+              <PurchaseItemRow
+                key={item.rowId}
+                item={item}
+                products={products}
+                categories={categories}
+                canCreateProduct={canCreateProduct}
+                canRemove={items.length > 1}
+                onChange={(patch) => updateItem(index, patch)}
+                onRemove={() => setItems((current) => current.filter((_, i) => i !== index))}
+              />
             ))}
-            <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" }])}>
+            <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, newItemDraft()])}>
               <Plus className="h-4 w-4" />
               Agregar producto
             </Button>
@@ -489,7 +545,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
   );
 }
 
-function PurchasePaymentDialog({ purchase }: { purchase: PurchaseResponse }) {
+function PurchasePaymentDialog({ purchase }: Readonly<{ purchase: PurchaseResponse }>) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(purchase.balanceDue);
   const [method, setMethod] = useState<PurchasePaymentMethod>("CASH");
@@ -639,44 +695,34 @@ export default function PurchasesPage() {
   }), [purchases]);
 
   if (!canViewPurchases && !canViewSuppliers) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Compras</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para consultar compras o proveedores.</p>
-      </div>
-    );
+    return <PermissionDenied title="Compras" message="No tienes permiso para consultar compras o proveedores." />;
   }
 
   if (!purchaseModuleEnabled) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Compras</h1>
-        <p className="text-sm text-muted-foreground">Este modulo no esta activo para este tenant.</p>
-      </div>
-    );
+    return <ModuleDisabled title="Compras" />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Proveedores y compras</h1>
-          <p className="text-sm text-muted-foreground">Registra proveedores, compras y recepciones de inventario.</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {canManageSuppliers && <SupplierDialog />}
-          {canCreatePurchase && (
-            <PurchaseDialog
-              suppliers={suppliers}
-              products={products}
-              categories={categories}
-              branches={branches}
-              defaultBranchId={soleBranchId ?? ""}
-              canCreateProduct={canCreateProduct}
-            />
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Proveedores y compras"
+        description="Registra proveedores, compras y recepciones de inventario."
+        actions={
+          <>
+            {canManageSuppliers && <SupplierDialog />}
+            {canCreatePurchase && (
+              <PurchaseDialog
+                suppliers={suppliers}
+                products={products}
+                categories={categories}
+                branches={branches}
+                defaultBranchId={soleBranchId ?? ""}
+                canCreateProduct={canCreateProduct}
+              />
+            )}
+          </>
+        }
+      />
 
       {canViewPurchases && (
         <div className="grid gap-3 sm:grid-cols-3">
@@ -696,7 +742,7 @@ export default function PurchasesPage() {
           <CardHeader><CardTitle>Historial de compras</CardTitle></CardHeader>
           <CardContent>
             {loadingPurchases && <p className="text-sm text-muted-foreground">Cargando compras...</p>}
-            {!loadingPurchases && purchases.length === 0 && <p className="text-sm text-muted-foreground">No hay compras registradas.</p>}
+            {!loadingPurchases && purchases.length === 0 && <EmptyState message="No hay compras registradas." />}
             {purchases.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[920px] text-sm">
@@ -748,7 +794,7 @@ export default function PurchasesPage() {
           <CardHeader><CardTitle>Proveedores</CardTitle></CardHeader>
           <CardContent>
             {suppliers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay proveedores registrados.</p>
+              <EmptyState message="No hay proveedores registrados." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">

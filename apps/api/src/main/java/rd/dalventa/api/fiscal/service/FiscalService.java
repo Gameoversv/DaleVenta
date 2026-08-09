@@ -19,6 +19,8 @@ import rd.dalventa.api.shared.web.ResourceNotFoundException;
 import rd.dalventa.api.tenant.domain.Tenant;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -101,7 +103,7 @@ public class FiscalService {
         requireFiscalEnabled(tenantId);
         var sequence = fiscalReceiptSequenceRepository.findByTenantIdAndReceiptTypeAndActiveTrue(tenantId, receiptType)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay secuencia NCF activa para " + receiptType));
-        if (sequence.getExpiresAt().isBefore(java.time.LocalDate.now())) {
+        if (sequence.getExpiresAt().isBefore(LocalDate.now(ZoneId.systemDefault()))) {
             throw new IllegalArgumentException("La secuencia NCF " + receiptType + " esta vencida");
         }
         if (sequence.getNextNumber() > sequence.getEndNumber()) {

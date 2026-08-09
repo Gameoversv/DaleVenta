@@ -28,20 +28,23 @@ const DATE_ONLY = new Intl.DateTimeFormat("es-DO", {
 /** Placeholder for a timestamp that does not exist, such as a shift that is still open. */
 export const NO_DATE = "-";
 
-function parse(value: string | number | Date | null | undefined): Date | null {
+/** Anything an API payload may carry for a timestamp. */
+export type DateInput = string | number | Date | null | undefined;
+
+function parse(value: DateInput): Date | null {
   if (value === null || value === undefined || value === "") return null;
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** Date and time, e.g. "27/7/2026, 18:15". */
-export function dateTime(value: string | number | Date | null | undefined): string {
+export function dateTime(value: DateInput): string {
   const date = parse(value);
   return date === null ? NO_DATE : DATE_TIME.format(date);
 }
 
 /** Date without the time, e.g. "27/7/2026". */
-export function dateOnly(value: string | number | Date | null | undefined): string {
+export function dateOnly(value: DateInput): string {
   const date = parse(value);
   return date === null ? NO_DATE : DATE_ONLY.format(date);
 }

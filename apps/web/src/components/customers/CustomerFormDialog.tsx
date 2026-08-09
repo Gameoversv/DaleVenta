@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,7 +32,7 @@ interface CustomerFormDialogProps {
   trigger: React.ReactNode;
 }
 
-export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProps) {
+export function CustomerFormDialog({ customer, trigger }: Readonly<CustomerFormDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!customer;
@@ -42,7 +42,7 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CustomerForm>({
     resolver: zodResolver(customerSchema),
@@ -59,7 +59,7 @@ export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProp
     },
   });
 
-  const creditEnabled = watch("creditEnabled");
+  const creditEnabled = useWatch({ control, name: "creditEnabled" });
 
   const mutation = useMutation({
     mutationFn: async (values: CustomerForm) => {

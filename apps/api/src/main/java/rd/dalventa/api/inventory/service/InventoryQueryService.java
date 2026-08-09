@@ -3,11 +3,10 @@ package rd.dalventa.api.inventory.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import rd.dalventa.api.branch.repository.BranchRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.inventory.dto.BranchInventoryResponse;
 import rd.dalventa.api.inventory.repository.BranchInventoryRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
-import rd.dalventa.api.shared.web.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +16,7 @@ import java.util.UUID;
 public class InventoryQueryService {
 
     private final BranchInventoryRepository branchInventoryRepository;
-    private final BranchRepository branchRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional(readOnly = true)
     public List<BranchInventoryResponse> byBranch(UUID branchId) {
@@ -35,9 +34,7 @@ public class InventoryQueryService {
 
     private UUID requireBranchInTenant(UUID branchId) {
         var tenantId = TenantContext.require();
-        branchRepository.findById(branchId)
-                .filter(b -> b.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
+        userOperationalScopeService.requireBranchAccess(branchId);
         return tenantId;
     }
 }

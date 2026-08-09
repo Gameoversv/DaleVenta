@@ -1,5 +1,6 @@
 import type { DenominationCountEntry, DenominationResponse } from "@/types/cash-shift";
 import type { CreditAccountResponse, CreditProfileResponse } from "@/types/credit";
+import type { PaymentRequest } from "@/types/sale";
 
 /**
  * Money arithmetic and payment rules for the point-of-sale checkout.
@@ -177,4 +178,53 @@ export function paymentReadiness(input: ReadinessInput): Readiness {
       rentalReady &&
       (cashReady || transferReady || mixedReady || creditReady),
   };
+}
+
+export interface PaymentPlanInput {
+  method: "CASH" | "TRANSFER" | "CREDIT" | "MIXED";
+  total: number;
+  cashDenominationsEnabled: boolean;
+  receivedEntries: DenominationCountEntry[];
+  bank: string;
+  reference: string;
+  mixedSecondMethod: "TRANSFER" | "CREDIT";
+  mixedCashAmount: number;
+  mixedTransferAmount: number;
+  mixedCreditAmount: number;
+  mixedReceivedEntries: DenominationCountEntry[];
+  mixedBank: string;
+  mixedReference: string;
+}
+
+/**
+ * Turns the checkout form into the payment lines the API expects. Kept out of the component
+ * because the mixed-payment cases were a four-deep nested ternary that no test could reach.
+ */
+export function paymentPlan(input: PaymentPlanInput): PaymentRequest[] {
+  const cashLine = (amount: number, entries: DenominationCountEntry[]): PaymentRequest => ({
+    method: "CASH",
+    amount: amount.toFixed(2),
+    receivedDenominations: input.cashDenominationsEnabled ? entries : [],
+  });
+
+  switch (input.method) {
+    case "CASH":
+      return [cashLine(input.total, input.receivedEntries)];
+    case "TRANSFER":
+      return [{ method: "TRANSFER", amount: input.total.toFixed(2), bank: input.bank, reference: input.reference }];
+    case "CREDIT":
+      return [{ method: "CREDIT", amount: input.total.toFixed(2) }];
+    case "MIXED":
+      return [
+        cashLine(input.mixedCashAmount, input.mixedReceivedEntries),
+        input.mixedSecondMethod === "TRANSFER"
+          ? {
+              method: "TRANSFER",
+              amount: input.mixedTransferAmount.toFixed(2),
+              bank: input.mixedBank,
+              reference: input.mixedReference,
+            }
+          : { method: "CREDIT", amount: input.mixedCreditAmount.toFixed(2) },
+      ];
+  }
 }

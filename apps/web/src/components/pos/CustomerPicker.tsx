@@ -18,7 +18,7 @@ interface CustomerPickerProps {
   onChange: (customer: CustomerResponse | null) => void;
 }
 
-export function CustomerPicker({ customer, onChange }: CustomerPickerProps) {
+export function CustomerPicker({ customer, onChange }: Readonly<CustomerPickerProps>) {
   const [query, setQuery] = useState("");
 
   const { data: results } = useQuery({

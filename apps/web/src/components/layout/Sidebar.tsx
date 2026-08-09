@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { visibleNavSections, type NavItem, type NavSection } from "@/components/layout/nav";
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active }: Readonly<{ item: NavItem; active: boolean }>) {
   const Icon = item.icon;
   return (
     <Link
@@ -25,7 +25,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-function NavSectionBlock({ section, pathname }: { section: NavSection; pathname: string }) {
+function NavSectionBlock({ section, pathname }: Readonly<{ section: NavSection; pathname: string }>) {
   return (
     <div className="space-y-1">
       <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">

@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTenantFeatures } from "@/hooks/useTenantFeatures";
 import { visibleNavSections, type NavItem } from "@/components/layout/nav";
 
-function NavMenuItem({ item }: { item: NavItem }) {
+function NavMenuItem({ item }: Readonly<{ item: NavItem }>) {
   const Icon = item.icon;
   return (
     <DropdownMenuItem asChild>

@@ -3,8 +3,10 @@ import {
   changeAmountCents,
   checkoutTotals,
   creditAvailable,
+  paymentPlan,
   paymentReadiness,
   sumDenominations,
+  type PaymentPlanInput,
   type ReadinessInput,
 } from "./checkout";
 
@@ -300,5 +302,60 @@ describe("paymentReadiness", () => {
       expect(paymentReadiness(paidRental).cashReady).toBe(true);
       expect(paymentReadiness(paidRental).canConfirm).toBe(false);
     });
+  });
+});
+
+describe("paymentPlan", () => {
+  const base: PaymentPlanInput = {
+    method: "CASH",
+    total: 350,
+    cashDenominationsEnabled: true,
+    receivedEntries: [{ denominationId: "d-500", quantity: 1 }],
+    bank: "Popular",
+    reference: "REF-1",
+    mixedSecondMethod: "CREDIT",
+    mixedCashAmount: 100,
+    mixedTransferAmount: 250,
+    mixedCreditAmount: 250,
+    mixedReceivedEntries: [{ denominationId: "d-100", quantity: 1 }],
+    mixedBank: "BHD",
+    mixedReference: "REF-2",
+  };
+
+  it("bills a cash sale for the full total with the counted bills", () => {
+    expect(paymentPlan(base)).toEqual([
+      { method: "CASH", amount: "350.00", receivedDenominations: [{ denominationId: "d-500", quantity: 1 }] },
+    ]);
+  });
+
+  it("drops the counted bills when the tenant does not track denominations", () => {
+    const plan = paymentPlan({ ...base, cashDenominationsEnabled: false });
+
+    expect(plan).toEqual([{ method: "CASH", amount: "350.00", receivedDenominations: [] }]);
+  });
+
+  it("carries bank and reference on a transfer", () => {
+    const plan = paymentPlan({ ...base, method: "TRANSFER" });
+
+    expect(plan).toEqual([{ method: "TRANSFER", amount: "350.00", bank: "Popular", reference: "REF-1" }]);
+  });
+
+  it("bills the whole total to credit", () => {
+    expect(paymentPlan({ ...base, method: "CREDIT" })).toEqual([{ method: "CREDIT", amount: "350.00" }]);
+  });
+
+  it("splits a mixed cash and credit sale into two lines", () => {
+    const plan = paymentPlan({ ...base, method: "MIXED" });
+
+    expect(plan).toEqual([
+      { method: "CASH", amount: "100.00", receivedDenominations: [{ denominationId: "d-100", quantity: 1 }] },
+      { method: "CREDIT", amount: "250.00" },
+    ]);
+  });
+
+  it("uses the mixed bank details when the second method is a transfer", () => {
+    const plan = paymentPlan({ ...base, method: "MIXED", mixedSecondMethod: "TRANSFER" });
+
+    expect(plan[1]).toEqual({ method: "TRANSFER", amount: "250.00", bank: "BHD", reference: "REF-2" });
   });
 });

@@ -1,5 +1,12 @@
 # DaleVenta
 
+[![CI](https://github.com/Gameoversv/DaleVenta/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Gameoversv/DaleVenta/actions/workflows/ci.yml)
+[![Security](https://github.com/Gameoversv/DaleVenta/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/Gameoversv/DaleVenta/actions/workflows/security.yml)
+[![License: MIT](https://img.shields.io/github/license/Gameoversv/DaleVenta)](LICENSE)
+[![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+
 A **multi-tenant SaaS POS (Point of Sale) system** for small retail businesses, with specialized support for bakeries and pastry shops (repostería). Built for rapid deployment and granular role-based access control (RBAC) with per-user permission overrides.
 
 ## Overview
@@ -19,21 +26,21 @@ DaleVenta handles:
 |-------|-----------|
 | **Backend** | Spring Boot 3 · Java 21 · Maven |
 | **Database** | PostgreSQL 16 · Flyway migrations · JDBC |
-| **Security** | Spring Security · JWT (access + refresh tokens) |
+| **Security** | Spring Security · JWT bearer tokens |
 | **Testing** | JUnit 5 · Mockito · Testcontainers |
 | **Containerization** | Docker · Docker Compose |
 | **Web Server** | Nginx (reverse proxy) |
-| **Frontend** | Next.js 15 · React 19 · TypeScript (`apps/web`) |
+| **Frontend** | Next.js 16 · React 19 · TypeScript (`apps/web`) |
 
 ## Current Modules
 
-- **auth** — JWT-based authentication, login/refresh, token validation, user management
+- **auth** — JWT-based authentication, login, token validation, user management
 - **tenant** — Multi-tenant isolation, subscription plans
 - **superadmin** — SaaS admin panel for tenant management and support
 - **shared** — Common utilities, configuration, storage, rate limiting
 - **dashboard** — Business analytics and KPI views
 - **customer** — Customer management with credit profile support
-- **branch** — Multi-branch organization and assignment
+- **branch** — Multi-branch organization
 - **register** — Cash register/point-of-sale station management
 - **permission** — RBAC with granular permission catalog, resolution engine, and per-user permission overrides (grant/revoke)
 - **product / inventory** — Products, categories, branch-level stock and movements
@@ -42,10 +49,14 @@ DaleVenta handles:
 - **credit** — Customer credit accounts, accounts receivable, payments
 - **report** — Sales and payment-method reporting
 - **audit** — Centralized audit log for sensitive operations (sale void, inventory adjustment, permission overrides)
+- **quotation** — Quotes with printable customer proposals
+- **purchase** — Suppliers, purchase orders, inventory receiving, accounts payable and supplier payments
+- **rental** — Rental reservations, returns, deposits and billing
+- **fiscal** — RNC, NCF sequences and fiscal receipts
 
 ## Frontend (`apps/web`)
 
-Next.js 15 dashboard covering: login, dashboard, branches, cash-shift (open/history/close), customers, inventory, POS, products, sales history, reports, and settings (users + permissions).
+Next.js 16 dashboard covering login, registration, POS, sales, quotations, purchases, rentals, branches, cash-shift, customers, products, inventory, fiscal configuration, reports, audit, tenant settings, and the super-admin panel.
 
 ## Getting Started
 
@@ -119,9 +130,9 @@ See the **[Bootstrap RBAC Plan](docs/superpowers/plans/2026-07-04-bootstrap-rbac
 
 ## Testing
 
-**Backend:** 41 test classes (JUnit 5 + MockMvc over a real PostgreSQL)
-**Frontend unit:** Vitest + Testing Library (`npm test` in `apps/web`)
-**Frontend E2E:** 10 Playwright specs (`apps/web/e2e`)
+**Backend:** 43 test classes (JUnit 5 + MockMvc over a real PostgreSQL)
+**Frontend unit:** 35 Vitest + Testing Library suites (`npm test` in `apps/web`)
+**Frontend E2E:** 16 Playwright specs (`apps/web/e2e`)
 
 Coverage is enforced by JaCoCo: the build fails if line coverage drops below the
 `jacoco.line.coverage` threshold in `apps/api/pom.xml` (currently 0.65, target 0.80).
@@ -159,16 +170,38 @@ docker run -d --name dalventa_test_db \
   -p 5432:5432 postgres:16-alpine
 ```
 
-## What Comes Next
+## Roadmap
 
-Fase 1 (MVP) is functionally complete. Remaining before closing it out:
+### Fase 0 — Preparación del piloto
 
-- E2E coverage for sales, reports, and user/permission management
-- Discount-above-threshold auditing (needs a configurable threshold first)
-- Shift reopening with second-user authorization
+El núcleo operativo está disponible. Cada tenant debe activar sus módulos desde el panel de
+superadministración: compras/proveedores y denominaciones de caja para comercios con inventario y
+efectivo; fiscal/NCF cuando corresponda; multisucursal, multicaja y alquileres solo si el negocio
+los necesita.
 
-**Phase 2:** exportable reports (PDF/Excel/CSV), returns/voids with authorization flow, internal notifications, customer self-service portal.
-**Phase 3:** raw materials, recipes, production (BOM) for bakery/pastry tenants; advanced analytics.
+### Fase 1 — Operación segura por sucursal y caja ✅
+
+Los cajeros se asignan desde **Ajustes → Usuarios** a sucursales y cajas concretas. La API aplica
+ese alcance en POS, turnos de caja e inventario; los administradores conservan la vista completa de
+su negocio. Las cajas siempre deben pertenecer a una sucursal asignada.
+
+### Fase 2 — Correcciones de venta auditables
+
+Devoluciones parciales, anulaciones después del cierre, reapertura de turno, umbrales de descuento
+y autorización de segundo usuario.
+
+### Fase 3 — Inventario y productividad
+
+Transferencias entre sucursales, ventas suspendidas, conteos cíclicos, etiquetas de código de barras
+e importación masiva.
+
+### Fase 4 — Gestión y relación con clientes
+
+Reportes PDF/Excel/CSV, dashboard comparativo, notificaciones y portal de cliente.
+
+### Fase 5 — Repostería y panadería
+
+Materias primas, recetas, producción/BOM, mermas, rentabilidad y pronóstico de demanda.
 
 ## Security
 

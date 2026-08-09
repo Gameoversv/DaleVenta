@@ -21,7 +21,7 @@ interface ShiftSummaryProps {
   onRequestClose: () => void;
 }
 
-export function ShiftSummary({ shift, registerId, onRequestClose }: ShiftSummaryProps) {
+export function ShiftSummary({ shift, registerId, onRequestClose }: Readonly<ShiftSummaryProps>) {
   const canClose = usePermission("CASHSHIFT_CLOSE");
   const { data: denominations } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
 

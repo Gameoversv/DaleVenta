@@ -7,7 +7,7 @@ interface FeatureCardProps {
   description: string;
 }
 
-export function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
+export function FeatureCard({ icon: Icon, title, description }: Readonly<FeatureCardProps>) {
   return (
     <Card className="group h-full transition-shadow hover:shadow-[var(--shadow-elevated)]">
       <CardContent className="flex h-full flex-col gap-3 p-6">

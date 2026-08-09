@@ -31,7 +31,7 @@ interface CustomerPurchaseHistoryDialogProps {
   trigger: React.ReactNode;
 }
 
-export function CustomerPurchaseHistoryDialog({ customer, trigger }: CustomerPurchaseHistoryDialogProps) {
+export function CustomerPurchaseHistoryDialog({ customer, trigger }: Readonly<CustomerPurchaseHistoryDialogProps>) {
   const { data: sales, isLoading } = useQuery({
     queryKey: ["sales-by-customer", customer.id],
     queryFn: () => fetchSalesByCustomer(customer.id),

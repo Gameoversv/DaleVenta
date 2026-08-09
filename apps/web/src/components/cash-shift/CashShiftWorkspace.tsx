@@ -30,7 +30,7 @@ function errorMessage(error: unknown): string {
   );
 }
 
-export function CashShiftWorkspace({ registerId, branchId }: { registerId: string; branchId: string }) {
+export function CashShiftWorkspace({ registerId, branchId }: Readonly<{ registerId: string; branchId: string }>) {
   const queryClient = useQueryClient();
   const [closing, setClosing] = useState(false);
   const [closedShift, setClosedShift] = useState<CashShiftSummaryResponse | null>(null);

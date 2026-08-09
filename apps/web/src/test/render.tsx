@@ -14,7 +14,7 @@ export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptio
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
-  function Providers({ children }: { children: ReactNode }) {
+  function Providers({ children }: Readonly<{ children: ReactNode }>) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   }
 

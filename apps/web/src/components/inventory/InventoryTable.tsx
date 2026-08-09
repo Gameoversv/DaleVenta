@@ -22,7 +22,7 @@ async function fetchProducts(): Promise<ProductResponse[]> {
   return res.data.data;
 }
 
-export function InventoryTable({ branchId }: { branchId: string }) {
+export function InventoryTable({ branchId }: Readonly<{ branchId: string }>) {
   const canAdjust = usePermission("INVENTORY_ADJUST");
   const [query, setQuery] = useState("");
   const { data: inventory, isLoading } = useQuery({

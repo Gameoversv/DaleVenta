@@ -20,14 +20,20 @@ const customer = { id: "cus-1", fullName: "Ana Perez", active: true } as Custome
 let creditProfile: { creditEnabled: boolean; creditLimit: string | null };
 let creditAccount: { balance: string };
 
+const DENOMINATIONS = [
+  { id: "d-100", value: "100.00", active: true },
+  { id: "d-500", value: "500.00", active: true },
+];
+
 function mockApi() {
   get.mockImplementation((url: string) => {
     if (url.includes("credit-profile")) return Promise.resolve({ data: { data: creditProfile } });
     if (url.includes("credit-account")) return Promise.resolve({ data: { data: creditAccount } });
+    if (url.includes("denominations")) return Promise.resolve({ data: { data: DENOMINATIONS } });
     return Promise.resolve({ data: { data: [] } });
   });
   // Change suggestion, only used when counting denominations.
-  post.mockResolvedValue({ data: { data: { exact: true, denominations: [] } } });
+  post.mockResolvedValue({ data: { data: { exact: true, combination: [] } } });
 }
 
 function setup(props: Partial<Parameters<typeof CheckoutPanel>[0]> = {}) {
@@ -234,6 +240,160 @@ describe("CheckoutPanel rentals", () => {
     expect(onConfirm.mock.calls[0][0][0].amount).toBe("800.00");
     // The deposit is passed through as typed; the API parses it as a decimal.
     expect(onConfirm.mock.calls[0][3]).toMatchObject({ depositAmount: "300" });
+  });
+});
+
+describe("CheckoutPanel mixed payment", () => {
+  async function splitCash(user: ReturnType<typeof userEvent.setup>, amount: string) {
+    await user.click(screen.getByRole("button", { name: /mixto/i }));
+    await user.type(screen.getByLabelText(/monto en efectivo/i), amount);
+  }
+
+  it("keeps the rest of the split out of the way until the cash share is settled", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole("button", { name: /mixto/i }));
+
+    expect(screen.getByText("Indica cuanto pagara en efectivo.")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/recibido en efectivo/i)).not.toBeInTheDocument();
+    expect(confirmButton()).toBeDisabled();
+  });
+
+  it("splits the sale between cash and a transfer", async () => {
+    const user = userEvent.setup();
+    const { onConfirm } = setup();
+
+    await splitCash(user, "200");
+    await user.selectOptions(screen.getByLabelText(/restante en/i), "TRANSFER");
+    await user.type(screen.getByLabelText(/recibido en efectivo/i), "200");
+    await user.type(screen.getByLabelText(/^banco$/i), "Banreservas");
+    await user.type(screen.getByLabelText(/^referencia$/i), "REF-002");
+    await user.click(confirmButton());
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm.mock.calls[0][0]).toEqual([
+      { method: "CASH", amount: "200.00", receivedDenominations: [] },
+      { method: "TRANSFER", amount: "300.00", bank: "Banreservas", reference: "REF-002" },
+    ]);
+  });
+
+  it("puts the remainder of a split on the customer credit line", async () => {
+    permissions = ["CREDIT_AUTHORIZE"];
+    const user = userEvent.setup();
+    const { onConfirm } = setup({ customer });
+
+    await splitCash(user, "200");
+    await user.type(screen.getByLabelText(/recibido en efectivo/i), "200");
+    await waitFor(() => expect(confirmButton()).toBeEnabled());
+    await user.click(confirmButton());
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm.mock.calls[0][0]).toEqual([
+      { method: "CASH", amount: "200.00", receivedDenominations: [] },
+      { method: "CREDIT", amount: "300.00" },
+    ]);
+  });
+
+  it("blocks a split whose credit half is past the customer limit", async () => {
+    permissions = ["CREDIT_AUTHORIZE"];
+    creditAccount = { balance: "900.00" }; // only 100 left of a 1000 limit
+    const user = userEvent.setup();
+    setup({ customer });
+
+    await splitCash(user, "200");
+    await user.type(screen.getByLabelText(/recibido en efectivo/i), "200");
+
+    expect(await screen.findByText("La parte a credito excede el disponible.")).toBeInTheDocument();
+    expect(confirmButton()).toBeDisabled();
+  });
+});
+
+describe("CheckoutPanel counting denominations", () => {
+  it("confirms a cash sale with the notes that were counted", async () => {
+    const user = userEvent.setup();
+    const { onConfirm } = setup({ cashDenominationsEnabled: true });
+
+    await user.type(await screen.findByLabelText("RD$500"), "1");
+
+    await waitFor(() => expect(confirmButton()).toBeEnabled());
+    await user.click(confirmButton());
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm.mock.calls[0][0]).toEqual([
+      { method: "CASH", amount: "500.00", receivedDenominations: [{ denominationId: "d-500", quantity: 1 }] },
+    ]);
+  });
+
+  it("checks the change on the cash half of a split too", async () => {
+    const user = userEvent.setup();
+    setup({ cashDenominationsEnabled: true });
+
+    await user.click(screen.getByRole("button", { name: /mixto/i }));
+    await user.type(screen.getByLabelText(/monto en efectivo/i), "200");
+    await user.type(await screen.findByLabelText("RD$500"), "1");
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith("/api/cash-shifts/change-suggestion", {
+        registerId: "r-1",
+        changeAmountCents: 30000,
+        receivedDenominations: [{ denominationId: "d-500", quantity: 1 }],
+      })
+    );
+  });
+
+  it("asks the drawer whether it can make the change", async () => {
+    const user = userEvent.setup();
+    setup({ cashDenominationsEnabled: true });
+
+    await user.type(await screen.findByLabelText("RD$500"), "2");
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith("/api/cash-shifts/change-suggestion", {
+        registerId: "r-1",
+        changeAmountCents: 50000,
+        receivedDenominations: [{ denominationId: "d-500", quantity: 2 }],
+      })
+    );
+  });
+});
+
+describe("CheckoutPanel fiscal receipts", () => {
+  const SEQUENCE = {
+    id: "seq-1",
+    receiptType: "B01",
+    nextNcf: "B0100000001",
+    remaining: 20,
+    active: true,
+  } as Parameters<typeof CheckoutPanel>[0]["fiscalSequences"][number];
+
+  it("leaves the receipt choice out while the fiscal module is off", () => {
+    setup({ fiscalSequences: [SEQUENCE] });
+
+    expect(screen.queryByLabelText(/comprobante fiscal/i)).not.toBeInTheDocument();
+  });
+
+  it("sends the sale under the chosen sequence", async () => {
+    const user = userEvent.setup();
+    const { onConfirm } = setup({ fiscalModuleEnabled: true, fiscalSequences: [SEQUENCE] });
+
+    await user.selectOptions(screen.getByLabelText(/comprobante fiscal/i), "B01");
+    await user.type(screen.getByLabelText(/recibido/i), "500");
+    await user.click(confirmButton());
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm.mock.calls[0][2]).toBe("B01");
+  });
+
+  it("sends a plain invoice as no receipt type at all", async () => {
+    const user = userEvent.setup();
+    const { onConfirm } = setup({ fiscalModuleEnabled: true, fiscalSequences: [SEQUENCE] });
+
+    await user.type(screen.getByLabelText(/recibido/i), "500");
+    await user.click(confirmButton());
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm.mock.calls[0][2]).toBeNull();
   });
 });
 

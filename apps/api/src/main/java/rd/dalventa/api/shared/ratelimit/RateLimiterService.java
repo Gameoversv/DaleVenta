@@ -4,7 +4,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * for a single API instance. For multi-instance deployments, replace with a distributed backend
  * (e.g. bucket4j-redis) so all instances share the same counters.
  */
-@Component
+@Service
 @RequiredArgsConstructor
 public class RateLimiterService {
 

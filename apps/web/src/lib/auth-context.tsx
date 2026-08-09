@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -26,6 +26,21 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * What a signed-out or not-yet-loaded session may assume.
+ *
+ * Cash denominations default on because a register that stops asking for a count silently changes
+ * how money is handled; the other modules are sold, so their absence is the safe answer.
+ */
+const DEFAULT_TENANT_FEATURES: TenantFeatures = {
+  fiscalModuleEnabled: false,
+  cashDenominationsEnabled: true,
+  multiBranchEnabled: false,
+  multiRegisterEnabled: false,
+  rentalModuleEnabled: false,
+  purchaseModuleEnabled: false,
+};
+
 async function fetchMe(): Promise<MeResponse | null> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (!token) return null;
@@ -42,7 +57,7 @@ async function fetchMe(): Promise<MeResponse | null> {
   }
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -74,27 +89,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   }, [queryClient, router]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: data?.user ?? null,
-        permissions: data?.permissions ?? [],
-        tenantFeatures: data?.tenantFeatures ?? {
-          fiscalModuleEnabled: false,
-          cashDenominationsEnabled: true,
-          multiBranchEnabled: false,
-          multiRegisterEnabled: false,
-          rentalModuleEnabled: false,
-          purchaseModuleEnabled: false,
-        },
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Rebuilding this object on every render would re-render every consumer of the context, which
+  // is most of the app: the sidebar, every permission check, every screen that reads the tenant.
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user: data?.user ?? null,
+      permissions: data?.permissions ?? [],
+      tenantFeatures: data?.tenantFeatures ?? DEFAULT_TENANT_FEATURES,
+      isLoading,
+      login,
+      logout,
+    }),
+    [data, isLoading, login, logout]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

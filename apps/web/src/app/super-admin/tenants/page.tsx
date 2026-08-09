@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronDown, CheckCircle, LogIn } from "lucide-react";
 import api from "@/lib/api";
+import { apiErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,10 +30,6 @@ async function fetchTenants(status: string, page: number): Promise<TenantsPage> 
     params: { status: status || undefined, page, size: 20 },
   });
   return res.data;
-}
-
-function extractError(err: unknown): string {
-  return (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Error";
 }
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
@@ -79,7 +76,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Tenant aprobado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const statusMutation = useMutation({
@@ -89,7 +86,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Estado actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const planMutation = useMutation({
@@ -99,7 +96,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Plan actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const fiscalModuleMutation = useMutation({
@@ -109,7 +106,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Modulo fiscal actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const cashDenominationsMutation = useMutation({
@@ -119,7 +116,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Denominaciones de caja actualizadas");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const multiBranchMutation = useMutation({
@@ -129,7 +126,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Modulo multisucursal actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const multiRegisterMutation = useMutation({
@@ -139,7 +136,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Modulo multicaja actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const rentalModuleMutation = useMutation({
@@ -149,7 +146,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Modulo de alquileres actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const purchaseModuleMutation = useMutation({
@@ -159,7 +156,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Modulo de compras actualizado");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const extendTrialMutation = useMutation({
@@ -168,7 +165,7 @@ export default function SuperAdminTenantsPage() {
       invalidate();
       toast.success("Trial extendido 30 dias");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const impersonateMutation = useMutation({
@@ -181,7 +178,7 @@ export default function SuperAdminTenantsPage() {
       toast.success(`Sesion iniciada como ${data.tenantName}`);
       window.location.assign("/dashboard");
     },
-    onError: (err: unknown) => toast.error(extractError(err)),
+    onError: (err: unknown) => toast.error(apiErrorMessage(err)),
   });
 
   const tenants = data?.data ?? [];
@@ -198,6 +195,7 @@ export default function SuperAdminTenantsPage() {
       <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
         {STATUS_FILTERS.map((opt) => (
           <button
+            type="button"
             key={opt.value}
             onClick={() => {
               setStatus(opt.value);
@@ -442,6 +440,7 @@ export default function SuperAdminTenantsPage() {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm">
               <button
+                type="button"
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"
@@ -452,6 +451,7 @@ export default function SuperAdminTenantsPage() {
                 Pagina {page + 1} de {totalPages}
               </span>
               <button
+                type="button"
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"

@@ -48,8 +48,8 @@ function sale(overrides: Partial<SaleResponse> = {}): SaleResponse {
     createdAt: "2026-07-27T18:15:00.000Z",
     voidedAt: null,
     voidReason: null,
-    items: [{ productId: "p-1", quantity: 2, unitPrice: "250.00", taxRate: "0", lineTotal: "500.00" }],
-    payments: [{ method: "CASH", amount: "500.00" }],
+    items: [{ id: "si-1", productId: "p-1", quantity: 2, unitPrice: "250.00", taxRate: "0", lineTotal: "500.00" }],
+    payments: [{ id: "pay-1", method: "CASH", amount: "500.00" }],
     ...overrides,
   } as SaleResponse;
 }

@@ -24,7 +24,7 @@ interface BranchFormDialogProps {
   trigger: React.ReactNode;
 }
 
-export function BranchFormDialog({ branch, trigger }: BranchFormDialogProps) {
+export function BranchFormDialog({ branch, trigger }: Readonly<BranchFormDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!branch;

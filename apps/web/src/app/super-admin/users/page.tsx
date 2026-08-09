@@ -24,7 +24,7 @@ async function fetchUsers(email: string, page: number): Promise<UsersPage> {
 }
 
 
-function ResetPasswordDialog({ user }: { user: UserSummaryResponse }) {
+function ResetPasswordDialog({ user }: Readonly<{ user: UserSummaryResponse }>) {
   const [open, setOpen] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState("");
 

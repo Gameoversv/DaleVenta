@@ -9,7 +9,7 @@ const CONFIG: Record<PaymentMethod, { label: string; icon: typeof Banknote; clas
   CREDIT: { label: "Credito", icon: Wallet2, className: "bg-credit/10 text-credit" },
 };
 
-export function PaymentMethodBadge({ method }: { method: PaymentMethod }) {
+export function PaymentMethodBadge({ method }: Readonly<{ method: PaymentMethod }>) {
   const cfg = CONFIG[method];
   const Icon = cfg.icon;
   return (

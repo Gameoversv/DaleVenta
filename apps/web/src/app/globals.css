@@ -5,6 +5,10 @@
 :root {
   color-scheme: light;
 
+  /* Local font stacks keep builds deterministic when external font CDNs are unavailable. */
+  --font-display: "Aptos Display", "Segoe UI", Arial, sans-serif;
+  --font-body: "Aptos", "Segoe UI", Arial, sans-serif;
+
   /* DaleVenta brand: navy primary, sky-blue secondary, coral accent. Clean enterprise SaaS. */
   --background: #f8fafc;
   --foreground: #0f172a;

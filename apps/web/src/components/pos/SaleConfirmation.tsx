@@ -21,7 +21,7 @@ interface SaleConfirmationProps {
   onNewSale: () => void;
 }
 
-export function SaleConfirmation({ sale: initialSale, products, registerId, onNewSale }: SaleConfirmationProps) {
+export function SaleConfirmation({ sale: initialSale, products, registerId, onNewSale }: Readonly<SaleConfirmationProps>) {
   const canVoid = usePermission("SALE_VOID");
   const [sale, setSale] = useState(initialSale);
   const [open, setOpen] = useState(false);

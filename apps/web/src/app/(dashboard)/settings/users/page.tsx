@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
+import { UserAssignmentsDialog, UserAssignmentsSummary } from "@/components/users/UserAssignments";
 import type {
   CreateUserRequest,
   PermissionEffect,
@@ -97,10 +101,6 @@ function CreateUserDialog() {
     },
   });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    mutation.mutate(form);
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -114,7 +114,13 @@ function CreateUserDialog() {
         <DialogHeader>
           <DialogTitle>Nuevo usuario</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            mutation.mutate(form);
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="user-name">Nombre</Label>
             <Input id="user-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -158,7 +164,7 @@ function CreateUserDialog() {
   );
 }
 
-function ResetPasswordDialog({ user }: { user: UserResponse }) {
+function ResetPasswordDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
@@ -225,7 +231,7 @@ async function fetchUserPermissions(userId: string): Promise<UserPermissionRow[]
   return res.data.data;
 }
 
-function PermissionRowControl({ userId, row }: { userId: string; row: UserPermissionRow }) {
+function PermissionRowControl({ userId, row }: Readonly<{ userId: string; row: UserPermissionRow }>) {
   const queryClient = useQueryClient();
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["user-permissions", userId] });
@@ -277,7 +283,7 @@ function PermissionRowControl({ userId, row }: { userId: string; row: UserPermis
   );
 }
 
-function PermissionsDialog({ user }: { user: UserResponse }) {
+function PermissionsDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const { data: rows, isLoading } = useQuery({
     queryKey: ["user-permissions", user.id],
@@ -298,7 +304,7 @@ function PermissionsDialog({ user }: { user: UserResponse }) {
         </DialogHeader>
         <div className="space-y-2 text-sm">
           <p className="text-muted-foreground">
-            Los permisos "segun rol" vienen del rol asignado. Otorgar o revocar crea una excepcion individual.
+            Los permisos &quot;segun rol&quot; vienen del rol asignado. Otorgar o revocar crea una excepcion individual.
           </p>
           {isLoading && <p className="text-muted-foreground">Cargando permisos...</p>}
           {rows && (
@@ -316,7 +322,7 @@ function PermissionsDialog({ user }: { user: UserResponse }) {
   );
 }
 
-function EditUserDialog({ user }: { user: UserResponse }) {
+function EditUserDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<UpdateUserRequest>({
     name: user.name,
@@ -408,7 +414,7 @@ function EditUserDialog({ user }: { user: UserResponse }) {
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.active} onChange={(event) => update({ active: event.target.checked })} />
-            Usuario activo
+            <span>Usuario activo</span>
           </label>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending || !form.name.trim() || !form.email.trim()}>
@@ -421,7 +427,7 @@ function EditUserDialog({ user }: { user: UserResponse }) {
   );
 }
 
-function UserRow({ user }: { user: UserResponse }) {
+function UserRow({ user }: Readonly<{ user: UserResponse }>) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(user.role === "ADMIN" ? "ADMIN" : "CASHIER");
 
@@ -468,6 +474,7 @@ function UserRow({ user }: { user: UserResponse }) {
         </select>
       </td>
       <td className="py-3 pr-4">{user.active ? "Activo" : "Inactivo"}</td>
+      <td className="py-3 pr-4 text-sm"><UserAssignmentsSummary user={user} /></td>
       <td className="py-3">
         <div className="flex justify-end gap-2">
           <Button
@@ -480,6 +487,7 @@ function UserRow({ user }: { user: UserResponse }) {
           </Button>
           <EditUserDialog user={user} />
           <PermissionsDialog user={user} />
+          {role === "CASHIER" && <UserAssignmentsDialog user={user} />}
           <ResetPasswordDialog user={user} />
         </div>
       </td>
@@ -496,20 +504,12 @@ export default function UsersSettingsPage() {
   });
 
   if (!canManageUsers) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <p className="text-muted-foreground">No tienes permiso para administrar usuarios.</p>
-      </div>
-    );
+    return <PermissionDenied title="Usuarios" message="No tienes permiso para administrar usuarios." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <CreateUserDialog />
-      </div>
+      <PageHeader title="Usuarios" actions={<CreateUserDialog />} />
 
       <Card>
         <CardHeader>
@@ -517,8 +517,8 @@ export default function UsersSettingsPage() {
         </CardHeader>
         <CardContent>
           {isLoading && <p className="text-sm text-muted-foreground">Cargando usuarios...</p>}
-          {isError && <p className="text-sm text-destructive">No se pudieron cargar los usuarios.</p>}
-          {users && users.length === 0 && <p className="text-sm text-muted-foreground">No hay usuarios internos.</p>}
+          {isError && <ErrorState message="No se pudieron cargar los usuarios." />}
+          {users && users.length === 0 && <EmptyState message="No hay usuarios internos." />}
           {users && users.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -527,6 +527,7 @@ export default function UsersSettingsPage() {
                     <th className="py-2 pr-4 font-medium">Usuario</th>
                     <th className="py-2 pr-4 font-medium">Rol</th>
                     <th className="py-2 pr-4 font-medium">Estado</th>
+                    <th className="py-2 pr-4 font-medium">Alcance operativo</th>
                     <th className="py-2 font-medium"></th>
                   </tr>
                 </thead>

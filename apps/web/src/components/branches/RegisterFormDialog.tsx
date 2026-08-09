@@ -24,7 +24,7 @@ interface RegisterFormDialogProps {
   trigger: React.ReactNode;
 }
 
-export function RegisterFormDialog({ branchId, register: existingRegister, trigger }: RegisterFormDialogProps) {
+export function RegisterFormDialog({ branchId, register: existingRegister, trigger }: Readonly<RegisterFormDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!existingRegister;

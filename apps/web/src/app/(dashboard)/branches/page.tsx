@@ -8,6 +8,9 @@ import { usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/lib/auth-context";
 import { BranchCard } from "@/components/branches/BranchCard";
 import { BranchFormDialog } from "@/components/branches/BranchFormDialog";
+import { PageHeader } from "@/components/common/page-header";
+import { PermissionDenied } from "@/components/common/permission-denied";
+import { EmptyState } from "@/components/common/empty-state";
 import type { BranchResponse } from "@/types/branch";
 
 async function fetchBranches(): Promise<BranchResponse[]> {
@@ -26,38 +29,33 @@ export default function BranchesPage() {
   const canCreateBranch = tenantFeatures.multiBranchEnabled || (branches?.length ?? 0) === 0;
 
   if (!canManageSettings) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Sucursales</h1>
-        <p className="text-sm text-muted-foreground">No tienes permiso para administrar sucursales.</p>
-      </div>
-    );
+    return <PermissionDenied title="Sucursales" message="No tienes permiso para administrar sucursales." />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Sucursales</h1>
-        {canCreateBranch && (
-          <BranchFormDialog
-            trigger={
-              <Button>
-                <Plus className="h-4 w-4" />
-                Nueva sucursal
-              </Button>
-            }
-          />
-        )}
-      </div>
+      <PageHeader
+        title="Sucursales"
+        actions={
+          canCreateBranch && (
+            <BranchFormDialog
+              trigger={
+                <Button>
+                  <Plus className="h-4 w-4" />
+                  Nueva sucursal
+                </Button>
+              }
+            />
+          )
+        }
+      />
       {!tenantFeatures.multiBranchEnabled && (branches?.length ?? 0) > 0 && (
         <p className="text-sm text-muted-foreground">
           Multisucursal no esta activo para este tenant. Solo se permite una sucursal.
         </p>
       )}
       {isLoading && <p className="text-muted-foreground">Cargando sucursales...</p>}
-      {branches && branches.length === 0 && (
-        <p className="text-muted-foreground">No hay sucursales todavia. Crea la primera.</p>
-      )}
+      {branches && branches.length === 0 && <EmptyState message="No hay sucursales todavia. Crea la primera." />}
       <div className="space-y-3">
         {branches?.map((branch) => (
           <BranchCard key={branch.id} branch={branch} multiRegisterEnabled={tenantFeatures.multiRegisterEnabled} />

@@ -26,7 +26,7 @@ async function fetchTenantFeatures(): Promise<TenantFeatures> {
   return res.data.data;
 }
 
-export function OpenShiftForm({ registerId, branchId }: { registerId: string; branchId: string }) {
+export function OpenShiftForm({ registerId, branchId }: Readonly<{ registerId: string; branchId: string }>) {
   const { tenantFeatures } = useAuth();
   const { data: liveTenantFeatures } = useQuery({ queryKey: ["tenant-features"], queryFn: fetchTenantFeatures });
   const denominationsEnabled = liveTenantFeatures?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled;

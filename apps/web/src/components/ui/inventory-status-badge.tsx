@@ -5,7 +5,7 @@ interface InventoryStatusBadgeProps {
   minStock: number | null;
 }
 
-export function InventoryStatusBadge({ currentStock, minStock }: InventoryStatusBadgeProps) {
+export function InventoryStatusBadge({ currentStock, minStock }: Readonly<InventoryStatusBadgeProps>) {
   if (currentStock <= 0) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">

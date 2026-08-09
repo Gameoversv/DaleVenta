@@ -27,7 +27,7 @@ interface CategoryPanelProps {
   onSelectCategory: (categoryId: string | null) => void;
 }
 
-export function CategoryPanel({ selectedCategoryId, onSelectCategory }: CategoryPanelProps) {
+export function CategoryPanel({ selectedCategoryId, onSelectCategory }: Readonly<CategoryPanelProps>) {
   const queryClient = useQueryClient();
   const canCreate = usePermission("INVENTORY_CREATE");
   const canEdit = usePermission("INVENTORY_EDIT");

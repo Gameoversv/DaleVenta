@@ -49,6 +49,14 @@ public class DailyCloseReportService {
 
     @Transactional(readOnly = true)
     public DailyCloseReportResponse report(LocalDate date, UUID registerId) {
+        return buildReport(date, registerId);
+    }
+
+    /**
+     * Shared by the read endpoint and by {@link #close(LocalDate, UUID)}. A self-call to the public
+     * method would skip the Spring proxy, so its read-only setting would never take effect anyway.
+     */
+    private DailyCloseReportResponse buildReport(LocalDate date, UUID registerId) {
         var tenantId = TenantContext.require();
         var zone = ZoneId.systemDefault();
         var start = date.atStartOfDay(zone).toInstant();
@@ -109,7 +117,7 @@ public class DailyCloseReportService {
             throw new DuplicateResourceException("Esta caja ya tiene cierre guardado para esa fecha");
         }
 
-        var report = report(date, registerId);
+        var report = buildReport(date, registerId);
         var user = currentUserProvider.current()
                 .orElseThrow(() -> new IllegalStateException("Usuario no autenticado"));
         long sequence = dailyClosingRepository.maxCloseSequence(tenantId) + 1;

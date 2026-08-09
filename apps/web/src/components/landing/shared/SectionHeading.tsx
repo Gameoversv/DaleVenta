@@ -8,7 +8,7 @@ interface SectionHeadingProps {
   className?: string;
 }
 
-export function SectionHeading({ eyebrow, title, description, align = "center", className }: SectionHeadingProps) {
+export function SectionHeading({ eyebrow, title, description, align = "center", className }: Readonly<SectionHeadingProps>) {
   return (
     <div
       className={cn(

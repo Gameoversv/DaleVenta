@@ -33,25 +33,7 @@ public final class ChangeSuggestionCalculator {
 
         for (int amount = 1; amount <= target; amount++) {
             for (AvailableDenomination denom : byValueDesc) {
-                if (denom.valueCents() > amount) {
-                    continue;
-                }
-                int prevAmount = amount - Math.toIntExact(denom.valueCents());
-                Map<UUID, Integer> prevUsed = usedCount[prevAmount];
-                if (prevUsed == null) {
-                    continue;
-                }
-                int alreadyUsed = prevUsed.getOrDefault(denom.denominationId(), 0);
-                if (alreadyUsed + 1 > denom.quantityAvailable()) {
-                    continue;
-                }
-                int candidatePieces = dp[prevAmount] + 1;
-                if (candidatePieces < dp[amount]) {
-                    dp[amount] = candidatePieces;
-                    Map<UUID, Integer> newUsed = new HashMap<>(prevUsed);
-                    newUsed.merge(denom.denominationId(), 1, Integer::sum);
-                    usedCount[amount] = newUsed;
-                }
+                relax(dp, usedCount, amount, denom);
             }
         }
 
@@ -59,5 +41,32 @@ public final class ChangeSuggestionCalculator {
             return new SuggestionResult(false, Map.of());
         }
         return new SuggestionResult(true, usedCount[target]);
+    }
+
+    /**
+     * Improves the best combination for {@code amount} if paying one more piece of {@code denom} on
+     * top of an already reachable amount beats what is recorded, respecting how many pieces of that
+     * denomination the drawer still holds.
+     */
+    private static void relax(int[] dp, Map<UUID, Integer>[] usedCount, int amount, AvailableDenomination denom) {
+        if (denom.valueCents() > amount) {
+            return;
+        }
+        int prevAmount = amount - Math.toIntExact(denom.valueCents());
+        Map<UUID, Integer> prevUsed = usedCount[prevAmount];
+        if (prevUsed == null) {
+            return;
+        }
+        int alreadyUsed = prevUsed.getOrDefault(denom.denominationId(), 0);
+        if (alreadyUsed + 1 > denom.quantityAvailable()) {
+            return;
+        }
+        int candidatePieces = dp[prevAmount] + 1;
+        if (candidatePieces < dp[amount]) {
+            dp[amount] = candidatePieces;
+            Map<UUID, Integer> newUsed = new HashMap<>(prevUsed);
+            newUsed.merge(denom.denominationId(), 1, Integer::sum);
+            usedCount[amount] = newUsed;
+        }
     }
 }

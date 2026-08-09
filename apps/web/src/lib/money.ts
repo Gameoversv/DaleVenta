@@ -20,7 +20,10 @@ const FORMATTER = new Intl.NumberFormat("es-DO", {
 /** Placeholder for an amount that does not exist, as opposed to an amount that is zero. */
 export const NO_AMOUNT = "-";
 
-function toNumber(value: string | number | null | undefined): number | null {
+/** Anything an API payload may carry for a monetary amount. */
+export type AmountInput = string | number | null | undefined;
+
+function toNumber(value: AmountInput): number | null {
   if (value === null || value === undefined || value === "") return null;
   const amount = typeof value === "number" ? value : Number(value);
   return Number.isFinite(amount) ? amount : null;
@@ -30,7 +33,7 @@ function toNumber(value: string | number | null | undefined): number | null {
  * Formats an amount, falling back to {@link NO_AMOUNT} when there is nothing to show.
  * Use this when a blank value means "not applicable" — an unset price, an open balance.
  */
-export function money(value: string | number | null | undefined): string {
+export function money(value: AmountInput): string {
   const amount = toNumber(value);
   return amount === null ? NO_AMOUNT : FORMATTER.format(amount);
 }
@@ -39,6 +42,6 @@ export function money(value: string | number | null | undefined): string {
  * Formats an amount, treating a missing value as zero. Use this for running totals and
  * summaries, where "nothing recorded yet" genuinely means RD$0.00.
  */
-export function moneyOrZero(value: string | number | null | undefined): string {
+export function moneyOrZero(value: AmountInput): string {
   return FORMATTER.format(toNumber(value) ?? 0);
 }

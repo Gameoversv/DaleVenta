@@ -99,6 +99,10 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
         expectNotFound(put("/api/users/" + foreignUserId + "/permissions/SALE_CREATE")
                 .contentType("application/json")
                 .content("{\"effect\":\"GRANT\"}"), b);
+        expectNotFound(get("/api/users/" + foreignUserId + "/assignments"), b);
+        expectNotFound(put("/api/users/" + foreignUserId + "/assignments")
+                .contentType("application/json")
+                .content("{\"branchIds\":[],\"registerIds\":[]}"), b);
     }
 
     @Test

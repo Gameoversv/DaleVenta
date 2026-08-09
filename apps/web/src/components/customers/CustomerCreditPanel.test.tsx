@@ -177,6 +177,28 @@ describe("recording a payment", () => {
     expect(screen.getByLabelText(/^monto/i)).toHaveValue(250);
   });
 
+  it("points the form at the invoice whose row was clicked", async () => {
+    const user = await openPanel();
+
+    const abonar = await screen.findAllByRole("button", { name: "Abonar" });
+    await user.click(abonar[1]);
+
+    expect(await screen.findByLabelText(/aplicar a/i)).toHaveValue("s-2");
+    expect(screen.getByLabelText(/^monto/i)).toHaveValue(150);
+  });
+
+  it("re-points the form even after the cashier has typed over the last prefill", async () => {
+    const user = await openPanel();
+
+    const abonar = await screen.findAllByRole("button", { name: "Abonar" });
+    await user.click(abonar[0]);
+    await user.clear(screen.getByLabelText(/^monto/i));
+    await user.type(screen.getByLabelText(/^monto/i), "10");
+    await user.click(screen.getAllByRole("button", { name: "Abonar" })[0]);
+
+    expect(screen.getByLabelText(/^monto/i)).toHaveValue(250);
+  });
+
   it("posts a payment against the chosen invoice", async () => {
     post.mockResolvedValue({ data: {} });
     const user = await openPanel();

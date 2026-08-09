@@ -69,6 +69,7 @@ export default function SuperAdminAuditPage() {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm">
               <button
+                type="button"
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"
@@ -79,6 +80,7 @@ export default function SuperAdminAuditPage() {
                 Pagina {page + 1} de {totalPages}
               </span>
               <button
+                type="button"
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"

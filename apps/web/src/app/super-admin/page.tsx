@@ -48,12 +48,12 @@ function StatCard({
   value,
   icon: Icon,
   tone,
-}: {
+}: Readonly<{
   label: string;
   value: number;
   icon: typeof Building2;
   tone: keyof typeof TONE_STYLES;
-}) {
+}>) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">

@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { DenominationCountEntry, DenominationResponse } from "@/types/cash-shift";
+import { useDenominations } from "@/hooks/useDenominations";
+import type { DenominationCountEntry } from "@/types/cash-shift";
 import { money } from "@/lib/money";
-
-async function fetchDenominations(): Promise<DenominationResponse[]> {
-  const res = await api.get<{ data: DenominationResponse[] }>("/api/denominations");
-  return res.data.data;
-}
 
 export function formatDenominationValue(value: string): string {
   const n = Number(value);
@@ -22,16 +16,12 @@ interface DenominationCountGridProps {
   onChange: (entries: DenominationCountEntry[]) => void;
 }
 
-export function DenominationCountGrid({ onChange }: DenominationCountGridProps) {
-  const {
-    data: denominations,
-    isLoading,
-    isError,
-  } = useQuery({ queryKey: ["denominations"], queryFn: fetchDenominations });
+export function DenominationCountGrid({ onChange }: Readonly<DenominationCountGridProps>) {
+  const { data: denominations, isLoading, isError } = useDenominations();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const handleChange = (denominationId: string, rawValue: string) => {
-    const quantity = Math.max(0, parseInt(rawValue, 10) || 0);
+    const quantity = Math.max(0, Number.parseInt(rawValue, 10) || 0);
     const next = { ...quantities, [denominationId]: quantity };
     setQuantities(next);
     onChange(

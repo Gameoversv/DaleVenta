@@ -32,7 +32,7 @@ interface AdjustStockDialogProps {
   trigger: React.ReactNode;
 }
 
-export function AdjustStockDialog({ branchId, productId, productName, products, trigger }: AdjustStockDialogProps) {
+export function AdjustStockDialog({ branchId, productId, productName, products, trigger }: Readonly<AdjustStockDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const needsProductPicker = !productId;
