@@ -21,6 +21,7 @@ import {
   changeAmountCents as changeCents,
   checkoutTotals,
   creditAvailable as creditAvailableAmount,
+  paymentPlan,
   paymentReadiness,
   sumDenominations,
 } from "@/lib/checkout";
@@ -204,41 +205,21 @@ export function CheckoutPanel({
     creditAvailable !== null && mixedRemainingAmountForCredit <= creditAvailable;
 
   const handleConfirm = () => {
-    const payments: PaymentRequest[] =
-      method === "CASH"
-        ? [
-            {
-              method: "CASH",
-              amount: total.toFixed(2),
-              receivedDenominations: cashDenominationsEnabled ? receivedEntries : [],
-            },
-          ]
-        : method === "TRANSFER"
-          ? [{ method: "TRANSFER", amount: total.toFixed(2), bank, reference }]
-          : method === "MIXED"
-            ? mixedSecondMethod === "TRANSFER"
-              ? [
-                  {
-                    method: "CASH",
-                    amount: mixedCashAmount.toFixed(2),
-                    receivedDenominations: cashDenominationsEnabled ? mixedReceivedEntries : [],
-                  },
-                  {
-                    method: "TRANSFER",
-                    amount: mixedTransferAmount.toFixed(2),
-                    bank: mixedBank,
-                    reference: mixedReference,
-                  },
-                ]
-              : [
-                  {
-                    method: "CASH",
-                    amount: mixedCashAmount.toFixed(2),
-                    receivedDenominations: cashDenominationsEnabled ? mixedReceivedEntries : [],
-                  },
-                  { method: "CREDIT", amount: mixedCreditAmount.toFixed(2) },
-                ]
-            : [{ method: "CREDIT", amount: total.toFixed(2) }];
+    const payments = paymentPlan({
+      method,
+      total,
+      cashDenominationsEnabled,
+      receivedEntries,
+      bank,
+      reference,
+      mixedSecondMethod,
+      mixedCashAmount,
+      mixedTransferAmount,
+      mixedCreditAmount,
+      mixedReceivedEntries,
+      mixedBank,
+      mixedReference,
+    });
     const rentalDetails = hasRentalItems
       ? {
           expectedReturnAt: new Date(rentalReturnAt).toISOString(),

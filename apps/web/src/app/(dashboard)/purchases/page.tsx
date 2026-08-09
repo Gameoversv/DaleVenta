@@ -343,6 +343,69 @@ function QuickProductDialog({
   );
 }
 
+/**
+ * One draft line of a purchase. Extracted from the dialog so the handlers stay one level deep:
+ * inline in the map callback they nested five functions in, which is where the row and the
+ * dialog state started to blur together.
+ */
+function PurchaseItemRow({
+  item,
+  products,
+  categories,
+  canCreateProduct,
+  canRemove,
+  onChange,
+  onRemove,
+}: Readonly<{
+  item: PurchaseItemDraft;
+  products: ProductResponse[];
+  categories: CategoryResponse[];
+  canCreateProduct: boolean;
+  canRemove: boolean;
+  onChange: (patch: Partial<PurchaseItemDraft>) => void;
+  onRemove: () => void;
+}>) {
+  return (
+    <div className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
+      <div className="space-y-2">
+        <Label>Producto</Label>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <select value={item.productId} onChange={(e) => onChange({ productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">Selecciona</option>
+            {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
+          </select>
+          {canCreateProduct && (
+            <QuickProductDialog
+              categories={categories}
+              trigger={<Button type="button" variant="outline" className="w-full sm:w-auto"><Plus className="h-4 w-4" /> Nuevo</Button>}
+              onCreated={(product) => onChange({ productId: product.id, unitCost: product.cost ?? item.unitCost })}
+            />
+          )}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Cant.</Label>
+        <Input type="number" min="1" value={item.quantity} onChange={(e) => onChange({ quantity: Number(e.target.value) })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Costo</Label>
+        <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={(e) => onChange({ unitCost: e.target.value })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Itbis %</Label>
+        <Input type="number" min="0" step="0.01" value={item.taxRate} onChange={(e) => onChange({ taxRate: e.target.value })} />
+      </div>
+      <div className="space-y-2">
+        <Label>Desc.</Label>
+        <Input type="number" min="0" step="0.01" value={item.discountAmount} onChange={(e) => onChange({ discountAmount: e.target.value })} />
+      </div>
+      <Button type="button" variant="ghost" disabled={!canRemove} onClick={onRemove}>
+        Quitar
+      </Button>
+    </div>
+  );
+}
+
 function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: Readonly<{
   suppliers: SupplierResponse[];
   products: ProductResponse[];
@@ -445,43 +508,16 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
           </div>
           <div className="space-y-3">
             {items.map((item, index) => (
-              <div key={item.rowId} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
-                <div className="space-y-2">
-                  <Label>Producto</Label>
-                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                    <select value={item.productId} onChange={(e) => updateItem(index, { productId: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                      <option value="">Selecciona</option>
-                      {products.map((product) => <option key={product.id} value={product.id}>{product.description} ({productUnitLabel(product.unit)})</option>)}
-                    </select>
-                    {canCreateProduct && (
-                      <QuickProductDialog
-                        categories={categories}
-                        trigger={<Button type="button" variant="outline" className="w-full sm:w-auto"><Plus className="h-4 w-4" /> Nuevo</Button>}
-                        onCreated={(product) => updateItem(index, { productId: product.id, unitCost: product.cost ?? item.unitCost })}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Cant.</Label>
-                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Costo</Label>
-                  <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={(e) => updateItem(index, { unitCost: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Itbis %</Label>
-                  <Input type="number" min="0" step="0.01" value={item.taxRate} onChange={(e) => updateItem(index, { taxRate: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Desc.</Label>
-                  <Input type="number" min="0" step="0.01" value={item.discountAmount} onChange={(e) => updateItem(index, { discountAmount: e.target.value })} />
-                </div>
-                <Button type="button" variant="ghost" disabled={items.length === 1} onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>
-                  Quitar
-                </Button>
-              </div>
+              <PurchaseItemRow
+                key={item.rowId}
+                item={item}
+                products={products}
+                categories={categories}
+                canCreateProduct={canCreateProduct}
+                canRemove={items.length > 1}
+                onChange={(patch) => updateItem(index, patch)}
+                onRemove={() => setItems((current) => current.filter((_, i) => i !== index))}
+              />
             ))}
             <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, newItemDraft()])}>
               <Plus className="h-4 w-4" />

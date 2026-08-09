@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
-import type { CreateQuotationRequest, QuotationResponse } from "@/types/quotation";
+import type { CreateQuotationRequest, QuotationItemRequest, QuotationResponse } from "@/types/quotation";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { quotationStatusLabel } from "@/lib/status-labels";
@@ -109,6 +109,36 @@ function printQuotation(quotation: QuotationResponse) {
   popup.document.close();
   popup.focus();
   popup.print();
+}
+
+/**
+ * One line of the quotation being drafted. Pulled out of the table body so the remove handler is
+ * not the fifth nested function inside the dialog.
+ */
+function QuotationDraftRow({
+  item,
+  product,
+  onRemove,
+}: Readonly<{
+  item: QuotationItemRequest;
+  product: ProductResponse | undefined;
+  onRemove: () => void;
+}>) {
+  const price = item.useWholesalePrice ? product?.wholesalePrice : product?.salePrice;
+  return (
+    <tr className="border-b border-border">
+      <td className="px-3 py-2">{product?.description ?? item.productId}</td>
+      <td className="px-3 py-2">
+        {item.quantity} {productUnitLabel(product?.unit)}
+      </td>
+      <td className="px-3 py-2">{moneyOrZero(price)}</td>
+      <td className="px-3 py-2 text-right">
+        <Button type="button" variant="ghost" size="icon" aria-label="Quitar producto" onClick={onRemove}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </td>
+    </tr>
+  );
 }
 
 function QuotationDetail({ quotation }: Readonly<{ quotation: QuotationResponse }>) {
@@ -383,30 +413,14 @@ export default function QuotationsPage() {
                             </td>
                           </tr>
                         ) : (
-                          items.map((item, index) => {
-                            const product = productById.get(item.productId);
-                            const price = item.useWholesalePrice ? product?.wholesalePrice : product?.salePrice;
-                            return (
-                              <tr key={`${item.productId}-${item.useWholesalePrice}`} className="border-b border-border">
-                                <td className="px-3 py-2">{product?.description ?? item.productId}</td>
-                                <td className="px-3 py-2">
-                                  {item.quantity} {productUnitLabel(product?.unit)}
-                                </td>
-                                <td className="px-3 py-2">{moneyOrZero(price)}</td>
-                                <td className="px-3 py-2 text-right">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Quitar producto"
-                                    onClick={() => setItems((current) => current.filter((_, i) => i !== index))}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            );
-                          })
+                          items.map((item, index) => (
+                            <QuotationDraftRow
+                              key={`${item.productId}-${item.useWholesalePrice}`}
+                              item={item}
+                              product={productById.get(item.productId)}
+                              onRemove={() => setItems((current) => current.filter((_, i) => i !== index))}
+                            />
+                          ))
                         )}
                       </tbody>
                     </table>
