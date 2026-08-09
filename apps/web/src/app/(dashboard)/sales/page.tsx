@@ -8,8 +8,7 @@ import { Eye, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission, useAnyPermission } from "@/hooks/usePermission";
-import { useSoleBranch } from "@/hooks/useSoleBranch";
-import { useSoleRegister } from "@/hooks/useSoleRegister";
+import { useOperationalLocation } from "@/hooks/useOperationalLocation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,6 +21,7 @@ import type { SaleResponse } from "@/types/sale";
 import { money } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { PageHeader } from "@/components/common/page-header";
+import { OperationalLocationSelector } from "@/components/common/OperationalLocationSelector";
 import { PermissionDenied } from "@/components/common/permission-denied";
 import { EmptyState } from "@/components/common/empty-state";
 
@@ -192,20 +192,9 @@ function VoidSaleDialog({ registerId, sale }: { registerId: string; sale: SaleRe
 }
 
 export default function SalesPage() {
-  const [manualBranchId, setManualBranchId] = useState("");
-  const [manualRegisterId, setManualRegisterId] = useState("");
   const canViewSales = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
-  const { branches, hasMultiple: hasMultipleBranches, soleBranchId } = useSoleBranch(canViewSales);
-  const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
-
-  const {
-    registers,
-    isLoading: registersLoading,
-    hasMultiple: hasMultipleRegisters,
-    soleRegisterId,
-  } = useSoleRegister(branchId, canViewSales);
-  const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
+  const location = useOperationalLocation({ enabled: canViewSales });
 
   const { data: products } = useQuery({
     queryKey: ["products"],
@@ -218,9 +207,9 @@ export default function SalesPage() {
     enabled: canViewSales,
   });
   const { data: sales, isLoading: salesLoading, isError } = useQuery({
-    queryKey: ["sales", registerId],
-    queryFn: () => fetchSales(registerId),
-    enabled: canViewSales && !!registerId,
+    queryKey: ["sales", location.registerId],
+    queryFn: () => fetchSales(location.registerId),
+    enabled: canViewSales && !!location.registerId,
   });
 
   const productById = useMemo(
@@ -244,63 +233,12 @@ export default function SalesPage() {
     <div className="space-y-6">
       <PageHeader title="Historial de ventas" />
 
-      {(hasMultipleBranches || hasMultipleRegisters) && (
-        <div className="flex flex-col gap-4 sm:flex-row">
-          {hasMultipleBranches && (
-            <div className="max-w-xs flex-1 space-y-2">
-              <label htmlFor="sales-branch" className="text-sm font-medium">
-                Sucursal
-              </label>
-              <select
-                id="sales-branch"
-                value={manualBranchId}
-                onChange={(e) => {
-                  setManualBranchId(e.target.value);
-                  setManualRegisterId("");
-                }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Selecciona una sucursal</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {hasMultipleRegisters && (
-            <div className="max-w-xs flex-1 space-y-2">
-              <label htmlFor="sales-register" className="text-sm font-medium">
-                Caja
-              </label>
-              <select
-                id="sales-register"
-                value={manualRegisterId}
-                onChange={(e) => setManualRegisterId(e.target.value)}
-                disabled={!branchId || registersLoading}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">{registersLoading ? "Cargando cajas..." : "Selecciona una caja"}</option>
-                {registers.map((register) => (
-                  <option key={register.id} value={register.id}>
-                    {register.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
-
-      {branchId && !registersLoading && registers.length === 0 && (
-        <p className="text-sm text-muted-foreground">Esta sucursal no tiene cajas activas.</p>
-      )}
+      <OperationalLocationSelector location={location} idPrefix="sales" />
 
       {salesLoading && <p className="text-muted-foreground">Cargando ventas...</p>}
       {isError && <p className="text-sm text-destructive">No se pudieron cargar las ventas.</p>}
 
-      {registerId && sales && (
+      {location.registerId && sales && (
         <Card>
           <CardHeader>
             <CardTitle>Ventas registradas</CardTitle>
@@ -350,7 +288,7 @@ export default function SalesPage() {
                               </Link>
                             </Button>
                             {canVoid && sale.status === "COMPLETED" && (
-                              <VoidSaleDialog registerId={registerId} sale={sale} />
+                              <VoidSaleDialog registerId={location.registerId} sale={sale} />
                             )}
                           </div>
                         </td>

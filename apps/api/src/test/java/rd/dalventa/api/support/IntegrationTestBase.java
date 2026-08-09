@@ -11,6 +11,8 @@ import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.auth.repository.UserRepository;
 import rd.dalventa.api.auth.repository.RoleRepository;
+import rd.dalventa.api.auth.repository.UserBranchAssignmentRepository;
+import rd.dalventa.api.auth.repository.UserRegisterAssignmentRepository;
 import rd.dalventa.api.branch.repository.BranchRepository;
 import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.product.repository.CategoryRepository;
@@ -61,6 +63,8 @@ public abstract class IntegrationTestBase {
     @Autowired protected ObjectMapper objectMapper;
     @Autowired protected UserRepository userRepository;
     @Autowired protected RoleRepository roleRepository;
+    @Autowired protected UserBranchAssignmentRepository userBranchAssignmentRepository;
+    @Autowired protected UserRegisterAssignmentRepository userRegisterAssignmentRepository;
     @Autowired protected TenantRepository tenantRepository;
     @Autowired protected CustomerRepository customerRepository;
     @Autowired protected BranchRepository branchRepository;
@@ -129,8 +133,10 @@ public abstract class IntegrationTestBase {
         purchaseRepository.deleteAll();
         cashShiftDenominationRepository.deleteAll();
         cashShiftRepository.deleteAll();
+        userRegisterAssignmentRepository.deleteAll();
         registerRepository.deleteAll();
         inventoryMovementRepository.deleteAll();
+        userBranchAssignmentRepository.deleteAll();
         userRepository.deleteAll();
         customerRepository.deleteAll();
         branchInventoryRepository.deleteAll();

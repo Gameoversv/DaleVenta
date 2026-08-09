@@ -8,6 +8,7 @@ import rd.dalventa.api.branch.dto.BranchResponse;
 import rd.dalventa.api.branch.dto.CreateBranchRequest;
 import rd.dalventa.api.branch.dto.UpdateBranchRequest;
 import rd.dalventa.api.branch.repository.BranchRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.tenant.repository.TenantRepository;
 import rd.dalventa.api.shared.web.ResourceNotFoundException;
@@ -21,6 +22,7 @@ public class BranchService {
 
     private final BranchRepository branchRepository;
     private final TenantRepository tenantRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public BranchResponse create(CreateBranchRequest req) {
@@ -37,7 +39,7 @@ public class BranchService {
 
     @Transactional(readOnly = true)
     public List<BranchResponse> list() {
-        return branchRepository.findAllByTenantIdAndActiveTrue(TenantContext.require())
+        return userOperationalScopeService.visibleBranches()
                 .stream().map(BranchResponse::from).toList();
     }
 

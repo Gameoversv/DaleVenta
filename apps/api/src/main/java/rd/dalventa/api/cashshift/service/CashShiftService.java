@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.cashshift.domain.CashShift;
 import rd.dalventa.api.cashshift.domain.CashShiftDenomination;
 import rd.dalventa.api.cashshift.domain.CashShiftStatus;
@@ -48,12 +49,12 @@ public class CashShiftService {
     private final BranchInventoryRepository branchInventoryRepository;
     private final AuditLogService auditLogService;
     private final TenantRepository tenantRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public CashShiftSummaryResponse open(OpenCashShiftRequest req) {
         var tenantId = TenantContext.require();
-        registerRepository.findByIdAndTenantId(req.registerId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(req.registerId());
 
         if (cashShiftRepository.findByRegisterIdAndStatus(req.registerId(), CashShiftStatus.OPEN).isPresent()) {
             throw new DuplicateResourceException("Esta caja ya tiene un turno abierto");
@@ -105,8 +106,7 @@ public class CashShiftService {
     @Transactional(readOnly = true)
     public CashShiftSummaryResponse getCurrentOpenShift(UUID registerId) {
         var tenantId = TenantContext.require();
-        registerRepository.findByIdAndTenantId(registerId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(registerId);
         var shift = cashShiftRepository.findByRegisterIdAndStatus(registerId, CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
         return buildSummary(shift);
@@ -187,14 +187,17 @@ public class CashShiftService {
     @Transactional(readOnly = true)
     public List<CashShiftSummaryResponse> list(UUID registerId) {
         var tenantId = TenantContext.require();
+        userOperationalScopeService.requireRegisterAccess(registerId);
         return cashShiftRepository.findAllByTenantIdAndRegisterId(tenantId, registerId)
                 .stream().map(this::buildSummary).toList();
     }
 
     CashShift requireShiftInTenant(UUID id) {
         var tenantId = TenantContext.require();
-        return cashShiftRepository.findByIdAndTenantId(id, tenantId)
+        var shift = cashShiftRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Turno no encontrado"));
+        userOperationalScopeService.requireRegisterAccess(shift.getRegisterId());
+        return shift;
     }
 
     private BigDecimal computeExpectedCash(CashShift shift, UUID tenantId) {

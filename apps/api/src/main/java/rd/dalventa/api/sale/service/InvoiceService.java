@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.branch.repository.BranchRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.customer.domain.Customer;
 import rd.dalventa.api.customer.repository.CustomerRepository;
 import rd.dalventa.api.fiscal.repository.FiscalProfileRepository;
@@ -37,12 +38,14 @@ public class InvoiceService {
     private final ProductRepository productRepository;
     private final FiscalProfileRepository fiscalProfileRepository;
     private final RentalContractRepository rentalContractRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoice(java.util.UUID saleId) {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(saleId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(sale.getRegisterId());
         var tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado"));
         var branch = branchRepository.findById(sale.getBranchId()).orElse(null);

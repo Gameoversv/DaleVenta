@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.branch.repository.BranchRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.register.domain.Register;
 import rd.dalventa.api.register.dto.CreateRegisterRequest;
 import rd.dalventa.api.register.dto.RegisterResponse;
@@ -23,6 +24,7 @@ public class RegisterService {
     private final RegisterRepository registerRepository;
     private final BranchRepository branchRepository;
     private final TenantRepository tenantRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public RegisterResponse create(CreateRegisterRequest req) {
@@ -44,12 +46,7 @@ public class RegisterService {
 
     @Transactional(readOnly = true)
     public List<RegisterResponse> listByBranch(UUID branchId) {
-        var tenantId = TenantContext.require();
-        var branch = branchRepository.findById(branchId)
-                .filter(b -> b.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
-
-        return registerRepository.findAllByBranchIdAndActiveTrue(branch.getId())
+        return userOperationalScopeService.visibleRegisters(branchId)
                 .stream().map(RegisterResponse::from).toList();
     }
 

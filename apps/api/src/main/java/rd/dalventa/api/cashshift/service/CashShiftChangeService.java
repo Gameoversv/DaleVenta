@@ -9,6 +9,7 @@ import rd.dalventa.api.cashshift.dto.ChangeSuggestionResponse;
 import rd.dalventa.api.cashshift.dto.DenominationCountEntry;
 import rd.dalventa.api.cashshift.repository.CashShiftDenominationRepository;
 import rd.dalventa.api.cashshift.repository.CashShiftRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.denomination.domain.Denomination;
 import rd.dalventa.api.denomination.repository.DenominationRepository;
 import rd.dalventa.api.shared.domain.TenantContext;
@@ -28,10 +29,12 @@ public class CashShiftChangeService {
     private final CashShiftRepository cashShiftRepository;
     private final CashShiftDenominationRepository cashShiftDenominationRepository;
     private final DenominationRepository denominationRepository;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional(readOnly = true)
     public ChangeSuggestionResponse suggest(ChangeSuggestionRequest req) {
         var tenantId = TenantContext.require();
+        userOperationalScopeService.requireRegisterAccess(req.registerId());
         var shift = cashShiftRepository.findByRegisterIdAndStatus(req.registerId(), CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto en esa caja"));
 

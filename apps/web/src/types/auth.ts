@@ -70,6 +70,11 @@ export interface ResetUserPasswordResponse {
   temporaryPassword: string;
 }
 
+export interface UserAssignments {
+  branchIds: string[];
+  registerIds: string[];
+}
+
 export interface MeResponse {
   user: UserResponse;
   permissions: PermissionCode[];

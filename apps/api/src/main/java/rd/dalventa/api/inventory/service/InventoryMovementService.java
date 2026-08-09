@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
-import rd.dalventa.api.branch.repository.BranchRepository;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.inventory.domain.BranchInventory;
 import rd.dalventa.api.inventory.domain.InventoryMovement;
 import rd.dalventa.api.inventory.domain.InventoryMovementType;
@@ -26,18 +26,16 @@ public class InventoryMovementService {
 
     private final BranchInventoryRepository branchInventoryRepository;
     private final InventoryMovementRepository inventoryMovementRepository;
-    private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
     private final CurrentUserProvider currentUserProvider;
     private final AuditLogService auditLogService;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public InventoryMovementResponse recordMovement(CreateInventoryMovementRequest req) {
         var tenantId = TenantContext.require();
 
-        branchRepository.findById(req.branchId())
-                .filter(b -> b.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada"));
+        userOperationalScopeService.requireBranchAccess(req.branchId());
         productRepository.findByIdAndTenantId(req.productId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 

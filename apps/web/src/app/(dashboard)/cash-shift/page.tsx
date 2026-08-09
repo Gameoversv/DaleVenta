@@ -1,38 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePermission } from "@/hooks/usePermission";
-import { useSoleBranch } from "@/hooks/useSoleBranch";
-import { useSoleRegister } from "@/hooks/useSoleRegister";
+import { useOperationalLocation } from "@/hooks/useOperationalLocation";
 import { Button } from "@/components/ui/button";
 import { CashShiftWorkspace } from "@/components/cash-shift/CashShiftWorkspace";
 import { PageHeader } from "@/components/common/page-header";
+import { OperationalLocationSelector } from "@/components/common/OperationalLocationSelector";
 import { PermissionDenied } from "@/components/common/permission-denied";
-import { ErrorState } from "@/components/common/empty-state";
 
 export default function CashShiftPage() {
-  const [manualBranchId, setManualBranchId] = useState("");
-  const [manualRegisterId, setManualRegisterId] = useState("");
   const canOpenCashShift = usePermission("CASHSHIFT_OPEN");
   const canManageSettings = usePermission("SETTINGS_MANAGE");
-  const {
-    branches,
-    isLoading: branchesLoading,
-    isError: branchesError,
-    hasMultiple: hasMultipleBranches,
-    soleBranchId,
-  } = useSoleBranch(canOpenCashShift);
-  const branchId = hasMultipleBranches ? manualBranchId : soleBranchId;
-
-  const {
-    registers,
-    isLoading: registersLoading,
-    isError: registersError,
-    hasMultiple: hasMultipleRegisters,
-    soleRegisterId,
-  } = useSoleRegister(branchId, canOpenCashShift);
-  const registerId = hasMultipleRegisters ? manualRegisterId : soleRegisterId;
+  const location = useOperationalLocation({ enabled: canOpenCashShift });
 
   if (!canOpenCashShift) {
     return (
@@ -43,86 +23,27 @@ export default function CashShiftPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Turno de Caja" />
-      {branchesError && <ErrorState message="No se pudieron cargar las sucursales." />}
-      {!branchesLoading && branches.length === 0 && (
-        <div className="space-y-3 rounded-md border border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            No hay sucursales activas. Crea una sucursal y una caja antes de abrir un turno.
-          </p>
-          {canManageSettings && (
+      <OperationalLocationSelector
+        location={location}
+        idPrefix="cash-shift"
+        emptyBranchAction={
+          canManageSettings ? (
             <Button asChild size="sm">
-              <Link href="/branches">Ir a sucursales</Link>
+              <Link href="/branches">Administrar sucursales</Link>
             </Button>
-          )}
-        </div>
-      )}
-      {(hasMultipleBranches || hasMultipleRegisters) && (
-        <div className="flex flex-col gap-4 sm:flex-row">
-          {hasMultipleBranches && (
-            <div className="max-w-xs flex-1 space-y-2">
-              <label htmlFor="cash-shift-branch" className="text-sm font-medium">
-                Sucursal
-              </label>
-              <select
-                id="cash-shift-branch"
-                value={manualBranchId}
-                onChange={(e) => {
-                  setManualBranchId(e.target.value);
-                  setManualRegisterId("");
-                }}
-                disabled={branchesLoading || branchesError}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Selecciona una sucursal</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {hasMultipleRegisters && (
-            <div className="max-w-xs flex-1 space-y-2">
-              <label htmlFor="cash-shift-register" className="text-sm font-medium">
-                Caja
-              </label>
-              <select
-                id="cash-shift-register"
-                value={manualRegisterId}
-                onChange={(e) => setManualRegisterId(e.target.value)}
-                disabled={!branchId || registersLoading || registersError}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">
-                  {registersLoading ? "Cargando cajas..." : "Selecciona una caja"}
-                </option>
-                {registers.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
-      {registersError && (
-        <p className="text-sm text-destructive">No se pudieron cargar las cajas de esta sucursal.</p>
-      )}
-      {branchId && !registersLoading && registers.length === 0 && (
-        <div className="space-y-3 rounded-md border border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            Esta sucursal no tiene cajas activas. Crea una caja antes de abrir el turno.
-          </p>
-          {canManageSettings && (
+          ) : undefined
+        }
+        emptyRegisterAction={
+          canManageSettings ? (
             <Button asChild size="sm" variant="secondary">
               <Link href="/branches">Administrar cajas</Link>
             </Button>
-          )}
-        </div>
+          ) : undefined
+        }
+      />
+      {location.registerId && (
+        <CashShiftWorkspace key={location.registerId} registerId={location.registerId} branchId={location.branchId} />
       )}
-      {registerId && <CashShiftWorkspace key={registerId} registerId={registerId} branchId={branchId} />}
     </div>
   );
 }

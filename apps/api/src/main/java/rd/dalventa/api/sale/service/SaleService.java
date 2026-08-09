@@ -19,7 +19,6 @@ import rd.dalventa.api.inventory.service.InventoryMovementService;
 import rd.dalventa.api.permission.domain.PermissionCode;
 import rd.dalventa.api.permission.service.PermissionResolutionService;
 import rd.dalventa.api.product.repository.ProductRepository;
-import rd.dalventa.api.register.repository.RegisterRepository;
 import rd.dalventa.api.sale.domain.Payment;
 import rd.dalventa.api.sale.domain.PaymentMethod;
 import rd.dalventa.api.sale.domain.Sale;
@@ -44,6 +43,7 @@ import rd.dalventa.api.credit.service.CreditService;
 import rd.dalventa.api.rental.service.RentalService;
 import rd.dalventa.api.audit.domain.AuditAction;
 import rd.dalventa.api.audit.service.AuditLogService;
+import rd.dalventa.api.auth.service.UserOperationalScopeService;
 import rd.dalventa.api.report.service.DailyCloseReportService;
 import rd.dalventa.api.shared.domain.TenantContext;
 import rd.dalventa.api.shared.security.CurrentUserProvider;
@@ -65,7 +65,6 @@ public class SaleService {
     private final SaleItemRepository saleItemRepository;
     private final PaymentRepository paymentRepository;
     private final TransferPaymentDetailRepository transferPaymentDetailRepository;
-    private final RegisterRepository registerRepository;
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
     private final CashShiftRepository cashShiftRepository;
@@ -83,18 +82,18 @@ public class SaleService {
     private final FiscalService fiscalService;
     private final TenantRepository tenantRepository;
     private final RentalService rentalService;
+    private final UserOperationalScopeService userOperationalScopeService;
 
     @Transactional
     public SaleResponse create(CreateSaleRequest req) {
         var tenantId = TenantContext.require();
 
-        var register = registerRepository.findByIdAndTenantId(req.registerId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Caja no encontrada"));
+        var register = userOperationalScopeService.requireRegisterAccess(req.registerId());
 
         // Guard only: the sale needs an open shift on this register, but nothing below uses the
         // shift entity itself.
         cashShiftRepository.findByIdAndTenantId(req.cashShiftId(), tenantId)
-                .filter(s -> s.getStatus() == CashShiftStatus.OPEN)
+                .filter(s -> s.getStatus() == CashShiftStatus.OPEN && s.getRegisterId().equals(req.registerId()))
                 .orElseThrow(() -> new ResourceNotFoundException("No hay turno abierto para esta caja"));
         if (dailyCloseReportService.isClosed(tenantId, LocalDate.now(ZoneId.systemDefault()), req.registerId())) {
             throw new IllegalArgumentException("No se puede vender: esta caja ya tiene cierre diario guardado para hoy");
@@ -288,6 +287,7 @@ public class SaleService {
     @Transactional(readOnly = true)
     public List<SaleResponse> list(java.util.UUID registerId) {
         var tenantId = TenantContext.require();
+        userOperationalScopeService.requireRegisterAccess(registerId);
         var sales = hasFullSaleHistory()
                 ? saleRepository.findAllByTenantIdAndRegisterIdOrderByCreatedAtDesc(tenantId, registerId)
                 : saleRepository.findAllByTenantIdAndRegisterIdAndUserIdOrderByCreatedAtDesc(
@@ -328,6 +328,7 @@ public class SaleService {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(sale.getRegisterId());
         if (!hasFullSaleHistory() && !sale.getUserId().equals(currentUserId())) {
             throw new ResourceNotFoundException("Venta no encontrada");
         }
@@ -347,6 +348,7 @@ public class SaleService {
         var tenantId = TenantContext.require();
         var sale = saleRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+        userOperationalScopeService.requireRegisterAccess(sale.getRegisterId());
 
         if (sale.getStatus() == SaleStatus.VOIDED) {
             throw new DuplicateResourceException("Esta venta ya esta anulada");
