@@ -18,10 +18,10 @@ async function fetchProducts(): Promise<ProductResponse[]> {
 export function FinalShiftSummary({
   shift,
   onDone,
-}: {
+}: Readonly<{
   shift: CashShiftSummaryResponse;
   onDone: () => void;
-}) {
+}>) {
   const difference = Number(shift.cashDifference ?? "0");
   const isExact = difference === 0;
 

@@ -92,7 +92,7 @@ export function CheckoutPanel({
   cashDenominationsEnabled,
   hasRentalItems,
   onConfirm,
-}: CheckoutPanelProps) {
+}: Readonly<CheckoutPanelProps>) {
   const canDiscount = usePermission("SALE_DISCOUNT");
   const canAuthorizeCredit = usePermission("CREDIT_AUTHORIZE");
   const [discountInput, setDiscountInput] = useState("");

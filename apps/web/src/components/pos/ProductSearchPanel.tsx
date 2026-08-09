@@ -23,7 +23,7 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
 }
 
 
-export function ProductSearchPanel({ products, onSelect }: ProductSearchPanelProps) {
+export function ProductSearchPanel({ products, onSelect }: Readonly<ProductSearchPanelProps>) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
   const tenantFeatures = useTenantFeatures();

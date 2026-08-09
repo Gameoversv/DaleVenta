@@ -13,7 +13,7 @@ export interface PermissionDeniedProps {
  * The gate itself stays in the page (it decides which permission matters); this only renders the
  * refusal, so the wording and layout cannot drift across the fourteen screens that need it.
  */
-export function PermissionDenied({ title, message }: PermissionDeniedProps) {
+export function PermissionDenied({ title, message }: Readonly<PermissionDeniedProps>) {
   return (
     <div className="space-y-2">
       <PageHeader title={title} />

@@ -13,7 +13,7 @@ interface DeactivateBranchDialogProps {
   trigger: React.ReactNode;
 }
 
-export function DeactivateBranchDialog({ branch, trigger }: DeactivateBranchDialogProps) {
+export function DeactivateBranchDialog({ branch, trigger }: Readonly<DeactivateBranchDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 

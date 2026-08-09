@@ -198,6 +198,7 @@ export default function SuperAdminTenantsPage() {
       <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
         {STATUS_FILTERS.map((opt) => (
           <button
+            type="button"
             key={opt.value}
             onClick={() => {
               setStatus(opt.value);
@@ -442,6 +443,7 @@ export default function SuperAdminTenantsPage() {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm">
               <button
+                type="button"
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"
@@ -452,6 +454,7 @@ export default function SuperAdminTenantsPage() {
                 Pagina {page + 1} de {totalPages}
               </span>
               <button
+                type="button"
                 disabled={page + 1 >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="rounded-md border border-input px-3 py-1 disabled:opacity-50"

@@ -22,7 +22,7 @@ interface DenominationCountGridProps {
   onChange: (entries: DenominationCountEntry[]) => void;
 }
 
-export function DenominationCountGrid({ onChange }: DenominationCountGridProps) {
+export function DenominationCountGrid({ onChange }: Readonly<DenominationCountGridProps>) {
   const {
     data: denominations,
     isLoading,
@@ -31,7 +31,7 @@ export function DenominationCountGrid({ onChange }: DenominationCountGridProps) 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const handleChange = (denominationId: string, rawValue: string) => {
-    const quantity = Math.max(0, parseInt(rawValue, 10) || 0);
+    const quantity = Math.max(0, Number.parseInt(rawValue, 10) || 0);
     const next = { ...quantities, [denominationId]: quantity };
     setQuantities(next);
     onChange(

@@ -28,7 +28,7 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
 
 type StatusFilter = "all" | "active" | "inactive";
 
-export function ProductTable({ categoryId }: { categoryId: string | null }) {
+export function ProductTable({ categoryId }: Readonly<{ categoryId: string | null }>) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const canCreate = usePermission("INVENTORY_CREATE");
   const canEdit = usePermission("INVENTORY_EDIT");

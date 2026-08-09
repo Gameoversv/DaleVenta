@@ -17,7 +17,7 @@ const toneClasses: Record<NonNullable<MetricMockupCardProps["tone"]>, string> = 
   info: "bg-info/15 text-info",
 };
 
-export function MetricMockupCard({ icon: Icon, label, value, trend, tone = "default", className }: MetricMockupCardProps) {
+export function MetricMockupCard({ icon: Icon, label, value, trend, tone = "default", className }: Readonly<MetricMockupCardProps>) {
   return (
     <div className={cn("rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-card)]", className)}>
       <div className="flex items-center justify-between">

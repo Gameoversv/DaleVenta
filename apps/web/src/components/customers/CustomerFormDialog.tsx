@@ -32,7 +32,7 @@ interface CustomerFormDialogProps {
   trigger: React.ReactNode;
 }
 
-export function CustomerFormDialog({ customer, trigger }: CustomerFormDialogProps) {
+export function CustomerFormDialog({ customer, trigger }: Readonly<CustomerFormDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEdit = !!customer;

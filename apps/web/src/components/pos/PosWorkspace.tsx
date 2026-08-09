@@ -23,7 +23,7 @@ async function fetchCurrentShift(registerId: string): Promise<CashShiftSummaryRe
   }
 }
 
-export function PosWorkspace({ registerId }: { registerId: string }) {
+export function PosWorkspace({ registerId }: Readonly<{ registerId: string }>) {
   const { data: currentShift, isLoading } = useQuery({
     queryKey: ["cash-shift-current", registerId],
     queryFn: () => fetchCurrentShift(registerId),

@@ -17,7 +17,7 @@ async function fetchGlobalSearch(query: string): Promise<GlobalSearchResponse> {
  * Renders the glyph rather than returning the component type. Picking a component during render
  * gives it a fresh identity on every pass, which remounts it and throws away any state it holds.
  */
-function ResultIcon({ type }: { type: string }) {
+function ResultIcon({ type }: Readonly<{ type: string }>) {
   const className = "h-4 w-4";
   if (type === "Factura") return <FileText className={className} />;
   if (type === "Cliente") return <UserRound className={className} />;
@@ -25,7 +25,7 @@ function ResultIcon({ type }: { type: string }) {
   return <Search className={className} />;
 }
 
-function ResultRow({ result, onSelect }: { result: GlobalSearchResult; onSelect: () => void }) {
+function ResultRow({ result, onSelect }: Readonly<{ result: GlobalSearchResult; onSelect: () => void }>) {
   return (
     <Link
       href={result.href}

@@ -183,7 +183,7 @@ function CreateUserDialog() {
   );
 }
 
-function ResetPasswordDialog({ user }: { user: UserResponse }) {
+function ResetPasswordDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
@@ -250,7 +250,7 @@ async function fetchUserPermissions(userId: string): Promise<UserPermissionRow[]
   return res.data.data;
 }
 
-function PermissionRowControl({ userId, row }: { userId: string; row: UserPermissionRow }) {
+function PermissionRowControl({ userId, row }: Readonly<{ userId: string; row: UserPermissionRow }>) {
   const queryClient = useQueryClient();
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["user-permissions", userId] });
@@ -302,7 +302,7 @@ function PermissionRowControl({ userId, row }: { userId: string; row: UserPermis
   );
 }
 
-function PermissionsDialog({ user }: { user: UserResponse }) {
+function PermissionsDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const { data: rows, isLoading } = useQuery({
     queryKey: ["user-permissions", user.id],
@@ -343,7 +343,7 @@ function PermissionsDialog({ user }: { user: UserResponse }) {
 
 const EMPTY_ASSIGNMENTS: UserAssignments = { branchIds: [], registerIds: [] };
 
-function UserAssignmentsSummary({ user }: { user: UserResponse }) {
+function UserAssignmentsSummary({ user }: Readonly<{ user: UserResponse }>) {
   const { data: assignments, isLoading, isError } = useQuery({
     queryKey: ["user-assignments", user.id],
     queryFn: () => fetchAssignments(user.id),
@@ -362,7 +362,7 @@ function UserAssignmentsSummary({ user }: { user: UserResponse }) {
   return <span>{branchLabel} · {registerLabel}</span>;
 }
 
-function UserAssignmentsDialog({ user }: { user: UserResponse }) {
+function UserAssignmentsDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<UserAssignments | null>(null);
   const queryClient = useQueryClient();
@@ -495,7 +495,7 @@ function UserAssignmentsDialog({ user }: { user: UserResponse }) {
   );
 }
 
-function EditUserDialog({ user }: { user: UserResponse }) {
+function EditUserDialog({ user }: Readonly<{ user: UserResponse }>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<UpdateUserRequest>({
     name: user.name,
@@ -600,7 +600,7 @@ function EditUserDialog({ user }: { user: UserResponse }) {
   );
 }
 
-function UserRow({ user }: { user: UserResponse }) {
+function UserRow({ user }: Readonly<{ user: UserResponse }>) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(user.role === "ADMIN" ? "ADMIN" : "CASHIER");
 

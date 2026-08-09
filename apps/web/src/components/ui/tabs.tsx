@@ -14,7 +14,7 @@ interface TabsProps {
   defaultValue?: string;
 }
 
-export function Tabs({ items, defaultValue }: TabsProps) {
+export function Tabs({ items, defaultValue }: Readonly<TabsProps>) {
   const [active, setActive] = useState(defaultValue ?? items[0]?.value);
 
   return (

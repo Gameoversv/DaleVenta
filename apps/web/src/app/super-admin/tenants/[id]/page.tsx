@@ -35,7 +35,7 @@ const STATUS_VARIANT: Record<TenantStatus, "warning" | "info" | "success" | "dan
   CANCELLED: "secondary",
 };
 
-function ExtendTrialDialog({ tenantId }: { tenantId: string }) {
+function ExtendTrialDialog({ tenantId }: Readonly<{ tenantId: string }>) {
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState("30");
   const queryClient = useQueryClient();

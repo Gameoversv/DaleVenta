@@ -29,10 +29,10 @@ async function fetchPayables(): Promise<AccountsPayableRow[]> {
 
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  return trimmed || null;
 }
 
-function PaymentDialog({ row }: { row: AccountsPayableRow }) {
+function PaymentDialog({ row }: Readonly<{ row: AccountsPayableRow }>) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(row.balanceDue);
   const [method, setMethod] = useState<PurchasePaymentMethod>("CASH");

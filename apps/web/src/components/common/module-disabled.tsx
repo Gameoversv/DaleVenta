@@ -14,7 +14,7 @@ export interface ModuleDisabledProps {
  * "your user is not allowed this" are different answers, and collapsing them would tell an admin
  * to go fix permissions that were never the problem.
  */
-export function ModuleDisabled({ title, message = "Este modulo no esta activo para este tenant." }: ModuleDisabledProps) {
+export function ModuleDisabled({ title, message = "Este modulo no esta activo para este tenant." }: Readonly<ModuleDisabledProps>) {
   return (
     <div className="space-y-2">
       <PageHeader title={title} />

@@ -36,7 +36,7 @@ function BrandMark() {
   );
 }
 
-export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+export default function SuperAdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();

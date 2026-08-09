@@ -14,7 +14,7 @@ export interface EmptyStateProps {
  * "Nothing here yet" copy. Callers pass their own padding through `className` because these land
  * both loose on the page and inside a `CardContent` that already sets its own.
  */
-export function EmptyState({ message, action, className }: EmptyStateProps) {
+export function EmptyState({ message, action, className }: Readonly<EmptyStateProps>) {
   return (
     <div className={cn("space-y-3 text-sm text-muted-foreground", className)}>
       <p>{message}</p>
@@ -32,7 +32,7 @@ export interface ErrorStateProps {
 }
 
 /** A failed load, styled apart from an empty one so the two are not read as the same outcome. */
-export function ErrorState({ message, action, className }: ErrorStateProps) {
+export function ErrorState({ message, action, className }: Readonly<ErrorStateProps>) {
   return (
     <div className={cn("space-y-3 text-sm text-destructive", className)} role="alert">
       <p>{message}</p>

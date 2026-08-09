@@ -21,7 +21,7 @@ export function OperationalLocationSelector({
   idPrefix,
   emptyBranchAction,
   emptyRegisterAction,
-}: OperationalLocationSelectorProps) {
+}: Readonly<OperationalLocationSelectorProps>) {
   if (location.branchesError) {
     return <ErrorState message="No se pudieron cargar las sucursales disponibles." />;
   }
@@ -114,7 +114,7 @@ export function OperationalLocationSelector({
   );
 }
 
-function LocationField({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+function LocationField({ icon, label, children }: Readonly<{ icon: ReactNode; label: string; children: ReactNode }>) {
   return (
     <div className="min-w-0 space-y-1">
       <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

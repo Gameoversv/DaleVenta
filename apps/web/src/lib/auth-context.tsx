@@ -42,7 +42,7 @@ async function fetchMe(): Promise<MeResponse | null> {
   }
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();

@@ -20,7 +20,7 @@ export interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
  * styles (`text-2xl font-semibold`, `font-display font-bold`, and the same plus `tracking-tight`)
  * ended up shipping side by side — several of them inside one file.
  */
-export function PageHeader({ title, description, actions, align = "center", className, ...props }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, align = "center", className, ...props }: Readonly<PageHeaderProps>) {
   return (
     <div
       className={cn(

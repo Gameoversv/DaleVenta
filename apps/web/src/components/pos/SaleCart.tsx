@@ -40,7 +40,7 @@ interface SaleCartProps {
   onRemove: (productId: string) => void;
 }
 
-export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onToggleWholesale, onRemove }: SaleCartProps) {
+export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onToggleWholesale, onRemove }: Readonly<SaleCartProps>) {
   const resolved = resolveCart(cart, products);
   const subtotal = resolved.reduce((sum, r) => sum + r.lineSubtotal, 0);
   const tax = resolved.reduce((sum, r) => sum + r.lineTax, 0);
@@ -76,7 +76,7 @@ export function SaleCart({ cart, products, discountAmount, onUpdateQuantity, onT
                         onChange={() => onToggleWholesale(r.line.productId)}
                         className="h-3.5 w-3.5"
                       />
-                      Precio mayoreo
+                      <span>Precio mayoreo</span>
                     </label>
                   </div>
                   <div className="flex items-center gap-2">

@@ -23,7 +23,7 @@ interface InventoryCountGridProps {
   onChange: (entries: InventoryCountEntry[]) => void;
 }
 
-export function InventoryCountGrid({ branchId, onChange }: InventoryCountGridProps) {
+export function InventoryCountGrid({ branchId, onChange }: Readonly<InventoryCountGridProps>) {
   const { data: inventory, isLoading, isError } = useQuery({
     queryKey: ["branch-inventory", branchId],
     queryFn: () => fetchBranchInventory(branchId),

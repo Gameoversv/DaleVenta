@@ -268,7 +268,7 @@ function SequenceDialog() {
               checked={form.active}
               onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))}
             />
-            Secuencia activa
+            <span>Secuencia activa</span>
           </label>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending || !form.expiresAt}>

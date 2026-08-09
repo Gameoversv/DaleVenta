@@ -36,7 +36,7 @@ interface ProductFormDialogProps {
   trigger: React.ReactNode;
 }
 
-export function ProductFormDialog({ product, categories, trigger }: ProductFormDialogProps) {
+export function ProductFormDialog({ product, categories, trigger }: Readonly<ProductFormDialogProps>) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const tenantFeatures = useTenantFeatures();

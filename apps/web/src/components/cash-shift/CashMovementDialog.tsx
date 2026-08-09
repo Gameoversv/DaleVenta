@@ -24,7 +24,7 @@ async function fetchTenantFeatures(): Promise<TenantFeatures> {
   return res.data.data;
 }
 
-export function CashMovementDialog({ cashShiftId, registerId, trigger }: CashMovementDialogProps) {
+export function CashMovementDialog({ cashShiftId, registerId, trigger }: Readonly<CashMovementDialogProps>) {
   const { tenantFeatures } = useAuth();
   const { data: liveTenantFeatures } = useQuery({ queryKey: ["tenant-features"], queryFn: fetchTenantFeatures });
   const denominationsEnabled = liveTenantFeatures?.cashDenominationsEnabled ?? tenantFeatures.cashDenominationsEnabled;

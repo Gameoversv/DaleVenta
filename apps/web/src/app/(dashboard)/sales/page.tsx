@@ -46,7 +46,7 @@ function paymentLabel(sale: SaleResponse): string {
   return sale.payments.map((p) => p.method).join(", ");
 }
 
-function StatusBadge({ status }: { status: SaleResponse["status"] }) {
+function StatusBadge({ status }: Readonly<{ status: SaleResponse["status"] }>) {
   const styles =
     status === "COMPLETED"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -64,13 +64,13 @@ function SaleDetailDialog({
   customerName,
   sale,
   trigger,
-}: {
+}: Readonly<{
   productName: (id: string) => string;
   productUnit: (id: string) => string;
   customerName: (id: string | null) => string;
   sale: SaleResponse;
   trigger: React.ReactNode;
-}) {
+}>) {
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -138,7 +138,7 @@ function SaleDetailDialog({
   );
 }
 
-function VoidSaleDialog({ registerId, sale }: { registerId: string; sale: SaleResponse }) {
+function VoidSaleDialog({ registerId, sale }: Readonly<{ registerId: string; sale: SaleResponse }>) {
   const [open, setOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const queryClient = useQueryClient();

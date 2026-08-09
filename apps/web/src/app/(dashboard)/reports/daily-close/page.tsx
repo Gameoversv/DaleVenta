@@ -67,12 +67,12 @@ function MetricCard({
   value,
   icon: Icon,
   tone,
-}: {
+}: Readonly<{
   label: string;
   value: string;
   icon: typeof DollarSign;
   tone: keyof typeof TONES;
-}) {
+}>) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">

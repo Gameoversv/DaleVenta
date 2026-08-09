@@ -37,7 +37,7 @@ const TONE_STYLES: Record<NonNullable<MetricCardProps["tone"]>, string> = {
   credit: "bg-credit/10 text-credit",
 };
 
-function MetricCard({ title, value, detail, href, icon: Icon, tone = "primary" }: MetricCardProps) {
+function MetricCard({ title, value, detail, href, icon: Icon, tone = "primary" }: Readonly<MetricCardProps>) {
   return (
     <Link href={href} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <Card className="h-full transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)]">
@@ -56,7 +56,7 @@ function MetricCard({ title, value, detail, href, icon: Icon, tone = "primary" }
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
       <span className="text-sm text-muted-foreground">{label}</span>
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         actions={
           <div className="hidden items-center gap-1.5 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-medium text-success sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            Sistema operativo
+            <span>Sistema operativo</span>
           </div>
         }
       />

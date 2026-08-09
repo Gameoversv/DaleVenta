@@ -59,7 +59,7 @@ interface CustomerCreditPanelProps {
   trigger: React.ReactNode;
 }
 
-export function CustomerCreditPanel({ customer, trigger }: CustomerCreditPanelProps) {
+export function CustomerCreditPanel({ customer, trigger }: Readonly<CustomerCreditPanelProps>) {
   const [open, setOpen] = useState(false);
   const canAuthorize = usePermission("CREDIT_AUTHORIZE");
   const canViewCredit = usePermission("CUSTOMER_EDIT");

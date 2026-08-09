@@ -49,7 +49,7 @@ function movementTypeClass(type: CashMovementResponse["type"]): string {
   return type === "ENTRY" ? "text-emerald-600" : "text-rose-600";
 }
 
-function StatusBadge({ status }: { status: CashShiftSummaryResponse["status"] }) {
+function StatusBadge({ status }: Readonly<{ status: CashShiftSummaryResponse["status"] }>) {
   const styles =
     status === "OPEN"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -65,11 +65,11 @@ function ShiftDetailDialog({
   denominationLabel,
   shift,
   trigger,
-}: {
+}: Readonly<{
   denominationLabel: (id: string) => string;
   shift: CashShiftSummaryResponse;
   trigger: React.ReactNode;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const {
     data: movements,

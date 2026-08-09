@@ -37,7 +37,7 @@ interface SaleWorkspaceProps {
   cashShiftId: string;
 }
 
-export function SaleWorkspace({ registerId, cashShiftId }: SaleWorkspaceProps) {
+export function SaleWorkspace({ registerId, cashShiftId }: Readonly<SaleWorkspaceProps>) {
   const { tenantFeatures } = useAuth();
   const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartLine[]>([]);

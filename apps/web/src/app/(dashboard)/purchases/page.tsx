@@ -60,10 +60,20 @@ async function fetchCategories(): Promise<CategoryResponse[]> {
 
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  return trimmed || null;
 }
 
-function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
+/**
+ * Draft rows carry a client-side id so React can keep inputs attached to their row: the array index
+ * shifts when a row above is removed, which moved the typed values to the wrong line.
+ */
+type PurchaseItemDraft = PurchaseItemRequest & { rowId: string };
+
+function newItemDraft(): PurchaseItemDraft {
+  return { rowId: crypto.randomUUID(), productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" };
+}
+
+function SupplierDialog({ supplier }: Readonly<{ supplier?: SupplierResponse }>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<SupplierRequest>({
     name: supplier?.name ?? "",
@@ -158,7 +168,7 @@ function SupplierDialog({ supplier }: { supplier?: SupplierResponse }) {
           {supplier && (
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={Boolean(form.active)} onChange={(e) => update("active", e.target.checked)} />
-              Activo
+              <span>Activo</span>
             </label>
           )}
           <DialogFooter>
@@ -176,11 +186,11 @@ function QuickProductDialog({
   categories,
   trigger,
   onCreated,
-}: {
+}: Readonly<{
   categories: CategoryResponse[];
   trigger: React.ReactNode;
   onCreated: (product: ProductResponse) => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CreateProductRequest>({
     categoryId: "",
@@ -320,7 +330,7 @@ function QuickProductDialog({
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.tracksInventory} onChange={(e) => update("tracksInventory", e.target.checked)} />
-            Rastrea inventario
+            <span>Rastrea inventario</span>
           </label>
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending || !form.internalCode.trim() || !form.description.trim()}>
@@ -333,14 +343,14 @@ function QuickProductDialog({
   );
 }
 
-function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: {
+function PurchaseDialog({ suppliers, products, categories, branches, defaultBranchId, canCreateProduct }: Readonly<{
   suppliers: SupplierResponse[];
   products: ProductResponse[];
   categories: CategoryResponse[];
   branches: BranchResponse[];
   defaultBranchId: string;
   canCreateProduct: boolean;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const [supplierId, setSupplierId] = useState("");
   // `defaultBranchId` lands once the branches query resolves, which is after this dialog mounts.
@@ -352,9 +362,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
   const setBranchId = setPickedBranchId;
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<PurchaseItemRequest[]>([
-    { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" },
-  ]);
+  const [items, setItems] = useState<PurchaseItemDraft[]>([newItemDraft()]);
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (payload: CreatePurchaseRequest) => api.post("/api/purchases", payload),
@@ -377,7 +385,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
     return sum + Math.max(0, subtotal - discount) + tax;
   }, 0);
 
-  const updateItem = (index: number, patch: Partial<PurchaseItemRequest>) => {
+  const updateItem = (index: number, patch: Partial<PurchaseItemDraft>) => {
     setItems((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
 
@@ -403,7 +411,15 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
               invoiceNumber: emptyToNull(invoiceNumber),
               purchasedAt: null,
               notes: emptyToNull(notes),
-              items: items.filter((item) => item.productId),
+              items: items
+                .filter((item) => item.productId)
+                .map(({ productId, quantity, unitCost, taxRate, discountAmount }) => ({
+                  productId,
+                  quantity,
+                  unitCost,
+                  taxRate,
+                  discountAmount,
+                })),
             });
           }}
         >
@@ -429,7 +445,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
           </div>
           <div className="space-y-3">
             {items.map((item, index) => (
-              <div key={index} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
+              <div key={item.rowId} className="grid gap-2 rounded-md border border-border p-3 md:grid-cols-[1fr_90px_120px_100px_120px_auto] md:items-end">
                 <div className="space-y-2">
                   <Label>Producto</Label>
                   <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -467,7 +483,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, { productId: "", quantity: 1, unitCost: "0", taxRate: "0", discountAmount: "0" }])}>
+            <Button type="button" variant="outline" onClick={() => setItems((current) => [...current, newItemDraft()])}>
               <Plus className="h-4 w-4" />
               Agregar producto
             </Button>
@@ -493,7 +509,7 @@ function PurchaseDialog({ suppliers, products, categories, branches, defaultBran
   );
 }
 
-function PurchasePaymentDialog({ purchase }: { purchase: PurchaseResponse }) {
+function PurchasePaymentDialog({ purchase }: Readonly<{ purchase: PurchaseResponse }>) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(purchase.balanceDue);
   const [method, setMethod] = useState<PurchasePaymentMethod>("CASH");

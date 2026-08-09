@@ -111,7 +111,7 @@ function printQuotation(quotation: QuotationResponse) {
   popup.print();
 }
 
-function QuotationDetail({ quotation }: { quotation: QuotationResponse }) {
+function QuotationDetail({ quotation }: Readonly<{ quotation: QuotationResponse }>) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 text-sm sm:grid-cols-3">
@@ -359,7 +359,7 @@ export default function QuotationsPage() {
                         checked={useWholesalePrice}
                         onChange={(e) => setUseWholesalePrice(e.target.checked)}
                       />
-                      Mayoreo
+                      <span>Mayoreo</span>
                     </label>
                     <Button type="button" onClick={addItem} disabled={!selectedProduct || quantity <= 0}>
                       Agregar

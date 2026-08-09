@@ -14,7 +14,7 @@ interface PricingCardProps {
   highlighted?: boolean;
 }
 
-export function PricingCard({ name, description, price, features, highlighted }: PricingCardProps) {
+export function PricingCard({ name, description, price, features, highlighted }: Readonly<PricingCardProps>) {
   return (
     <Card
       className={cn(
