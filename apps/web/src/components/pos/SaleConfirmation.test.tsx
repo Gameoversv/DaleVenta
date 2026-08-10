@@ -166,6 +166,29 @@ describe("SaleConfirmation", () => {
     expect(post.mock.calls[0][1]).toEqual({ voidReason: "Cobro duplicado" });
   });
 
+  it("sends the invoice to the printer as soon as the sale is confirmed", () => {
+    setup();
+
+    const frame = screen.getByTestId("invoice-print-frame");
+    expect(frame).toHaveAttribute("src", "/print/sales/s-1");
+  });
+
+  it("does not auto print a sale that arrived already voided", () => {
+    setup({ status: "VOIDED", voidedAt: "2026-07-27T19:00:00.000Z", voidReason: "Error" });
+
+    expect(screen.queryByTestId("invoice-print-frame")).not.toBeInTheDocument();
+  });
+
+  it("reprints on demand when the paper jammed or ran out", async () => {
+    const user = userEvent.setup();
+    setup();
+    expect(screen.getByTestId("invoice-print-frame")).toHaveAttribute("data-job", "1");
+
+    await user.click(screen.getByRole("button", { name: /imprimir/i }));
+
+    expect(screen.getByTestId("invoice-print-frame")).toHaveAttribute("data-job", "2");
+  });
+
   it("hands control back for the next sale", async () => {
     const user = userEvent.setup();
     const { onNewSale } = setup();

@@ -4,7 +4,7 @@ import type React from "react";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Eye, Printer, RotateCcw } from "lucide-react";
+import { Eye, FileText, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission, useAnyPermission } from "@/hooks/usePermission";
@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { OperationalLocationSelector } from "@/components/common/OperationalLocationSelector";
 import { PermissionDenied } from "@/components/common/permission-denied";
 import { EmptyState } from "@/components/common/empty-state";
+import { useInvoicePrinter } from "@/components/invoice/invoice-print-frame";
 
 async function fetchProducts(): Promise<ProductResponse[]> {
   const res = await api.get<{ data: ProductResponse[] }>("/api/products");
@@ -194,6 +195,8 @@ export default function SalesPage() {
   const canViewSales = useAnyPermission("SALE_VIEW_HISTORY", "SALE_CREATE");
   const canVoid = usePermission("SALE_VOID");
   const location = useOperationalLocation({ enabled: canViewSales });
+  // Reimprimir desde el historial no deberia sacar al usuario de la lista.
+  const { printInvoice, frame } = useInvoicePrinter();
 
   const { data: products } = useQuery({
     queryKey: ["products"],
@@ -270,9 +273,17 @@ export default function SalesPage() {
                                 </Button>
                               }
                             />
-                            <Button asChild variant="ghost" size="icon" aria-label="Imprimir factura">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Imprimir factura"
+                              onClick={() => printInvoice(sale.id)}
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button asChild variant="ghost" size="icon" aria-label="Ver factura">
                               <Link href={`/sales/${sale.id}/invoice`}>
-                                <Printer className="h-4 w-4" />
+                                <FileText className="h-4 w-4" />
                               </Link>
                             </Button>
                             {canVoid && sale.status === "COMPLETED" && (
@@ -289,6 +300,7 @@ export default function SalesPage() {
           </CardContent>
         </Card>
       )}
+      {frame}
     </div>
   );
 }

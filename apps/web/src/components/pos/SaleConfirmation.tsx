@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { usePermission } from "@/hooks/usePermission";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useInvoicePrinter } from "@/components/invoice/invoice-print-frame";
 import { productUnitLabel } from "@/lib/product-units";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
@@ -27,6 +29,8 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
   const [open, setOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const queryClient = useQueryClient();
+  // La venta recien cerrada se imprime sola; una venta que llega anulada, no.
+  const { printInvoice, frame } = useInvoicePrinter(initialSale.status === "COMPLETED" ? initialSale.id : null);
 
   const voidMutation = useMutation({
     mutationFn: () => api.post<{ data: SaleResponse }>(`/api/sales/${sale.id}/void`, { voidReason }),
@@ -77,7 +81,11 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
           <p>Metodo de pago: {sale.payments.map((p) => p.method).join(", ")}</p>
           <p className="font-semibold">Total: RD${sale.total}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => printInvoice(sale.id)}>
+            <Printer className="h-4 w-4" />
+            Imprimir factura
+          </Button>
           {canVoid && sale.status === "COMPLETED" && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -107,6 +115,7 @@ export function SaleConfirmation({ sale: initialSale, products, registerId, onNe
             Nueva venta
           </Button>
         </div>
+        {frame}
       </CardContent>
     </Card>
   );
