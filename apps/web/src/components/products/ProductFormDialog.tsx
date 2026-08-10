@@ -127,12 +127,12 @@ export function ProductFormDialog({ product, categories, trigger }: Readonly<Pro
             <>
               <div className="space-y-2">
                 <Label htmlFor="product-code">Codigo interno</Label>
-                <Input id="product-code" {...register("internalCode")} />
+                <Input id="product-code" maxLength={50} {...register("internalCode")} />
                 {errors.internalCode && <p className="text-sm text-destructive">{errors.internalCode.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="product-barcode">Codigo de barras (opcional)</Label>
-                <Input id="product-barcode" {...register("barcode")} />
+                <Input id="product-barcode" maxLength={50} {...register("barcode")} />
               </div>
             </>
           )}
