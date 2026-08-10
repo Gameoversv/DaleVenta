@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDenominationValue } from "@/components/cash-shift/DenominationCountGrid";
+import { InvoicePreviewDialog } from "@/components/invoice/invoice-preview-dialog";
 import { PageHeader } from "@/components/common/page-header";
 import { PermissionDenied } from "@/components/common/permission-denied";
 import { EmptyState, ErrorState } from "@/components/common/empty-state";
@@ -289,10 +290,15 @@ function InvoiceSettingsCard() {
                 ))}
               </div>
 
-              <Button type="submit" disabled={mutation.isPending || !values.businessName?.trim()}>
-                <Save className="h-4 w-4" />
-                {mutation.isPending ? "Guardando..." : "Guardar factura"}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" disabled={mutation.isPending || !values.businessName?.trim()}>
+                  <Save className="h-4 w-4" />
+                  {mutation.isPending ? "Guardando..." : "Guardar factura"}
+                </Button>
+                {/* Toma los valores en curso, no los guardados: el preview
+                    responde a cada interruptor antes de confirmar. */}
+                <InvoicePreviewDialog settings={values} />
+              </div>
             </form>
           )}
         </CardContent>
