@@ -19,6 +19,20 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
+    @DisplayName("a value the column cannot hold is a client error, and never echoes the SQL")
+    void dataIntegrityViolation_isBadRequestWithoutLeakingSql() {
+        var ex = new org.springframework.dao.DataIntegrityViolationException(
+                "could not execute statement [ERROR: value too long for type character varying(20)] "
+                        + "[update tenants set address=?,phone=?,rnc=? where id=?]");
+
+        var response = handler.handleDataIntegrity(ex);
+
+        assertThat(response.success()).isFalse();
+        assertThat(response.error()).doesNotContain("update tenants");
+        assertThat(response.error()).doesNotContain("character varying");
+    }
+
+    @Test
     @DisplayName("a missing query parameter names the parameter and stays a 400")
     void missingParameter_isReportedAsBadRequest() {
         var ex = new MissingServletRequestParameterException("branchId", "UUID");

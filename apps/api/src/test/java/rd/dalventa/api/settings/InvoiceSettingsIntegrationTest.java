@@ -114,4 +114,44 @@ class InvoiceSettingsIntegrationTest extends IntegrationTestBase {
                         .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"A4\"}"))
                 .andExpect(status().isBadRequest());
     }
+
+    // tenants.phone y tenants.rnc son VARCHAR(20). Sin @Size el valor llegaba
+    // a Postgres y estallaba como 500 en la cara del usuario.
+    @Test
+    @DisplayName("a phone longer than the column is rejected, not sent to the database")
+    void updateSettings_withOverlongPhone_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"LETTER\","
+                                + "\"phone\":\"809-555-0100 / 829-555-0200\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("an RNC longer than the column is rejected")
+    void updateSettings_withOverlongRnc_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"LETTER\","
+                                + "\"rnc\":\"RNC 1-31-12345-6 / 130123456\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("a business name longer than the column is rejected")
+    void updateSettings_withOverlongBusinessName_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"" + "N".repeat(151) + "\",\"printSize\":\"LETTER\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }
