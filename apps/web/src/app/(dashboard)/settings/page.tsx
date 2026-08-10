@@ -225,6 +225,16 @@ function InvoiceSettingsCard() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="invoice-rnc">RNC</Label>
+                  <Input
+                    id="invoice-rnc"
+                    maxLength={20}
+                    value={values.rnc ?? ""}
+                    onChange={(event) => update("rnc", event.target.value)}
+                    placeholder="Ej. 131234567"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="invoice-phone">Telefono</Label>
                   <Input id="invoice-phone" maxLength={50} value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
                 </div>
@@ -271,6 +281,7 @@ function InvoiceSettingsCard() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   ["showLogo", "Mostrar logo"],
+                  ["showRnc", "Mostrar RNC"],
                   ["showPhone", "Mostrar telefono"],
                   ["showEmail", "Mostrar email"],
                   ["showAddress", "Mostrar direccion"],
