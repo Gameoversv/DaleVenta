@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 
 const loginSchema = z.object({
-  email: z.email("Correo invalido"),
+  email: z.string().trim().min(1, "El usuario es requerido"),
   password: z.string().min(1, "Contrasena requerida"),
 });
 type LoginForm = z.infer<typeof loginSchema>;
@@ -44,8 +44,8 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo</Label>
-              <Input id="email" type="email" {...register("email")} />
+              <Label htmlFor="email">Usuario o correo</Label>
+              <Input id="email" type="text" autoCapitalize="none" autoCorrect="off" {...register("email")} />
               {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">

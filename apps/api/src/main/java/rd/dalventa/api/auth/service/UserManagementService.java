@@ -51,13 +51,15 @@ public class UserManagementService {
     public UserResponse create(CreateUserRequest request) {
         var tenantId = TenantContext.require();
         validateStaffRole(request.role());
-        if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("El correo ya esta registrado");
+        // El admin escribe "caja1"; la columna guarda caja1@daleventa.invalid.
+        var storedEmail = LoginIdentifier.toStoredEmail(request.email());
+        if (userRepository.existsByEmail(storedEmail)) {
+            throw new IllegalArgumentException("Ese usuario ya esta registrado");
         }
 
         var role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new IllegalStateException("Rol no encontrado: " + request.role()));
-        var user = new User(request.name(), request.email(), passwordEncoder.encode(request.password()), tenantId);
+        var user = new User(request.name(), storedEmail, passwordEncoder.encode(request.password()), tenantId);
         user.addRole(role);
         return UserResponse.from(userRepository.save(user));
     }
@@ -66,14 +68,15 @@ public class UserManagementService {
     public UserResponse update(UUID id, UpdateUserRequest request) {
         validateStaffRole(request.role());
         var user = findTenantUser(id);
-        userRepository.findByEmail(request.email())
+        var storedEmail = LoginIdentifier.toStoredEmail(request.email());
+        userRepository.findByEmail(storedEmail)
                 .filter(existing -> !existing.getId().equals(user.getId()))
                 .ifPresent(existing -> {
-                    throw new IllegalArgumentException("El correo ya esta registrado");
+                    throw new IllegalArgumentException("Ese usuario ya esta registrado");
                 });
         var role = roleRepository.findByName(request.role())
                 .orElseThrow(() -> new IllegalStateException("Rol no encontrado: " + request.role()));
-        user.updateProfile(request.name(), request.email());
+        user.updateProfile(request.name(), storedEmail);
         user.replaceRole(role);
         user.setActive(request.active());
         return UserResponse.from(userRepository.save(user));

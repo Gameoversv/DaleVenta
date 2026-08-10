@@ -47,7 +47,15 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        var user = userRepository.findByEmail(request.email())
+        // Acepta "caja1" o un correo real: ambos resuelven a la misma columna.
+        String storedEmail;
+        try {
+            storedEmail = LoginIdentifier.toStoredEmail(request.email());
+        } catch (IllegalArgumentException ex) {
+            // Un identificador mal formado no debe distinguirse de uno inexistente.
+            throw new BadCredentialsException("Credenciales invalidas");
+        }
+        var user = userRepository.findByEmail(storedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Credenciales invalidas"));
         if (!user.isEnabled() || !passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BadCredentialsException("Credenciales invalidas");

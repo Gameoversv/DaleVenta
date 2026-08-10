@@ -127,8 +127,8 @@ function CreateUserDialog() {
             <Input id="user-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="user-email">Correo</Label>
-            <Input id="user-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Label htmlFor="user-email">Usuario</Label>
+            <Input id="user-email" type="text" autoCapitalize="none" autoCorrect="off" placeholder="Ej. caja1" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="user-password">Contrasena inicial</Label>
@@ -389,10 +389,12 @@ function EditUserDialog({ user }: Readonly<{ user: UserResponse }>) {
             <Input id={`edit-user-name-${user.id}`} value={form.name} onChange={(e) => update({ name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`edit-user-email-${user.id}`}>Correo</Label>
+            <Label htmlFor={`edit-user-email-${user.id}`}>Usuario</Label>
             <Input
               id={`edit-user-email-${user.id}`}
-              type="email"
+              type="text"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={form.email}
               onChange={(e) => update({ email: e.target.value })}
             />
