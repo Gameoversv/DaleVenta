@@ -7,53 +7,15 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAnyPermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
-import { PaymentMethodBadge } from "@/components/ui/payment-method-badge";
 import { cn } from "@/lib/utils";
-import { productUnitLabel } from "@/lib/product-units";
 import type { InvoiceResponse } from "@/types/sale";
-import { moneyOrZero } from "@/lib/money";
-import { dateTime } from "@/lib/dates";
 import { PermissionDenied } from "@/components/common/permission-denied";
 import { ErrorState } from "@/components/common/empty-state";
+import { InvoiceDocument, invoiceWidth } from "@/components/invoice/invoice-document";
 
 async function fetchInvoice(id: string): Promise<InvoiceResponse> {
   const res = await api.get<{ data: InvoiceResponse }>(`/api/sales/${id}/invoice`);
   return res.data.data;
-}
-
-
-
-function fieldValue(record: unknown, names: string[], fallback: string | number = 0): string | number {
-  const source = record as Record<string, unknown> | null | undefined;
-  for (const name of names) {
-    const value = source?.[name];
-    if (value !== undefined && value !== null && value !== "") {
-      return value as string | number;
-    }
-  }
-  return fallback;
-}
-
-function itemName(item: unknown, index: number): string {
-  const value = fieldValue(item, ["productName", "product_name", "description", "name", "productId", "product_id"], `Producto ${index + 1}`);
-  return String(value);
-}
-
-function rentalStatusLabel(status: string): string {
-  if (status === "RESERVED") return "Reservado";
-  if (status === "ACTIVE") return "Alquilado";
-  if (status === "RETURNED") return "Recibido";
-  return "Anulado";
-}
-
-function paymentTotal(data: InvoiceResponse): number {
-  return data.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-}
-
-function invoiceWidth(printSize: InvoiceResponse["business"]["printSize"]): string {
-  if (printSize === "THERMAL_58MM") return "max-w-[58mm]";
-  if (printSize === "THERMAL_80MM") return "max-w-[80mm]";
-  return "max-w-3xl";
 }
 
 export default function InvoicePage() {
@@ -87,151 +49,7 @@ export default function InvoicePage() {
       {isLoading && <p className="text-muted-foreground print:hidden">Cargando factura...</p>}
       {isError && <ErrorState message="No se pudo cargar la factura." className="print:hidden" />}
 
-      {data && (
-        <section className="bg-white p-6 text-slate-950 shadow-sm ring-1 ring-slate-200 print:p-0 print:text-black print:shadow-none print:ring-0 [&_.border-border]:border-slate-200 [&_.text-muted-foreground]:text-slate-500">
-          <div className="border-b border-border pb-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                {data.business.showLogo && data.business.logoUrl && (
-                  // Tenant logos are dynamic storage URLs and this printable document needs the original asset.
-                  // next/image would require a host allowlist that cannot cover each tenant storage provider.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={data.business.logoUrl} alt={data.business.name} className="mb-3 max-h-16 max-w-40 object-contain" />
-                )}
-                <h1 className="text-2xl font-bold">{data.business.name}</h1>
-                {data.business.showRnc && data.business.rnc && <p className="text-sm">RNC: {data.business.rnc}</p>}
-                {data.business.showAddress && (
-                  <p className="text-sm text-muted-foreground">
-                    {[data.business.address, data.business.city].filter(Boolean).join(", ")}
-                  </p>
-                )}
-                {(data.business.showPhone || data.business.showEmail) && (
-                  <p className="text-sm text-muted-foreground">
-                    {[
-                      data.business.showPhone ? data.business.phone : null,
-                      data.business.showEmail ? data.business.email : null,
-                    ].filter(Boolean).join(" | ")}
-                  </p>
-                )}
-              </div>
-              <div className="text-left sm:text-right">
-                <p className="text-xs uppercase text-muted-foreground">Factura</p>
-                <p className="text-2xl font-bold">{data.invoiceNumber}</p>
-                {data.fiscalNcf && (
-                  <div className="mt-2">
-                    <p className="text-xs uppercase text-muted-foreground">NCF</p>
-                    <p className="text-lg font-semibold">{data.fiscalNcf}</p>
-                    {data.fiscalReceiptType && <p className="text-xs text-muted-foreground">{data.fiscalReceiptType}</p>}
-                  </div>
-                )}
-                <p className="text-sm">{dateTime(data.createdAt)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 border-b border-border py-4 text-sm sm:grid-cols-2">
-            {data.business.showCustomer && (
-              <div>
-                <p className="font-medium">Cliente</p>
-                <p>{data.customer?.name ?? "Cliente de contado"}</p>
-                {data.customer?.documentId && <p className="text-muted-foreground">Documento: {data.customer.documentId}</p>}
-                {data.customer?.phone && <p className="text-muted-foreground">Telefono: {data.customer.phone}</p>}
-              </div>
-            )}
-            <div className="sm:text-right">
-              <p className="font-medium">Venta</p>
-              <p className="text-muted-foreground">Estado: {data.status === "COMPLETED" ? "Completada" : "Anulada"}</p>
-            </div>
-          </div>
-
-          <div className="py-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="py-2">Producto</th>
-                  <th className="py-2 text-right">Cant.</th>
-                  <th className="py-2 text-right">Precio</th>
-                  <th className="py-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((item, index) => (
-                  <tr key={`${itemName(item, index)}-${index}`} className="border-b border-border">
-                    <td className="py-2">{itemName(item, index)}</td>
-                    <td className="py-2 text-right">
-                      {fieldValue(item, ["quantity", "qty"], 0)}{" "}
-                      {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
-                    </td>
-                    <td className="py-2 text-right">
-                      {moneyOrZero(fieldValue(item, ["unitPrice", "unit_price", "price"]))} /{" "}
-                      {productUnitLabel(String(fieldValue(item, ["productUnit", "product_unit"], item.productUnit)))}
-                    </td>
-                    <td className="py-2 text-right">{moneyOrZero(fieldValue(item, ["lineTotal", "line_total", "total", "amount"]))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {data.rental && (
-            <div className="border-t border-border py-4 text-sm">
-              <p className="font-medium">Contrato de alquiler</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <p className="text-muted-foreground">
-                  Contrato: <span className="font-medium text-foreground">{data.rental.contractNumber}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  Estado: <span className="font-medium text-foreground">{rentalStatusLabel(data.rental.status)}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  Devolucion esperada: <span className="font-medium text-foreground">{dateTime(data.rental.expectedReturnAt)}</span>
-                </p>
-                {data.rental.returnedAt && (
-                  <p className="text-muted-foreground">
-                    Recibido: <span className="font-medium text-foreground">{dateTime(data.rental.returnedAt)}</span>
-                  </p>
-                )}
-              </div>
-              {data.rental.notes && <p className="mt-2 text-muted-foreground">Notas: {data.rental.notes}</p>}
-            </div>
-          )}
-
-          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-[1fr_240px]">
-            <div className="space-y-2 text-sm">
-              <p className="font-medium">Pagos</p>
-              {data.payments.map((payment) => (
-                <div key={payment.id} className="flex max-w-xs items-center justify-between gap-3">
-                  <PaymentMethodBadge method={payment.method} />
-                  <span className="font-mono-money">{moneyOrZero(payment.amount)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>{moneyOrZero(data.subtotal)}</span></div>
-              {data.business.showTax && <div className="flex justify-between"><span>Impuesto</span><span>{moneyOrZero(data.taxTotal)}</span></div>}
-              <div className="flex justify-between"><span>Descuento</span><span>{moneyOrZero(data.discountAmount)}</span></div>
-              {data.rental && Number(data.rental.depositAmount) > 0 && (
-                <div className="flex justify-between">
-                  <span>Deposito alquiler</span><span>{moneyOrZero(data.rental.depositAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>{data.rental ? "Total renta" : "Total"}</span><span>{moneyOrZero(data.total)}</span>
-              </div>
-              {data.rental && (
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total cobrado</span><span>{moneyOrZero(data.amountPaid ?? paymentTotal(data))}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          {data.business.footerMessage && (
-            <p className="mt-6 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-              {data.business.footerMessage}
-            </p>
-          )}
-        </section>
-      )}
+      {data && <InvoiceDocument data={data} />}
     </div>
   );
 }
