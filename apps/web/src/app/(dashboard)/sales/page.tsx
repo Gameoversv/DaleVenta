@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { productUnitLabel } from "@/lib/product-units";
-import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { SaleResponse } from "@/types/sale";
 import { money } from "@/lib/money";
@@ -30,9 +29,11 @@ async function fetchProducts(): Promise<ProductResponse[]> {
   return res.data.data;
 }
 
-async function fetchCustomers(): Promise<CustomerResponse[]> {
-  const res = await api.get<{ data: CustomerResponse[] }>("/api/customers", { params: { size: 500 } });
-  return res.data.data;
+// El nombre viene resuelto en la propia venta. Antes se descargaban los
+// primeros 500 clientes para traducir el customerId, y toda venta a un cliente
+// fuera de esos 500 mostraba el UUID crudo.
+function customerName(sale: SaleResponse): string {
+  return sale.customerName ?? "Cliente de contado";
 }
 
 async function fetchSales(registerId: string): Promise<SaleResponse[]> {
@@ -61,13 +62,11 @@ function StatusBadge({ status }: Readonly<{ status: SaleResponse["status"] }>) {
 function SaleDetailDialog({
   productName,
   productUnit,
-  customerName,
   sale,
   trigger,
 }: Readonly<{
   productName: (id: string) => string;
   productUnit: (id: string) => string;
-  customerName: (id: string | null) => string;
   sale: SaleResponse;
   trigger: React.ReactNode;
 }>) {
@@ -90,7 +89,7 @@ function SaleDetailDialog({
             </div>
             <div>
               <p className="text-muted-foreground">Cliente</p>
-              <p className="font-medium">{customerName(sale.customerId)}</p>
+              <p className="font-medium">{customerName(sale)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Estado</p>
@@ -201,11 +200,6 @@ export default function SalesPage() {
     queryFn: fetchProducts,
     enabled: canViewSales,
   });
-  const { data: customers } = useQuery({
-    queryKey: ["customers-all"],
-    queryFn: fetchCustomers,
-    enabled: canViewSales,
-  });
   const { data: sales, isLoading: salesLoading, isError } = useQuery({
     queryKey: ["sales", location.registerId],
     queryFn: () => fetchSales(location.registerId),
@@ -219,11 +213,6 @@ export default function SalesPage() {
   const productName = (id: string) => productById.get(id)?.description ?? id;
   const productUnit = (id: string) => productUnitLabel(productById.get(id)?.unit);
 
-  const customerById = useMemo(
-    () => new Map((customers ?? []).map((customer) => [customer.id, customer.fullName])),
-    [customers]
-  );
-  const customerName = (id: string | null) => (id ? customerById.get(id) ?? id : "Cliente de contado");
 
   if (!canViewSales) {
     return <PermissionDenied title="Historial de ventas" message="Tu usuario no tiene permiso para consultar ventas." />;
@@ -265,7 +254,7 @@ export default function SalesPage() {
                       <tr key={sale.id} className="border-b border-border">
                         <td className="py-2">{dateTime(sale.createdAt)}</td>
                         <td className="py-2 font-medium">{sale.invoiceNumber}</td>
-                        <td className="py-2">{customerName(sale.customerId)}</td>
+                        <td className="py-2">{customerName(sale)}</td>
                         <td className="py-2"><StatusBadge status={sale.status} /></td>
                         <td className="py-2">{paymentLabel(sale)}</td>
                         <td className="py-2 text-right font-medium">{money(sale.total)}</td>
@@ -275,7 +264,6 @@ export default function SalesPage() {
                               sale={sale}
                               productName={productName}
                               productUnit={productUnit}
-                              customerName={customerName}
                               trigger={
                                 <Button variant="ghost" size="icon" aria-label="Ver detalle">
                                   <Eye className="h-4 w-4" />

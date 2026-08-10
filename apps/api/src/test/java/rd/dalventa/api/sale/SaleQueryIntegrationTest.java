@@ -74,11 +74,18 @@ class SaleQueryIntegrationTest extends IntegrationTestBase {
                 .andReturn().getResponse().getContentAsString();
         var cashShiftId = objectMapper.readTree(openRes).path("data").path("id").asText();
 
+        var customerRes = mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"firstName\":\"Yovanca\",\"lastName\":\"Rojas\"}"))
+                .andReturn().getResponse().getContentAsString();
+        var customerId = objectMapper.readTree(customerRes).path("data").path("id").asText();
+
         var saleRes = mockMvc.perform(post("/api/sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
                         .content("{\"registerId\":\"" + registerId + "\",\"cashShiftId\":\"" + cashShiftId + "\","
-                                + "\"customerId\":null,\"items\":[{\"productId\":\"" + productId
+                                + "\"customerId\":\"" + customerId + "\",\"items\":[{\"productId\":\"" + productId
                                 + "\",\"quantity\":1,\"useWholesalePrice\":false}],"
                                 + "\"payments\":[{\"method\":\"TRANSFER\",\"amount\":\"250.00\","
                                 + "\"bank\":\"Banreservas\",\"reference\":\"REF-Q-1\"}]}"))
@@ -88,11 +95,15 @@ class SaleQueryIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(get("/api/sales?registerId=" + registerId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(saleId));
+                .andExpect(jsonPath("$.data[0].id").value(saleId))
+                // El listado debe resolver el nombre: el front no puede cargar
+                // todos los clientes solo para traducir el customerId.
+                .andExpect(jsonPath("$.data[0].customerName").value("Yovanca Rojas"));
 
         mockMvc.perform(get("/api/sales/" + saleId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items.length()").value(1))
-                .andExpect(jsonPath("$.data.payments.length()").value(1));
+                .andExpect(jsonPath("$.data.payments.length()").value(1))
+                .andExpect(jsonPath("$.data.customerName").value("Yovanca Rojas"));
     }
 }
