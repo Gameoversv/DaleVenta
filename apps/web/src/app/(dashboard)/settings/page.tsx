@@ -225,7 +225,7 @@ function InvoiceSettingsCard() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-phone">Telefono</Label>
-                  <Input id="invoice-phone" maxLength={20} value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
+                  <Input id="invoice-phone" maxLength={50} value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-email">Email</Label>
