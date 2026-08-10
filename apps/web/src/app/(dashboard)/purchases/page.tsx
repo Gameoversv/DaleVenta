@@ -138,23 +138,23 @@ function SupplierDialog({ supplier }: Readonly<{ supplier?: SupplierResponse }>)
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="supplier-name">Nombre</Label>
-              <Input id="supplier-name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+              <Input id="supplier-name" maxLength={180} value={form.name} onChange={(e) => update("name", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-contact">Contacto</Label>
-              <Input id="supplier-contact" value={form.contactName ?? ""} onChange={(e) => update("contactName", e.target.value)} />
+              <Input id="supplier-contact" maxLength={150} value={form.contactName ?? ""} onChange={(e) => update("contactName", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-phone">Telefono</Label>
-              <Input id="supplier-phone" value={form.phone ?? ""} onChange={(e) => update("phone", e.target.value)} />
+              <Input id="supplier-phone" maxLength={50} value={form.phone ?? ""} onChange={(e) => update("phone", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-email">Email</Label>
-              <Input id="supplier-email" value={form.email ?? ""} onChange={(e) => update("email", e.target.value)} />
+              <Input id="supplier-email" maxLength={255} value={form.email ?? ""} onChange={(e) => update("email", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-tax-id">Documento fiscal</Label>
-              <Input id="supplier-tax-id" value={form.taxId ?? ""} onChange={(e) => update("taxId", e.target.value)} />
+              <Input id="supplier-tax-id" maxLength={30} value={form.taxId ?? ""} onChange={(e) => update("taxId", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-address">Direccion</Label>

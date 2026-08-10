@@ -43,6 +43,56 @@ class ProductIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data.salePrice").value("350.00"));
     }
 
+    // internal_code y barcode son VARCHAR(50), unit VARCHAR(30). Sin @Size el
+    // valor llegaba a Postgres y el rechazo salia como 500.
+    @Test
+    void createProduct_overlongInternalCode_returnsBadRequest() throws Exception {
+        String token = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");
+        String categoryId = createCategoryAndGetId(token);
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"categoryId\":\"" + categoryId + "\",\"internalCode\":\"" + "C".repeat(51) + "\","
+                                + "\"barcode\":null,\"description\":\"Bizcocho\",\"unit\":\"unidad\","
+                                + "\"cost\":\"150.00\",\"salePrice\":\"350.00\",\"wholesalePrice\":\"300.00\","
+                                + "\"taxRate\":\"18.00\",\"tracksInventory\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("codigo interno")));
+    }
+
+    @Test
+    void createProduct_overlongBarcode_returnsBadRequest() throws Exception {
+        String token = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");
+        String categoryId = createCategoryAndGetId(token);
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"categoryId\":\"" + categoryId + "\",\"internalCode\":\"BIZ-900\","
+                                + "\"barcode\":\"" + "7".repeat(51) + "\",\"description\":\"Bizcocho\",\"unit\":\"unidad\","
+                                + "\"cost\":\"150.00\",\"salePrice\":\"350.00\",\"wholesalePrice\":\"300.00\","
+                                + "\"taxRate\":\"18.00\",\"tracksInventory\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("codigo de barras")));
+    }
+
+    @Test
+    void createProduct_overlongUnit_returnsBadRequest() throws Exception {
+        String token = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");
+        String categoryId = createCategoryAndGetId(token);
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content("{\"categoryId\":\"" + categoryId + "\",\"internalCode\":\"BIZ-901\","
+                                + "\"barcode\":null,\"description\":\"Bizcocho\",\"unit\":\"" + "u".repeat(31) + "\","
+                                + "\"cost\":\"150.00\",\"salePrice\":\"350.00\",\"wholesalePrice\":\"300.00\","
+                                + "\"taxRate\":\"18.00\",\"tracksInventory\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("unidad")));
+    }
+
     @Test
     void createProduct_duplicateInternalCode_returnsConflict() throws Exception {
         String token = registerTenantAndGetToken("admin@dalventa.test", "Secret123!");

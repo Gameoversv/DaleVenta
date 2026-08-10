@@ -46,6 +46,35 @@ class PurchaseIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data.balanceDue").value("531.00"));
     }
 
+    // Mismo habito que en la factura: el negocio anota dos numeros en un campo.
+    // suppliers.phone era VARCHAR(30) y el segundo numero no cabia.
+    @Test
+    @DisplayName("a supplier takes two phone numbers in one field")
+    void createSupplier_withTwoPhoneNumbers_isStored() throws Exception {
+        var t = provisionTenant(ADMIN);
+
+        mockMvc.perform(post("/api/suppliers")
+                        .header("Authorization", bearer(t.token()))
+                        .contentType("application/json")
+                        .content("{\"name\":\"Distribuidora del Este\","
+                                + "\"phone\":\"(809) 555-0100 / (829) 555-0200\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.phone").value("(809) 555-0100 / (829) 555-0200"));
+    }
+
+    @Test
+    @DisplayName("a supplier phone past the column is rejected, not sent to the database")
+    void createSupplier_withOverlongPhone_returnsBadRequest() throws Exception {
+        var t = provisionTenant(ADMIN);
+
+        mockMvc.perform(post("/api/suppliers")
+                        .header("Authorization", bearer(t.token()))
+                        .contentType("application/json")
+                        .content("{\"name\":\"Distribuidora del Sur\",\"phone\":\"" + "9".repeat(51) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("telefono")));
+    }
+
     @Test
     @DisplayName("a purchase without items is rejected")
     void createPurchase_withoutItems_returnsBadRequest() throws Exception {
