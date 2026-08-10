@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/common/page-header";
 import { PermissionDenied } from "@/components/common/permission-denied";
@@ -131,9 +132,8 @@ function CreateUserDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="user-password">Contrasena inicial</Label>
-            <Input
+            <PasswordInput
               id="user-password"
-              type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
