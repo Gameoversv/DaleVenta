@@ -17,13 +17,23 @@ import { PermissionDenied } from "@/components/common/permission-denied";
 import { EmptyState } from "@/components/common/empty-state";
 import type { CustomerResponse } from "@/types/customer";
 
-async function fetchCustomers(q: string): Promise<CustomerResponse[]> {
-  const res = await api.get<{ data: CustomerResponse[] }>("/api/customers", { params: { q, size: 100 } });
-  return res.data.data;
+const PAGE_SIZE = 20;
+
+interface CustomersPage {
+  data: CustomerResponse[];
+  meta: { total: number };
+}
+
+async function fetchCustomers(q: string, page: number): Promise<CustomersPage> {
+  const res = await api.get<CustomersPage>("/api/customers", {
+    params: { q, page, size: PAGE_SIZE },
+  });
+  return { data: res.data.data, meta: { total: res.data.meta?.total ?? 0 } };
 }
 
 export default function CustomersPage() {
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
   const canView = usePermission("CUSTOMER_VIEW");
   const canCreate = usePermission("CUSTOMER_CREATE");
   const canEdit = usePermission("CUSTOMER_EDIT");
@@ -32,11 +42,23 @@ export default function CustomersPage() {
   const canViewReports = usePermission("REPORTS_VIEW");
   const canManageCredit = canEdit || canReceivePayment;
 
-  const { data: customers, isLoading } = useQuery({
-    queryKey: ["customers", query],
-    queryFn: () => fetchCustomers(query),
+  const { data: result, isLoading } = useQuery({
+    queryKey: ["customers", query, page],
+    queryFn: () => fetchCustomers(query, page),
     enabled: canView,
+    placeholderData: (previous) => previous,
   });
+
+  const customers = result?.data;
+  const total = result?.meta.total ?? 0;
+  const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+  const desde = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const hasta = Math.min(total, page * PAGE_SIZE + (customers?.length ?? 0));
+
+  function search(value: string) {
+    setQuery(value);
+    setPage(0); // Un filtro nuevo siempre arranca en la primera pagina
+  }
 
   if (!canView) {
     return <PermissionDenied title="Clientes" message="No tienes permiso para ver clientes." />;
@@ -73,15 +95,23 @@ export default function CustomersPage() {
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Buscar cliente..."
+          placeholder="Buscar por nombre, telefono o cedula..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => search(e.target.value)}
           className="pl-9"
         />
       </div>
 
       {isLoading && <p className="text-muted-foreground">Cargando clientes...</p>}
-      {customers && customers.length === 0 && <EmptyState message="Aun no hay clientes registrados." />}
+      {customers && customers.length === 0 && (
+        <EmptyState
+          message={
+            query.trim()
+              ? `Ningun cliente coincide con "${query}".`
+              : "Aun no hay clientes registrados."
+          }
+        />
+      )}
       {customers && customers.length > 0 && (
         <Card>
           <CardContent className="p-0">
@@ -147,6 +177,35 @@ export default function CustomersPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {total > 0 && (
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {desde}-{hasta} de {total} clientes
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Pagina {page + 1} de {lastPage + 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+              disabled={page >= lastPage}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

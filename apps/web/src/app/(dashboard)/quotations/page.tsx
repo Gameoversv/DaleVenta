@@ -12,13 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { CustomerResponse } from "@/types/customer";
 import type { ProductResponse } from "@/types/product";
 import type { CreateQuotationRequest, QuotationItemRequest, QuotationResponse } from "@/types/quotation";
 import { moneyOrZero } from "@/lib/money";
 import { dateTime } from "@/lib/dates";
 import { quotationStatusLabel } from "@/lib/status-labels";
 import { escapeHtml } from "@/lib/html";
+import { CustomerSearchSelect } from "@/components/customers/CustomerSearchSelect";
 import { PageHeader } from "@/components/common/page-header";
 import { PermissionDenied } from "@/components/common/permission-denied";
 import { EmptyState, ErrorState } from "@/components/common/empty-state";
@@ -39,10 +39,6 @@ async function fetchProducts(): Promise<ProductResponse[]> {
   return res.data.data;
 }
 
-async function fetchCustomers(): Promise<CustomerResponse[]> {
-  const res = await api.get<{ data: CustomerResponse[] }>("/api/customers", { params: { size: 500 } });
-  return res.data.data;
-}
 
 
 
@@ -218,6 +214,7 @@ export default function QuotationsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [discountAmount, setDiscountAmount] = useState("0");
   const [notes, setNotes] = useState("");
@@ -234,11 +231,6 @@ export default function QuotationsPage() {
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
-    enabled: canCreate || canView,
-  });
-  const { data: customers } = useQuery({
-    queryKey: ["customers-all"],
-    queryFn: fetchCustomers,
     enabled: canCreate || canView,
   });
 
@@ -267,6 +259,7 @@ export default function QuotationsPage() {
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       setOpen(false);
       setCustomerId("");
+      setCustomerName("");
       setValidUntil("");
       setDiscountAmount("0");
       setNotes("");
@@ -332,19 +325,15 @@ export default function QuotationsPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="quotation-customer">Cliente</Label>
-                      <select
+                      <CustomerSearchSelect
                         id="quotation-customer"
-                        value={customerId}
-                        onChange={(e) => setCustomerId(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Cliente de contado</option>
-                        {(customers ?? []).map((customer) => (
-                          <option key={customer.id} value={customer.id}>
-                            {customer.fullName}
-                          </option>
-                        ))}
-                      </select>
+                        customerId={customerId}
+                        customerName={customerName}
+                        onChange={(customer) => {
+                          setCustomerId(customer?.id ?? "");
+                          setCustomerName(customer?.fullName ?? "");
+                        }}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="quotation-valid-until">Valida hasta</Label>

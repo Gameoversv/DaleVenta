@@ -114,4 +114,58 @@ class InvoiceSettingsIntegrationTest extends IntegrationTestBase {
                         .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"A4\"}"))
                 .andExpect(status().isBadRequest());
     }
+
+    // Caso real del negocio: dos telefonos en la factura, escritos en un solo
+    // campo. Con VARCHAR(20) esto reventaba como 500.
+    @Test
+    @DisplayName("two phone numbers in one field are stored, not rejected")
+    void updateSettings_withTwoPhoneNumbers_isStored() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"LETTER\","
+                                + "\"phone\":\"809-555-0100 / 829-555-0200\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.phone").value("809-555-0100 / 829-555-0200"));
+    }
+
+    @Test
+    @DisplayName("a phone past the widened column is still rejected, not sent to the database")
+    void updateSettings_withOverlongPhone_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"LETTER\","
+                                + "\"phone\":\"" + "9".repeat(51) + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("an RNC longer than the column is rejected")
+    void updateSettings_withOverlongRnc_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"Dona Ana\",\"printSize\":\"LETTER\","
+                                + "\"rnc\":\"RNC 1-31-12345-6 / 130123456\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("a business name longer than the column is rejected")
+    void updateSettings_withOverlongBusinessName_returnsBadRequest() throws Exception {
+        var token = registerTenantAndGetToken(ADMIN, DEFAULT_PASSWORD);
+
+        mockMvc.perform(put("/api/settings/invoice")
+                        .header("Authorization", bearer(token))
+                        .contentType("application/json")
+                        .content("{\"businessName\":\"" + "N".repeat(151) + "\",\"printSize\":\"LETTER\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }

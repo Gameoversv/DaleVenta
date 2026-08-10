@@ -218,17 +218,18 @@ function InvoiceSettingsCard() {
                   <Label htmlFor="invoice-business-name">Nombre del negocio o local</Label>
                   <Input
                     id="invoice-business-name"
+                    maxLength={150}
                     value={values.businessName}
                     onChange={(event) => update("businessName", event.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-phone">Telefono</Label>
-                  <Input id="invoice-phone" value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
+                  <Input id="invoice-phone" maxLength={50} value={values.phone ?? ""} onChange={(event) => update("phone", event.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-email">Email</Label>
-                  <Input id="invoice-email" value={values.email ?? ""} onChange={(event) => update("email", event.target.value)} />
+                  <Input id="invoice-email" maxLength={255} value={values.email ?? ""} onChange={(event) => update("email", event.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-address">Direccion</Label>
@@ -236,7 +237,7 @@ function InvoiceSettingsCard() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-city">Ciudad</Label>
-                  <Input id="invoice-city" value={values.city ?? ""} onChange={(event) => update("city", event.target.value)} />
+                  <Input id="invoice-city" maxLength={100} value={values.city ?? ""} onChange={(event) => update("city", event.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invoice-logo">URL del logo</Label>

@@ -17,6 +17,7 @@ public record SaleResponse(
         @JsonProperty("fiscalReceiptType") FiscalReceiptType fiscalReceiptType,
         @JsonProperty("fiscalNcf") String fiscalNcf,
         @JsonProperty("customerId") UUID customerId,
+        @JsonProperty("customerName") String customerName,
         SaleStatus status,
         @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal subtotal,
         @JsonProperty("taxTotal") @JsonFormat(shape = JsonFormat.Shape.STRING) BigDecimal taxTotal,
@@ -29,8 +30,13 @@ public record SaleResponse(
         List<PaymentResponse> payments
 ) {
     public static SaleResponse from(Sale sale, List<SaleItemResponse> items, List<PaymentResponse> payments) {
+        return from(sale, null, items, payments);
+    }
+
+    public static SaleResponse from(Sale sale, String customerName,
+                                    List<SaleItemResponse> items, List<PaymentResponse> payments) {
         return new SaleResponse(sale.getId(), sale.getInvoiceNumber(), sale.getFiscalReceiptType(), sale.getFiscalNcf(),
-                sale.getCustomerId(), sale.getStatus(), sale.getSubtotal(),
+                sale.getCustomerId(), customerName, sale.getStatus(), sale.getSubtotal(),
                 sale.getTaxTotal(), sale.getDiscountAmount(), sale.getTotal(), sale.getCreatedAt(),
                 sale.getVoidedAt(), sale.getVoidReason(), items, payments);
     }

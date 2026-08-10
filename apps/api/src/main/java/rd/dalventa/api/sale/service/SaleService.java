@@ -408,7 +408,18 @@ public class SaleService {
                 .stream().map(SaleItemResponse::from).toList();
         List<PaymentResponse> payments = paymentRepository.findAllBySaleId(sale.getId())
                 .stream().map(PaymentResponse::from).toList();
-        return SaleResponse.from(sale, items, payments);
+        return SaleResponse.from(sale, customerName(sale), items, payments);
+    }
+
+    // El nombre viaja en la respuesta para que el listado del front no tenga que
+    // descargar el padron completo de clientes solo para traducir el customerId.
+    private String customerName(Sale sale) {
+        if (sale.getCustomerId() == null) {
+            return null;
+        }
+        return customerRepository.findById(sale.getCustomerId())
+                .map(c -> (c.getFirstName() + " " + c.getLastName()).trim())
+                .orElse(null);
     }
 
     @Transactional

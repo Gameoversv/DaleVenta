@@ -30,6 +30,18 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(errors);
     }
 
+    /**
+     * Red de seguridad para lo que la validacion del DTO no atajo: un valor que
+     * la columna no aguanta es culpa del cliente, no una caida del servidor.
+     * El mensaje de Postgres trae el SQL completo, asi que no se reenvia.
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Restriccion de base de datos violada", ex);
+        return ApiResponse.error("Alguno de los datos enviados no es valido o excede el largo permitido");
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> handleMissingParameter(MissingServletRequestParameterException ex) {

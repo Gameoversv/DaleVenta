@@ -56,6 +56,7 @@ export interface SaleResponse {
   fiscalReceiptType: FiscalReceiptType | null;
   fiscalNcf: string | null;
   customerId: string | null;
+  customerName: string | null;
   status: SaleStatus;
   subtotal: string;
   taxTotal: string;

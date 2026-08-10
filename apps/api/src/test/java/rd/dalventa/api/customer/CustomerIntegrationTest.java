@@ -63,6 +63,53 @@ class CustomerIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("GET /api/customers?q=<telefono> - finds customer by phone")
+    void list_searchByPhone_findsCustomer() throws Exception {
+        var req = new CreateCustomerRequest("Ingri", "Santana", "8092689346", null, null, null, null);
+        mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated());
+        createCustomer("Carlos", "Diaz", "00300300300");
+
+        mockMvc.perform(get("/api/customers?q=8092689346")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.data[0].firstName").value("Ingri"));
+    }
+
+    @Test
+    @DisplayName("POST /api/customers - accepts two phone numbers in one field")
+    void create_withTwoPhoneNumbers_returns201() throws Exception {
+        var req = new CreateCustomerRequest("Leidy", "Nova", "809-523-1083 / 829-484-6985",
+                null, null, null, null);
+
+        mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.phone").value("809-523-1083 / 829-484-6985"));
+    }
+
+    @Test
+    @DisplayName("GET /api/customers?page=1 - second page keeps the full total")
+    void list_secondPage_reportsFullTotal() throws Exception {
+        createCustomer("Ana", "Aaa", "00100000001");
+        createCustomer("Bruno", "Bbb", "00100000002");
+        createCustomer("Carla", "Ccc", "00100000003");
+
+        mockMvc.perform(get("/api/customers?page=1&size=2")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.total").value(3))
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.data.length()").value(1));
+    }
+
+    @Test
     @DisplayName("GET /api/customers/:id - returns customer")
     void getById_existing_returnsCustomer() throws Exception {
         var id = createCustomer("Ana", "Marte", "00400400400");

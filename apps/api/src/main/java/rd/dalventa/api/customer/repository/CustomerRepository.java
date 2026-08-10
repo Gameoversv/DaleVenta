@@ -12,6 +12,8 @@ import java.util.UUID;
 
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
+    // Mismos campos que searchTop: la mayoria de los clientes migrados solo
+    // tienen nombre y telefono, asi que buscar solo por nombre/cedula no basta.
     @Query("""
             SELECT c FROM Customer c
             WHERE c.tenantId = :tenantId
@@ -19,6 +21,9 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             AND (:q IS NULL OR :q = ''
                 OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.whatsapp) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :q, '%'))
                 OR c.documentId LIKE CONCAT('%', :q, '%'))
             """)
     Page<Customer> search(@Param("tenantId") UUID tenantId,
