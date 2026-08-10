@@ -2,6 +2,7 @@ package rd.dalventa.api.superadmin.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import rd.dalventa.api.auth.domain.User;
+import rd.dalventa.api.auth.service.LoginIdentifier;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -17,7 +18,7 @@ public record UserSummaryResponse(
 ) {
     public static UserSummaryResponse from(User u) {
         return new UserSummaryResponse(
-                u.getId(), u.getName(), u.getEmail(),
+                u.getId(), u.getName(), LoginIdentifier.toDisplayName(u.getEmail()),
                 u.getPrimaryRole() != null ? u.getPrimaryRole().name() : null,
                 u.getTenantId(), u.isActive(), u.getCreatedAt()
         );

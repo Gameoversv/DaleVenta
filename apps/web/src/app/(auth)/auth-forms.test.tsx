@@ -10,9 +10,9 @@ import RegisterPage from "./register/page";
  * a user can get wrong while still filling every field. Everything else about these forms is
  * react-hook-form's job.
  *
- * The bad address is domain-without-a-dot rather than something obviously broken: the field is
- * type="email", so the browser refuses to submit anything it already considers malformed, and the
- * schema would never be reached. What is left for Zod is exactly this — addresses HTML accepts.
+ * El campo de entrada dejo de ser un correo: ahora acepta un usuario ("caja1") o una direccion,
+ * y el backend resuelve ambos. Lo unico que queda por validar en el cliente es que no vaya vacio;
+ * si el identificador no existe, eso lo decide el servidor con un 401.
  */
 
 const login = vi.fn();
@@ -33,15 +33,14 @@ beforeEach(() => {
 });
 
 describe("login", () => {
-  it("does not attempt to sign in with a malformed address", async () => {
+  it("does not attempt to sign in without an identifier", async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByLabelText(/correo/i), "ada@dalventa");
+    await user.type(screen.getByLabelText(/usuario/i), "   ");
     await user.type(screen.getByLabelText(/contrasena/i), "secret123");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
-    expect(await screen.findByText("Correo invalido")).toBeInTheDocument();
     expect(login).not.toHaveBeenCalled();
   });
 

@@ -13,16 +13,16 @@ test("crear un cajero, revocarle un permiso de su rol y reiniciar su clave", asy
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { name: "Usuarios internos" })).toBeVisible();
 
-  const cashierEmail = `cajera-${Date.now()}@dalventa.test`;
+  const cashierUsername = `cajera-${Date.now()}`;
   await page.getByRole("button", { name: "Nuevo usuario" }).click();
   await page.getByLabel("Nombre").fill("Maria Cajera");
-  await page.getByLabel("Correo").fill(cashierEmail);
+  await page.locator("#user-email").fill(cashierUsername);
   await page.getByLabel("Contrasena inicial").fill("Secret123!");
   await page.getByLabel("Rol").selectOption("CASHIER");
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page.getByText("Maria Cajera")).toBeVisible();
-  await expect(page.getByText(cashierEmail)).toBeVisible();
+  await expect(page.getByText(cashierUsername)).toBeVisible();
 
   // A cashier holds SALE_CREATE through their role; revoking it must beat the role.
   await page.getByRole("button", { name: "Permisos" }).last().click();
@@ -42,12 +42,12 @@ test("crear un cajero, revocarle un permiso de su rol y reiniciar su clave", asy
 test("un cajero con un permiso revocado no ve la pantalla que ese permiso abre", async ({ page }) => {
   await registerTenant(page, "users-effect");
 
-  const cashierEmail = `cajera-efecto-${Date.now()}@dalventa.test`;
+  const cashierUsername = `cajera-efecto-${Date.now()}`;
   await page.goto("/settings/users");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Nuevo usuario" }).click();
   await page.getByLabel("Nombre").fill("Rosa Cajera");
-  await page.getByLabel("Correo").fill(cashierEmail);
+  await page.locator("#user-email").fill(cashierUsername);
   await page.getByLabel("Contrasena inicial").fill("Secret123!");
   await page.getByLabel("Rol").selectOption("CASHIER");
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -62,7 +62,7 @@ test("un cajero con un permiso revocado no ve la pantalla que ese permiso abre",
   // Sign in as the cashier and confirm the revoke reaches the navigation.
   await page.getByRole("button", { name: "Cerrar sesion" }).click();
   await expect(page).toHaveURL(/\/login/);
-  await page.getByLabel("Correo").fill(cashierEmail);
+  await page.locator("#email").fill(cashierUsername);
   await page.getByLabel("Contrasena").fill("Secret123!");
   await page.getByRole("button", { name: "Ingresar" }).click();
 
