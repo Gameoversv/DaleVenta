@@ -58,6 +58,23 @@ DaleVenta handles:
 
 Next.js 16 dashboard covering login, registration, POS, sales, quotations, purchases, rentals, branches, cash-shift, customers, products, inventory, fiscal configuration, reports, audit, tenant settings, and the super-admin panel.
 
+### Invoice printing
+
+Closing a sale in the POS sends its invoice to the printer on its own: the confirmation screen loads
+`/print/sales/{id}` in a hidden iframe, and that route prints itself once the document is ready. The
+same button is available on every row of the sales history, so any invoice can be reprinted at any
+time without leaving the list. `/sales/{id}/invoice` remains as the on-screen copy.
+
+Browsers do not allow printing without their own dialog. To make the receipt come out with no click
+at all, run the cashier's Chrome with a fixed default printer and kiosk printing:
+
+```bash
+chrome --kiosk-printing --app=https://<tenant>.daleventa.app/pos
+```
+
+Without that flag the cashier only confirms the browser dialog — no navigating and no searching for
+the sale.
+
 ## Getting Started
 
 ### Prerequisites
